@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Account — CorePanel</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.acc-scroll{flex:1;overflow-y:auto;padding:24px 24px 60px;}
+@media (max-width:640px){.acc-scroll{padding:20px 16px 40px;}}
+.acc-card{max-width:560px;border-radius:14px;padding:28px 28px 24px;display:flex;flex-direction:column;gap:24px;}
+@media (max-width:640px){.acc-card{padding:20px 16px 18px;}}
+.acc-avatar-row{display:flex;align-items:center;gap:16px;}
+.acc-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;background:var(--gr);flex-shrink:0;}
+.acc-avatar-info{display:flex;flex-direction:column;gap:2px;}
+.acc-avatar-name{font-size:16px;font-weight:700;color:var(--tx);font-family:var(--font);}
+.acc-avatar-role{font-size:12px;font-weight:500;color:var(--mu);font-family:var(--font);}
+.acc-section{display:flex;flex-direction:column;gap:8px;}
+.acc-section-title{font-size:14px;font-weight:700;color:var(--tx);font-family:var(--font);}
+.acc-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media (max-width:500px){.acc-row{grid-template-columns:1fr;}}
+.acc-field{display:flex;flex-direction:column;gap:6px;}
+.acc-field.full{grid-column:1/-1;}
+.acc-field label{font-size:11.5px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;font-family:var(--font);}
+.acc-field input{height:40px;padding:0 12px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;outline:none;transition:border-color .15s;}
+.acc-field input:focus{border-color:var(--ac);}
+.acc-field input[readonly]{color:var(--mu);cursor:default;}
+.acc-field input[readonly]:focus{border-color:var(--brd2);}
+.acc-footer{display:flex;justify-content:flex-end;gap:10px;padding-top:4px;}
+.acc-btn-save{padding:8px 18px;border-radius:8px;font-size:12.5px;font-weight:600;font-family:var(--font);color:#fff;background:var(--ac);border:none;cursor:pointer;transition:opacity .12s;}
+.acc-btn-save:hover{opacity:.85;}
+.acc-dd-wrap{position:relative;}
+.acc-dd-btn{display:flex;align-items:center;width:100%;height:40px;padding:0 12px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--mu);font-family:var(--font);font-size:13px;cursor:pointer;transition:border-color .15s;text-align:left;}
+.acc-dd-btn.has-value{color:var(--tx);}
+.acc-dd-btn:hover{border-color:var(--ac);}
+.acc-dd-btn svg{width:14px;height:14px;margin-left:auto;flex-shrink:0;color:var(--mu);transition:transform .15s;}
+.acc-dd-btn.open svg{transform:rotate(180deg);}
+.acc-dd-list{display:none;position:fixed;background:var(--sur);border:0.5px solid var(--brd2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:200;padding:4px;}
+.acc-dd-list.open{display:block;}
+.acc-dd-opt{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12.5px;font-weight:500;font-family:var(--font);color:var(--tx);cursor:pointer;border-radius:7px;transition:background .1s;border:none;background:none;width:100%;text-align:left;}
+.acc-dd-opt:hover{background:var(--sur2);}
+.acc-dd-opt .acc-dd-chk{margin-left:auto;width:14px;height:14px;color:var(--ac);opacity:0;}
+.acc-dd-opt.selected .acc-dd-chk{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <span class="set-page-title"></span>
+  </div>
+  <div class="acc-scroll">
+    <div class="acc-card">
+      <div class="acc-avatar-row">
+        <div class="acc-avatar" id="acc-avatar">BS</div>
+        <div class="acc-avatar-info">
+          <div class="acc-avatar-name" id="acc-display-name">Brian Sweden</div>
+          <div class="acc-avatar-role" id="acc-display-role">Admin</div>
+        </div>
+      </div>
+
+      <div class="acc-section">
+        <div class="acc-section-title">Personal Information</div>
+        <div class="acc-row">
+          <div class="acc-field">
+            <label>First Name</label>
+            <input id="acc-fname" value="Brian"/>
+          </div>
+          <div class="acc-field">
+            <label>Last Name</label>
+            <input id="acc-lname" value="Sweden"/>
+          </div>
+        </div>
+        <div class="acc-row">
+          <div class="acc-field full">
+            <label>Email</label>
+            <input id="acc-email" type="email" value="brian@bitesbysweden.com"/>
+          </div>
+        </div>
+        <div class="acc-row">
+          <div class="acc-field">
+            <label>Phone</label>
+            <input id="acc-phone" type="tel" value="(555) 123-4567"/>
+          </div>
+          <div class="acc-field">
+            <label>Role</label>
+            <div class="acc-dd-wrap" id="acc-role-wrap">
+              <button type="button" class="acc-dd-btn has-value" id="acc-role-btn" onclick="accRoleToggle(event)">
+                <span id="acc-role-label">Admin</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="acc-dd-list" id="acc-role-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="acc-footer">
+        <button class="acc-btn-save" onclick="accSave()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>BuySmartShell.init({ page: 'account', title: 'Account' });</script>
+<script>
+var ACC_ROLES = [
+  { name:'Admin',     active:true },
+  { name:'Agent',     active:true },
+  { name:'User',      active:true }
+];
+var ACC_ROLE = 'admin';
+
+function accBuildRoleList(){
+  var list = document.getElementById('acc-role-list');
+  var chk = '<svg class="acc-dd-chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  list.innerHTML = ACC_ROLES.filter(function(r){ return r.active; }).map(function(r){
+    var key = r.name.toLowerCase();
+    var sel = key === ACC_ROLE ? ' selected' : '';
+    return '<button type="button" class="acc-dd-opt' + sel + '" onclick="accRolePick(\'' + key + '\',\'' + r.name + '\',this)">' + r.name + chk + '</button>';
+  }).join('');
+}
+accBuildRoleList();
+
+function accRoleToggle(e){
+  if(e) e.stopPropagation();
+  var btn = document.getElementById('acc-role-btn');
+  var list = document.getElementById('acc-role-list');
+  var isOpen = btn.classList.toggle('open');
+  list.classList.toggle('open');
+  if(isOpen){
+    var r = btn.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top = (r.bottom + 4) + 'px';
+    list.style.width = r.width + 'px';
+  }
+}
+function accRolePick(value, label, el){
+  ACC_ROLE = value;
+  document.getElementById('acc-role-label').textContent = label;
+  document.getElementById('acc-role-btn').classList.add('has-value');
+  document.querySelectorAll('.acc-dd-opt').forEach(function(o){ o.classList.remove('selected'); });
+  el.classList.add('selected');
+  document.getElementById('acc-role-btn').classList.remove('open');
+  document.getElementById('acc-role-list').classList.remove('open');
+}
+document.addEventListener('click', function(e){
+  var wrap = document.getElementById('acc-role-wrap');
+  if(wrap && !wrap.contains(e.target)){
+    document.getElementById('acc-role-btn').classList.remove('open');
+    document.getElementById('acc-role-list').classList.remove('open');
+  }
+});
+
+function accSave(){
+  var fname = document.getElementById('acc-fname').value.trim();
+  var lname = document.getElementById('acc-lname').value.trim();
+  if(!fname){ document.getElementById('acc-fname').focus(); return; }
+  if(!lname){ document.getElementById('acc-lname').focus(); return; }
+  var full = fname + ' ' + lname;
+  var initials = fname.charAt(0) + lname.charAt(0);
+  var roleLabel = ACC_ROLE.charAt(0).toUpperCase() + ACC_ROLE.slice(1);
+  document.getElementById('acc-display-name').textContent = full;
+  document.getElementById('acc-display-role').textContent = roleLabel;
+  document.getElementById('acc-avatar').textContent = initials.toUpperCase();
+  window.showNavToast('Saved', 'Account profile updated successfully.');
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CorePanel</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+
+/* ── Dashboard scroll area ─────────────────────────────────────────────── */
+.dash-scroll{padding:24px 28px 60px;overflow-y:auto;flex:1;}
+.dash-greeting{font-size:22px;font-weight:700;color:var(--tx);font-family:var(--font);margin-bottom:4px;}
+.dash-subtitle{font-size:13.5px;color:var(--mu);font-family:var(--font);margin-bottom:24px;}
+
+/* ── Widget grid ───────────────────────────────────────────────────────── */
+.widget-grid{display:flex;flex-wrap:wrap;gap:16px;}
+
+/* ── Widget card shell ─────────────────────────────────────────────────── */
+.widget{background:var(--sur);border:0.5px solid var(--brd2);border-radius:12px;
+  padding:0;overflow:hidden;position:relative;
+  transition:border-color .15s;display:flex;flex-direction:column;}
+.widget:hover{border-color:rgba(255,255,255,.18);}
+
+/* Widget header */
+.w-head{display:flex;align-items:center;gap:6px;padding:6px 10px;
+  border-bottom:0.5px solid var(--brd);min-height:44px;position:relative;}
+.w-title{flex:1;font-size:11px;font-weight:500;color:var(--mu);
+  text-transform:uppercase;letter-spacing:.7px;padding-left:6px;}
+.w-kebab{width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  background:transparent;border:none;color:var(--mu);cursor:pointer;
+  border-radius:8px;transition:color .12s,background .12s;flex-shrink:0;}
+.w-kebab:hover{color:var(--ac);background:var(--hover);}
+
+/* Drag handle */
+.w-drag{width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  color:var(--mu);opacity:.35;cursor:grab;flex-shrink:0;border-radius:8px;transition:opacity .15s,color .15s;}
+.widget:hover .w-drag{opacity:.7;}
+.w-drag:hover{opacity:1!important;color:var(--ac2);}
+.w-drag:active{cursor:grabbing;}
+.widget.dragging{opacity:.4;transition:opacity .15s;}
+
+/* Kebab dropdown menu */
+.w-menu{display:none;position:absolute;top:46px;right:10px;z-index:80;min-width:160px;
+  background:var(--sur);border:0.5px solid var(--brd2);border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden;}
+.w-menu.open{display:block;}
+.w-menu-item{display:flex;align-items:center;gap:10px;width:100%;padding:0 14px;min-height:40px;
+  background:none;border:none;border-bottom:0.5px solid var(--brd);color:var(--tx);
+  font:500 12.5px/1 var(--font);cursor:pointer;white-space:nowrap;}
+.w-menu-item:last-child{border-bottom:none;}
+.w-menu-item:hover{background:var(--hover);color:var(--ac2);}
+.w-menu-item svg{width:14px;height:14px;color:var(--mu);flex-shrink:0;}
+.w-menu-item:hover svg{color:var(--ac2);}
+
+/* Empty state (when all widgets in section hidden) */
+.widget-empty{flex:1 1 100%;padding:64px 24px;text-align:center;
+  background:var(--sur);border:1px dashed var(--brd2);border-radius:12px;}
+.widget-empty-icon{width:48px;height:48px;border-radius:12px;margin:0 auto 14px;
+  background:rgba(79,124,255,.10);color:var(--ac2);display:flex;align-items:center;justify-content:center;}
+.widget-empty-title{font-size:15px;font-weight:600;color:var(--tx);letter-spacing:-.2px;margin-bottom:6px;}
+.widget-empty-body{color:var(--mu);font-size:12.5px;line-height:1.55;max-width:380px;margin:0 auto;}
+.widget-empty-cta{margin-top:14px;display:inline-flex;align-items:center;gap:6px;
+  background:var(--ac);color:#fff;border:none;border-radius:8px;
+  padding:0 14px;height:34px;font-size:12.5px;font-weight:500;cursor:pointer;}
+.widget-empty-cta:hover{background:var(--ac2);}
+
+/* Widgets panel (slide-over) */
+.widgets-menu{position:fixed;top:0;right:0;bottom:0;width:340px;z-index:9500;
+  background:var(--sur);border-left:0.5px solid var(--brd);
+  box-shadow:-8px 0 32px rgba(0,0,0,.35);
+  transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;}
+.widgets-menu.open{transform:translateX(0);}
+.wm-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;
+  border-bottom:0.5px solid var(--brd);flex-shrink:0;}
+.wm-header-title{font:600 15px/1 var(--font);color:var(--tx);letter-spacing:-.2px;}
+.wm-close{width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  background:transparent;border:none;color:var(--mu);cursor:pointer;border-radius:6px;}
+.wm-close:hover{background:var(--hover);color:var(--tx);}
+.wm-section-head{padding:14px 18px 8px;font:600 11px/1 var(--font);color:var(--mu);
+  text-transform:uppercase;letter-spacing:.6px;}
+.wm-list{flex:1;overflow-y:auto;padding:0 12px 12px;scrollbar-width:thin;scrollbar-color:var(--brd2) transparent;}
+.wm-tile{background:transparent;border:none;margin-bottom:8px;}
+.wm-tile .wm-prev-widget{transition:border-color .15s;}
+.wm-tile:hover .wm-prev-widget{border-color:var(--ac);}
+.wm-tile-add{width:26px;height:26px;border-radius:50%;background:var(--ac);color:#fff;
+  border:none;cursor:pointer;font-size:16px;font-weight:600;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;transition:background .12s;pointer-events:auto;}
+.wm-tile-add:hover{background:var(--ac2);}
+.wm-prev-widget{pointer-events:none;}
+.wm-prev-widget .w-drag{pointer-events:auto;}
+.wm-tile:hover .w-drag{opacity:.7;}
+.wm-tile.dragging{opacity:.45;}
+.wm-drop-active{outline:1.5px dashed var(--ac);outline-offset:6px;border-radius:12px;}
+.widget.wm-drop-before{box-shadow:-4px 0 0 var(--ac);}
+.widget.wm-drop-after{box-shadow:4px 0 0 var(--ac);}
+.wm-empty{padding:28px 18px;text-align:center;font-size:12.5px;line-height:1.5;color:var(--mu);}
+.wm-footer{padding:12px 18px;border-top:0.5px solid var(--brd);flex-shrink:0;}
+.wm-reset{width:100%;padding:0 14px;height:34px;background:transparent;border:0.5px solid var(--brd2);
+  border-radius:8px;color:var(--mu);font:500 12.5px/1 var(--font);cursor:pointer;}
+.wm-reset:hover{background:var(--hover);color:var(--tx);}
+
+/* Widgets toolbar button */
+.widgets-btn{display:flex;align-items:center;gap:6px;padding:0 14px;height:40px;
+  background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;
+  color:var(--mu);font:500 12.5px/1 var(--font);cursor:pointer;white-space:nowrap;
+  flex-shrink:0;transition:all .15s;position:relative;}
+.widgets-btn:hover{border-color:var(--ac);color:var(--ac2);}
+.widgets-btn svg{width:14px;height:14px;}
+.widgets-btn .wb-chev{width:11px;height:11px;margin-left:1px;color:var(--mu);transition:transform .15s,color .15s;}
+.widgets-btn:hover .wb-chev{color:var(--ac2);}
+.widgets-btn.open{border-color:var(--ac);color:var(--ac2);background:rgba(79,124,255,.08);}
+.widgets-btn.open .wb-chev{transform:rotate(180deg);color:var(--ac2);}
+
+/* Widget body */
+.w-body{flex:1;padding:16px 16px 16px;}
+
+/* Scrollable list body — show ~4 items then scroll */
+.w-body-scroll{max-height:230px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--brd2) transparent;}
+.w-body-scroll::-webkit-scrollbar{width:4px;}
+.w-body-scroll::-webkit-scrollbar-track{background:transparent;}
+.w-body-scroll::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:4px;}
+.w-body-chart-scroll{max-height:230px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--brd2) transparent;}
+.w-body-chart-scroll::-webkit-scrollbar{width:4px;}
+.w-body-chart-scroll::-webkit-scrollbar-track{background:transparent;}
+.w-body-chart-scroll::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:4px;}
+
+/* ── KPI layout ────────────────────────────────────────────────────────── */
+.kpi{display:flex;flex-direction:column;gap:10px;}
+.kpi-icon{width:34px;height:34px;border-radius:9px;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;}
+.kpi-icon svg{width:16px;height:16px;}
+.kpi-num{font-size:32px;font-weight:600;line-height:.95;letter-spacing:-1.2px;font-family:var(--font);}
+.kpi-sub{font-size:11.5px;color:var(--mu);margin-top:-3px;}
+
+/* KPI color variants */
+.kpi-orgs .kpi-icon{background:rgba(79,124,255,.14);color:var(--ac);}
+.kpi-orgs .kpi-num{color:var(--ac);}
+.kpi-users .kpi-icon{background:rgba(34,200,138,.14);color:var(--gr);}
+.kpi-users .kpi-num{color:var(--gr);}
+.kpi-products .kpi-icon{background:rgba(232,85,85,.14);color:var(--rd);}
+.kpi-products .kpi-num{color:var(--rd);}
+.kpi-revenue .kpi-icon{background:rgba(155,89,182,.14);color:#9b59b6;}
+.kpi-revenue .kpi-num{color:#9b59b6;}
+
+/* Window label footer */
+.kpi-window{display:flex;align-items:center;gap:6px;margin-top:12px;
+  padding-top:10px;border-top:0.5px solid var(--brd);
+  font-size:10.5px;color:var(--mu);font-family:var(--font);}
+.kpi-window-dot{width:5px;height:5px;border-radius:50%;background:var(--ac);flex-shrink:0;}
+
+/* Trend badge */
+.kpi-trend{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;
+  padding:2px 8px;border-radius:6px;margin-top:2px;width:fit-content;}
+.kpi-trend svg{width:12px;height:12px;}
+.kpi-trend.up{color:var(--gr);background:rgba(34,200,138,.1);}
+.kpi-trend.down{color:var(--rd);background:rgba(232,85,85,.1);}
+
+/* ── Chart grid (3-col below KPIs) ─────────────────────────────────────── */
+.widget-grid-chart{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px;}
+/* Up to 4 per line; widgets on a short line stretch to fill it */
+.widget-grid > .widget,.widget-grid-chart > .widget{flex:1 1 0;min-width:calc((100% - 48px) / 4 - 1px);}
+
+/* Chart body padding */
+.w-body-chart{flex:1;padding:18px 18px 14px;display:flex;flex-direction:column;gap:0;}
+
+/* ── CoreConnect chart legend (interactive) ───────────────────────────── */
+.chart-legend{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.chart-leg{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;
+  color:var(--mu);cursor:pointer;user-select:none;
+  padding:8px 12px;min-height:36px;border-radius:7px;
+  background:transparent;
+  transition:opacity .12s, background .12s, color .12s;}
+.chart-leg:hover{background:var(--hover);color:var(--tx);}
+.chart-leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.chart-leg.off{opacity:.45;}
+.chart-leg.off .chart-leg-dot{background:var(--mu) !important;}
+
+/* Simple legend (donut, bar) */
+.chart-legend-simple{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--mu);font-family:var(--font);}
+.chart-legend-item{display:flex;align-items:center;gap:5px;}
+.chart-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ── CoreConnect chart SVG ────────────────────────────────────────────── */
+.chart-wrap{position:relative;width:100%;}
+.chart-svg{display:block;width:100%;height:240px;overflow:visible;}
+.chart-grid-line{stroke:var(--brd);stroke-width:0.5;}
+.chart-axis-label{fill:var(--mu);font-family:var(--mono);font-size:9px;}
+.chart-line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;}
+.chart-area{opacity:1;}
+.chart-series.hidden{display:none;}
+
+/* Hover tracer + dots */
+.chart-tracer{stroke:var(--brd2);stroke-width:1;stroke-dasharray:3 3;opacity:0;}
+.chart-tracer.on{opacity:1;}
+.chart-dot{opacity:0;}
+.chart-dot.on{opacity:1;}
+
+/* Tooltip */
+.chart-tip{position:absolute;pointer-events:none;z-index:5;
+  background:var(--sur2);border:0.5px solid var(--brd2);border-radius:9px;
+  padding:9px 11px;box-shadow:0 6px 20px rgba(0,0,0,.4);
+  opacity:0;transition:opacity .12s;
+  min-width:120px;}
+.chart-tip.on{opacity:1;}
+@media (hover: hover) and (pointer: fine){
+  .chart-tip{
+    transition: opacity .12s, left .18s cubic-bezier(.2,.8,.2,1), top .18s cubic-bezier(.2,.8,.2,1);
+  }
+  .chart-tip.tip-positioning{transition: opacity .12s;}
+}
+@media (prefers-reduced-motion: reduce){
+  .chart-tip{transition: opacity .12s !important;}
+}
+.chart-tip-time{font-family:var(--mono);font-size:10px;color:var(--mu);
+  margin-bottom:6px;letter-spacing:.3px;}
+.chart-tip-row{display:flex;align-items:center;justify-content:space-between;
+  gap:14px;font-size:11.5px;padding:1px 0;}
+.chart-tip-left{display:inline-flex;align-items:center;gap:6px;color:var(--mu);}
+.chart-tip-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.chart-tip-val{font-family:var(--mono);font-weight:500;color:var(--tx);}
+
+/* Window footer for charts */
+.ca-window{display:flex;align-items:center;gap:6px;margin-top:12px;
+  padding-top:10px;border-top:0.5px solid var(--brd);
+  font-size:10.5px;color:var(--mu);font-family:var(--font);}
+.ca-window-dot{width:5px;height:5px;border-radius:50%;background:var(--ac);flex-shrink:0;}
+
+/* Bar chart labels */
+.bar-label{font-size:10px;fill:var(--mu);font-family:var(--font);}
+.bar-val{font-size:9px;fill:var(--tx);font-family:var(--font);font-weight:600;}
+
+/* ── Phase 3: Data table widgets (CoreConnect leaderboard pattern) ───── */
+.lb{display:flex;flex-direction:column;}
+.lb-head{display:grid;gap:8px;
+  padding:0 4px 8px;border-bottom:0.5px solid var(--brd);
+  font-size:9.5px;font-weight:500;color:var(--mu);text-transform:uppercase;letter-spacing:.6px;}
+.lb-head span{font-family:var(--font);}
+.lb-row{display:grid;gap:8px;align-items:center;
+  padding:9px 4px;border-bottom:0.5px solid var(--brd);position:relative;
+  transition:background .12s;}
+.lb-row:last-child{border-bottom:none;}
+.lb-row:hover{background:var(--hover);}
+.lb-rank{font-family:var(--mono);font-size:12px;color:var(--mu);text-align:center;}
+.lb-row.top .lb-rank{color:var(--ac);font-weight:500;}
+.lb-name-cell{display:flex;align-items:center;gap:9px;min-width:0;}
+.lb-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;font-size:10.5px;font-weight:600;color:#fff;}
+.lb-name{font-size:12.5px;color:var(--tx);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;min-width:0;}
+.lb-stat{font-family:var(--mono);font-size:12px;color:var(--mu);text-align:right;}
+.lb-total{font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--tx);text-align:right;}
+.lb-bar-track{grid-column:2 / -1;height:3px;border-radius:2px;background:var(--sur2);
+  margin-top:2px;overflow:hidden;}
+.lb-bar-fill{height:100%;border-radius:2px;background:var(--ac);transition:width .5s ease;}
+.lb-row.top .lb-bar-fill{background:var(--gr);}
+
+/* Status badge */
+.lb-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:5px;
+  font-size:10px;font-weight:600;letter-spacing:.2px;white-space:nowrap;}
+.lb-badge.active{color:var(--gr);background:rgba(34,200,138,.1);}
+.lb-badge.trial{color:var(--am);background:rgba(245,166,35,.1);}
+.lb-badge.inactive{color:var(--mu);background:rgba(255,255,255,.06);}
+
+/* Activity feed */
+.act-feed{display:flex;flex-direction:column;}
+.act-feed-item{display:flex;align-items:flex-start;gap:10px;padding:10px 4px;
+  border-bottom:0.5px solid var(--brd);}
+.act-feed-item:last-child{border-bottom:none;}
+.act-feed-icon{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;font-size:12px;}
+.act-feed-icon svg{width:14px;height:14px;}
+.act-feed-body{flex:1;min-width:0;}
+.act-feed-text{font-size:12.5px;color:var(--tx);line-height:1.4;}
+.act-feed-text strong{font-weight:600;}
+.act-feed-time{font-size:10px;color:var(--mu);font-family:var(--mono);margin-top:2px;}
+
+/* Grid columns per table type */
+.lb-orgs .lb-head,.lb-orgs .lb-row{grid-template-columns:26px 1fr 72px 56px 72px;}
+.lb-spend .lb-head,.lb-spend .lb-row{grid-template-columns:26px 1fr 64px 58px 72px;}
+@media (max-width:540px){
+  .lb-orgs .lb-head,.lb-orgs .lb-row{grid-template-columns:26px 1fr 56px 56px;}
+  .lb-spend .lb-head,.lb-spend .lb-row{grid-template-columns:26px 1fr 58px 72px;}
+  .lb-col-users,.lb-col-plan{display:none;}
+}
+
+/* ── Phase 4: Operational widgets ──────────────────────────────────────── */
+.sys-list{display:flex;flex-direction:column;}
+.sys-row{display:flex;align-items:center;gap:10px;padding:10px 4px;
+  border-bottom:0.5px solid var(--brd);}
+.sys-row:last-child{border-bottom:none;}
+.sys-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sys-dot.green{background:var(--gr);}
+.sys-dot.yellow{background:var(--am);}
+.sys-dot.red{background:var(--rd);}
+.sys-name{flex:1;font-size:12.5px;color:var(--tx);}
+.sys-tag{font-size:10px;font-family:var(--mono);font-weight:500;padding:2px 8px;
+  border-radius:5px;white-space:nowrap;}
+.sys-tag.operational{color:var(--gr);background:rgba(34,200,138,.1);}
+.sys-tag.degraded{color:var(--am);background:rgba(245,166,35,.1);}
+.sys-tag.down{color:var(--rd);background:rgba(232,85,85,.1);}
+.sys-uptime{font-size:10px;font-family:var(--mono);color:var(--mu);white-space:nowrap;}
+
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.qa-btn{display:flex;align-items:center;gap:8px;padding:11px 12px;
+  border-radius:9px;border:0.5px solid var(--brd2);background:var(--sur2);
+  cursor:pointer;transition:border-color .12s,background .12s;font-family:var(--font);}
+.qa-btn:hover{border-color:rgba(255,255,255,.18);background:var(--hover);}
+.qa-btn-icon{width:30px;height:30px;border-radius:8px;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;}
+.qa-btn-icon svg{width:14px;height:14px;}
+.qa-btn-text{font-size:12px;color:var(--tx);font-weight:500;}
+.qa-btn-sub{font-size:10px;color:var(--mu);margin-top:1px;}
+
+.alert-feed{display:flex;flex-direction:column;}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:10px 4px;
+  border-bottom:0.5px solid var(--brd);}
+.alert-item:last-child{border-bottom:none;}
+.alert-icon{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;}
+.alert-icon svg{width:14px;height:14px;}
+.alert-body{flex:1;min-width:0;}
+.alert-text{font-size:12.5px;color:var(--tx);line-height:1.4;}
+.alert-text strong{font-weight:600;}
+.alert-meta{display:flex;align-items:center;gap:8px;margin-top:3px;}
+.alert-time{font-size:10px;color:var(--mu);font-family:var(--mono);}
+.alert-sev{font-size:9px;font-weight:600;padding:1px 6px;border-radius:4px;
+  text-transform:uppercase;letter-spacing:.3px;}
+.alert-sev.critical{color:var(--rd);background:rgba(232,85,85,.1);}
+.alert-sev.warning{color:var(--am);background:rgba(245,166,35,.1);}
+.alert-sev.info{color:var(--ac);background:rgba(79,124,255,.1);}
+
+/* ── Phase 5: Toolbar & Filters ────────────────────────────────────────── */
+.toolbar{display:flex;align-items:center;gap:8px;padding:10px 28px;overflow:visible;
+  position:relative;z-index:55;border-bottom:0.5px solid var(--brd);background:var(--bg);flex-shrink:0;}
+.tbtn{display:flex;align-items:center;gap:5px;background:var(--sur2);
+  border:0.5px solid var(--brd2);border-radius:8px;padding:0 14px;height:40px;
+  color:var(--mu);font-size:12.5px;font-family:var(--font);cursor:pointer;
+  transition:all .15s;white-space:nowrap;position:relative;}
+.tbtn:hover{border-color:var(--ac);color:var(--ac2);}
+.tbtn svg{width:14px;height:14px;flex-shrink:0;}
+.tbtn.open{border-color:var(--ac);color:var(--ac2);background:rgba(79,124,255,.08);}
+.tb-sp{flex:1;}
+.icon-btn{width:40px;padding:0;justify-content:center;}
+
+/* Period toggle */
+.period-toggle{display:inline-flex;align-items:center;gap:4px;padding:4px;
+  background:var(--sur2);border:0.5px solid var(--brd2);border-radius:10px;flex-shrink:0;}
+.pt-seg{display:flex;align-items:center;justify-content:center;
+  min-height:32px;padding:0 16px;border-radius:7px;
+  background:transparent;border:none;cursor:pointer;
+  color:var(--mu);font-size:12.5px;font-weight:500;font-family:var(--font);
+  transition:color .12s, background .12s;white-space:nowrap;}
+.pt-seg:hover{color:var(--tx);}
+.pt-seg.active{background:var(--ac);color:#fff;}
+.pt-seg.active:hover{color:#fff;}
+:root[data-theme="light"] .period-toggle,
+:root[data-theme="light"] .widgets-btn{box-shadow:0 1px 2px rgba(15,17,23,.06),0 2px 8px rgba(15,17,23,.06);}
+
+/* Calendar picker */
+.cal-outer{position:relative;flex-shrink:0;}
+.cal-panel{display:none;position:fixed;
+  background:var(--sur);border:0.5px solid var(--brd2);border-radius:12px;
+  overflow:hidden;width:320px;z-index:200;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);flex-direction:column;}
+.cal-panel.open{display:flex;}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 14px;border-bottom:0.5px solid var(--brd);flex-shrink:0;}
+.cal-nav-btn{width:40px;height:40px;border-radius:8px;
+  background:transparent;border:0.5px solid var(--brd2);color:var(--mu);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.cal-nav-btn:hover:not(:disabled){border-color:var(--ac);color:var(--ac2);}
+.cal-nav-btn:disabled{opacity:.3;cursor:not-allowed;}
+.cal-nav-label{font-size:13px;font-weight:600;color:var(--tx);letter-spacing:-.2px;}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:8px 10px 4px;}
+.cal-wd{font-family:var(--mono);font-size:10.5px;color:var(--mu);
+  text-align:center;text-transform:uppercase;letter-spacing:.5px;padding:4px 0;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:0 10px 12px;}
+.cal-day{height:40px;display:flex;align-items:center;justify-content:center;
+  border-radius:8px;font-size:13px;font-weight:500;color:var(--tx);
+  background:transparent;border:0.5px solid transparent;cursor:pointer;
+  transition:background .1s,color .1s,border-color .1s;font-family:var(--font);}
+.cal-day:hover:not(.disabled):not(.selected){background:rgba(79,124,255,.08);color:var(--ac2);}
+.cal-day.other{color:var(--mu);opacity:.5;}
+.cal-day.today:not(.selected){border-color:var(--ac);color:var(--ac2);}
+.cal-day.selected{background:var(--ac);color:#fff;border-color:var(--ac);}
+.cal-day.disabled{opacity:.25;cursor:not-allowed;}
+.cal-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 12px;background:var(--sur2);border-top:0.5px solid var(--brd);}
+.cal-foot-btn{height:40px;border-radius:8px;padding:0 16px;
+  background:transparent;border:0.5px solid var(--brd2);color:var(--mu);
+  font-size:12px;font-weight:500;font-family:var(--font);cursor:pointer;transition:all .15s;}
+.cal-foot-btn:hover{border-color:var(--ac);color:var(--ac2);}
+.cal-foot-btn.primary{background:var(--ac);border-color:var(--ac);color:#fff;}
+.cal-foot-btn.primary:hover{background:var(--ac2);border-color:var(--ac2);}
+
+/* Filter dropdown */
+.df-outer{position:relative;flex-shrink:0;}
+.df-badge{width:7px;height:7px;border-radius:50%;background:var(--ac);flex:none;}
+.df-chev{transition:transform .15s;}
+.tbtn.open .df-chev{transform:rotate(180deg);}
+.df-menu{position:fixed;z-index:200;display:none;
+  background:var(--sur);border:0.5px solid var(--brd2);border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden;flex-direction:row;min-height:300px;}
+.df-menu.open{display:flex;}
+.df-mobile-header{display:none;align-items:center;gap:6px;padding:10px 12px;border-bottom:0.5px solid var(--brd2);
+  background:var(--sur);flex-shrink:0;}
+.df-mobile-back{width:40px;height:40px;border-radius:8px;background:transparent;border:none;color:var(--tx);
+  cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;display:none;}
+.df-menu.show-opts .df-mobile-back{display:flex;}
+.df-mobile-title{flex:1;font-size:15px;font-weight:600;color:var(--tx);text-align:center;}
+.df-mobile-close{width:40px;height:40px;border-radius:8px;background:transparent;border:none;color:var(--mu);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.df-left{width:180px;display:flex;flex-direction:column;border-right:0.5px solid var(--brd2);background:var(--sur);}
+.df-catlist{flex:1;padding:6px;overflow-y:auto;min-height:0;}
+.df-cat{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;border-radius:7px;
+  cursor:pointer;border:none;background:transparent;color:var(--tx);font-size:12.5px;
+  font-family:var(--font);text-align:left;transition:background .12s,color .12s;}
+.df-cat:hover{background:var(--sur2);color:var(--ac2);}
+.df-cat.active{background:rgba(79,124,255,.10);color:var(--ac2);}
+.df-cat-chev{margin-left:auto;font-size:11px;color:var(--mu);}
+.df-foot{padding:9px 12px;border-top:0.5px solid var(--brd);display:flex;
+  align-items:center;justify-content:space-between;}
+.df-clear{font-size:11.5px;color:var(--mu);cursor:pointer;background:none;border:none;
+  font-family:var(--font);}
+.df-clear:hover{color:var(--rd);}
+.df-foot-hint{font-size:10px;color:var(--mu);font-family:var(--mono);}
+.df-right{width:280px;display:flex;flex-direction:column;background:var(--sur2);}
+.df-search{display:flex;align-items:center;gap:7px;padding:11px 12px;
+  border-bottom:0.5px solid var(--brd);}
+.df-search svg{width:14px;height:14px;color:var(--mu);flex-shrink:0;}
+.df-search input{flex:1;background:none;border:none;outline:none;color:var(--tx);
+  font-family:var(--font);font-size:13px;}
+.df-search input::placeholder{color:var(--mu);}
+.df-opts{flex:1;overflow-y:auto;padding:6px;max-height:340px;min-height:0;}
+.df-opt{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:7px;
+  cursor:pointer;border:none;background:transparent;text-align:left;transition:background .12s;
+  font-family:var(--font);}
+.df-opt:hover{background:var(--hover);}
+.df-radio{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--brd2);flex:none;
+  display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.df-opt.chosen .df-radio{background:var(--ac);border-color:var(--ac);}
+.df-opt.chosen .df-radio::after{content:'';width:4px;height:8px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-1px;}
+.df-opt-av{width:26px;height:26px;border-radius:50%;font-size:9.5px;font-weight:700;
+  color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.df-opt-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:13px;color:var(--tx);}
+.df-opt.chosen .df-opt-label{color:var(--ac2);}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width:1024px){
+  .widget-grid > .widget,.widget-grid-chart > .widget{min-width:calc((100% - 16px) / 2 - 1px);}
+}
+@media (max-width:640px){
+  .widget-grid > .widget,.widget-grid-chart > .widget{min-width:100%;}
+}
+@media (max-width:640px){
+  .period-toggle{display:none;}
+  .toolbar{flex-wrap:wrap;}
+  /* Filter becomes a full-screen drill-down: categories first, then options slide in */
+  .df-menu{top:0!important;left:0!important;right:0!important;bottom:0!important;width:auto!important;
+    max-height:none;min-height:0;border-radius:0;border:none;flex-direction:column;z-index:9500;}
+  .df-mobile-header{display:flex;}
+  .df-left,.df-right{position:absolute;top:61px;left:0;right:0;bottom:0;width:100%;border:none;transition:transform .22s ease;}
+  .df-left{transform:translateX(0);}
+  .df-menu.show-opts .df-left{transform:translateX(-100%);}
+  .df-right{display:flex;transform:translateX(100%);}
+  .df-menu.show-opts .df-right{transform:translateX(0);}
+  .df-opts{max-height:none;}
+  .df-cat{padding:14px;font-size:14px;}
+  .df-opt{padding:13px 12px;}
+  .df-opt-label{font-size:14px;}
+  .df-search input{font-size:16px;}
+  .df-foot{padding:12px 16px;}
+  #df-btn-label,#widgets-btn > span{display:none;}
+  .cal-panel{left:auto;right:0;}
+}
+@media (max-width:540px){
+  .dash-scroll{padding:16px 12px 60px;}
+  .widget-grid{gap:12px;}
+  .widget-grid-chart{gap:12px;}
+  .widget-grid-table{gap:12px;}
+}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+
+  <!-- ── Phase 5: Toolbar (outside scroll area) ────────────────────── -->
+  <div class="toolbar" id="toolbar">
+
+    <!-- Period toggle -->
+    <div class="period-toggle" role="radiogroup" aria-label="Period">
+      <button type="button" class="pt-seg active" data-period="Month">Month</button>
+      <button type="button" class="pt-seg" data-period="Quarter">Quarter</button>
+      <button type="button" class="pt-seg" data-period="Year">Year</button>
+      <button type="button" class="pt-seg" data-period="All">All</button>
+    </div>
+
+    <!-- Calendar picker -->
+    <div class="cal-outer" id="cal-outer">
+      <button class="tbtn icon-btn" id="cal-btn" aria-label="Pick date">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="11" rx="1.5"/><line x1="2" y1="6.5" x2="14" y2="6.5"/><line x1="5.5" y1="1.5" x2="5.5" y2="4.5"/><line x1="10.5" y1="1.5" x2="10.5" y2="4.5"/></svg>
+      </button>
+      <div class="cal-panel" id="cal-panel">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" id="cal-prev" aria-label="Previous month">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="10 3 5 8 10 13"/></svg>
+          </button>
+          <span class="cal-nav-label" id="cal-label"></span>
+          <button class="cal-nav-btn" id="cal-next" aria-label="Next month">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 3 11 8 6 13"/></svg>
+          </button>
+        </div>
+        <div class="cal-weekdays">
+          <span class="cal-wd">Sun</span><span class="cal-wd">Mon</span><span class="cal-wd">Tue</span>
+          <span class="cal-wd">Wed</span><span class="cal-wd">Thu</span><span class="cal-wd">Fri</span><span class="cal-wd">Sat</span>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="cal-footer">
+          <button class="cal-foot-btn" id="cal-today-btn">Today</button>
+          <button class="cal-foot-btn primary" id="cal-done-btn">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter dropdown -->
+    <div class="df-outer" id="df-outer">
+      <button class="tbtn" id="df-btn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 3h13M3.5 8h9M5.5 13h5"/></svg>
+        <span id="df-btn-label">Filter</span>
+        <span class="df-badge" id="df-badge" style="display:none;"></span>
+        <svg class="df-chev" width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg>
+      </button>
+      <div class="df-menu" id="df-menu" role="dialog" aria-label="Filter dashboard">
+        <div class="df-mobile-header">
+          <button class="df-mobile-back" id="df-mback" aria-label="Back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <span class="df-mobile-title" id="df-mtitle">Filter</span>
+          <button class="df-mobile-close" id="df-mclose" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="df-left">
+          <div class="df-catlist" id="df-catlist"></div>
+          <div class="df-foot">
+            <button class="df-clear" id="df-clear">Clear all</button>
+            <span class="df-foot-hint">Esc to close</span>
+          </div>
+        </div>
+        <div class="df-right">
+          <div class="df-search">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+            <input id="df-search" placeholder="Search filter..." oninput="dfRenderOpts()">
+          </div>
+          <div class="df-opts" id="df-opts"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tb-sp"></div>
+
+    <!-- Widgets button (right-aligned) -->
+    <button class="widgets-btn" id="widgets-btn" onclick="toggleWidgetsPanel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Widgets</span>
+      <svg class="wb-chev" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </div>
+
+  <!-- Widgets panel (slide-over) -->
+  <div class="widgets-menu" id="widgets-menu">
+    <div class="wm-header">
+      <span class="wm-header-title">Widgets</span>
+      <button class="wm-close" onclick="toggleWidgetsPanel()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
+      </button>
+    </div>
+    <div class="wm-section-head">Hidden widgets</div>
+    <div class="wm-list" id="wm-list"></div>
+    <div class="wm-footer">
+      <button class="wm-reset" onclick="resetWidgets()">Reset to defaults</button>
+    </div>
+  </div>
+
+  <div class="dash-scroll">
+
+    <div class="widget-grid" id="widget-grid-kpi">
+
+      <!-- Total Organizations -->
+      <div class="widget" data-wid="total-orgs">
+        <div class="w-head">
+          <div class="w-title">Total Organizations</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body">
+          <div class="kpi kpi-orgs" id="kpi-orgs">
+            <div class="kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div class="kpi-num">13</div>
+            <div class="kpi-sub">Registered dealers</div>
+            <div class="kpi-trend up">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              +1 this month
+            </div>
+            <div class="kpi-window">
+              <span class="kpi-window-dot"></span>
+              <span>Sep 2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Users -->
+      <div class="widget" data-wid="active-users">
+        <div class="w-head">
+          <div class="w-title">Active Users</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body">
+          <div class="kpi kpi-users" id="kpi-users">
+            <div class="kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="kpi-num">156</div>
+            <div class="kpi-sub">Users across all organizations</div>
+            <div class="kpi-trend up">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              +12 this month
+            </div>
+            <div class="kpi-window">
+              <span class="kpi-window-dot"></span>
+              <span>Sep 2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Products -->
+      <div class="widget" data-wid="active-products">
+        <div class="w-head">
+          <div class="w-title">Active Products</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body">
+          <div class="kpi kpi-products" id="kpi-products">
+            <div class="kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            </div>
+            <div class="kpi-num">58</div>
+            <div class="kpi-sub">Product subscriptions</div>
+            <div class="kpi-trend up">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              +5 this month
+            </div>
+            <div class="kpi-window">
+              <span class="kpi-window-dot"></span>
+              <span>Sep 2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Revenue -->
+      <div class="widget" data-wid="monthly-revenue">
+        <div class="w-head">
+          <div class="w-title">Monthly Revenue</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body">
+          <div class="kpi kpi-revenue" id="kpi-revenue">
+            <div class="kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="kpi-num">$18,420</div>
+            <div class="kpi-sub">Total billing this period</div>
+            <div class="kpi-trend down">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+              -2.4% vs last month
+            </div>
+            <div class="kpi-window">
+              <span class="kpi-window-dot"></span>
+              <span>Sep 2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Phase 2: Chart widgets ──────────────────────────────────────── -->
+    <div class="widget-grid-chart">
+
+      <!-- Revenue Over Time (area chart — full width) -->
+      <div class="widget" data-wid="revenue-chart">
+        <div class="w-head">
+          <div class="w-title">Revenue Over Time</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body-chart" id="chart-revenue"></div>
+      </div>
+
+      <!-- Organizations by Plan (donut) -->
+      <div class="widget" data-wid="plans-chart">
+        <div class="w-head">
+          <div class="w-title">Organizations by Plan</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body-chart" id="chart-plans"></div>
+      </div>
+
+      <!-- Product Adoption (bar chart) -->
+      <div class="widget" data-wid="products-chart">
+        <div class="w-head">
+          <div class="w-title">Product Adoption</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body-chart" id="chart-products"></div>
+      </div>
+
+    </div>
+
+    <!-- ── Phase 3: Data table widgets ────────────────────────────────── -->
+    <div class="widget-grid-chart widget-grid-table" style="margin-top:16px;">
+
+      <!-- Recent Organizations (full width) -->
+      <div class="widget" data-wid="recent-orgs">
+        <div class="w-head">
+          <div class="w-title">Recent Organizations</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body-chart" id="table-recent-orgs"></div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="widget" data-wid="recent-activity">
+        <div class="w-head">
+          <div class="w-title">Recent Activity</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body-chart" id="table-activity"></div>
+      </div>
+
+      <!-- Top Organizations by Spend -->
+      <div class="widget" data-wid="top-spend">
+        <div class="w-head">
+          <div class="w-title">Top Organizations by Spend</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body-chart" id="table-top-spend"></div>
+      </div>
+
+    </div>
+
+    <!-- ── Phase 4: Operational widgets ──────────────────────────────── -->
+    <div class="widget-grid-chart" style="margin-top:16px;">
+
+      <!-- System Status -->
+      <div class="widget" data-wid="sys-status">
+        <div class="w-head">
+          <div class="w-title">System Status</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body" id="sys-status"></div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="widget" data-wid="quick-actions">
+        <div class="w-head">
+          <div class="w-title">Quick Actions</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body" id="quick-actions"></div>
+      </div>
+
+      <!-- Pending Alerts -->
+      <div class="widget" data-wid="pending-alerts">
+        <div class="w-head">
+          <div class="w-title">Pending Alerts</div>
+          <button class="w-kebab" aria-label="Widget options">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/></svg>
+          </button>
+        </div>
+        <div class="w-body" id="pending-alerts"></div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>BuySmartShell.init({ page: 'home', title: 'Dashboard' });</script>
+<script>
+(function(){
+  // ── Helpers ────────────────────────────────────────────────────────────
+  function smoothPath(pts){
+    if(pts.length === 0) return '';
+    if(pts.length === 1) return 'M '+pts[0][0]+' '+pts[0][1];
+    var d = 'M '+pts[0][0]+' '+pts[0][1];
+    for(var i = 0; i < pts.length - 1; i++){
+      var p0 = pts[i - 1] || pts[i];
+      var p1 = pts[i];
+      var p2 = pts[i + 1];
+      var p3 = pts[i + 2] || p2;
+      var cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+      var cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+      var cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+      var cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ' C '+cp1x.toFixed(1)+' '+cp1y.toFixed(1)+' '+cp2x.toFixed(1)+' '+cp2y.toFixed(1)+' '+p2[0]+' '+p2[1];
+    }
+    return d;
+  }
+  function niceMax(peak){
+    if(peak <= 4) return 4;
+    var mag = Math.pow(10, Math.floor(Math.log10(peak)));
+    var candidates = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+    for(var c = 0; c < candidates.length; c++){
+      var v = candidates[c] * mag;
+      if(v >= peak) return Math.ceil(v);
+    }
+    return Math.ceil(10 * mag);
+  }
+  function fmt$(v){ return '$' + (v >= 1000 ? (v/1000).toFixed(v%1000===0?0:1) + 'k' : v); }
+
+  // ── Organization data (names and products match organization.html) ─────
+  var MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var LAST_IDX = 32; // month index of Sep 2026, where index 0 = Jan 2024
+
+  function monthIdx(date){
+    var p = date.split('-');
+    return (+p[0] - 2024) * 12 + (+p[1] - 1);
+  }
+
+  // mrr = monthly revenue in Sep 2026
+  var ORGS = [
+    { name:'Acme Motors',            plan:'Enterprise', status:'active',   joined:'2024-01-15', users:22, mrr:2320, products:['corerecon','coreconnect','corebuy'] },
+    { name:'Big Sky Auto',           plan:'Starter',    status:'active',   joined:'2024-03-08', users:6,  mrr:650,  products:['corerecon'] },
+    { name:'USA Direct Auto',        plan:'Pro',        status:'active',   joined:'2024-05-20', users:14, mrr:1500, products:['corerecon','coreconnect'] },
+    { name:'Sunset Auto Group',      plan:'Enterprise', status:'active',   joined:'2025-02-11', users:18, mrr:2400, products:['corerecon','coreconnect','corebuy'] },
+    { name:'Liberty Car Sales',      plan:'Starter',    status:'inactive', joined:'2026-07-14', users:3,  mrr:0,    products:['corebuy'] },
+    { name:'Apex Automotive',        plan:'Pro',        status:'active',   joined:'2024-11-04', users:12, mrr:1400, products:['corerecon','corebuy'] },
+    { name:'Tri-State Motors',       plan:'Pro',        status:'active',   joined:'2025-09-10', users:12, mrr:1600, products:['corerecon','coreconnect'] },
+    { name:'Pacific Coast Auto',     plan:'Enterprise', status:'active',   joined:'2025-07-22', users:15, mrr:2100, products:['corerecon','coreconnect','corebuy'] },
+    { name:'Lone Star Dealers',      plan:'Pro',        status:'active',   joined:'2025-04-17', users:11, mrr:1350, products:['coreconnect','corebuy'] },
+    { name:'Great Lakes Auto',       plan:'Enterprise', status:'active',   joined:'2024-08-02', users:20, mrr:2600, products:['corerecon','coreconnect','corebuy'] },
+    { name:'Mountain View Motors',   plan:'Trial',      status:'trial',    joined:'2026-09-08', users:4,  mrr:0,    products:['corerecon'] },
+    { name:'Eastside Auto Exchange', plan:'Starter',    status:'active',   joined:'2026-04-03', users:8,  mrr:700,  products:['coreconnect','corebuy'] },
+    { name:'Premier Fleet Sales',    plan:'Enterprise', status:'active',   joined:'2025-12-05', users:11, mrr:1800, products:['corerecon','corebuy'] }
+  ].map(function(o, i){
+    o.id = o.name.toLowerCase().replace(/\s+/g, '-');
+    o.idx = i;
+    o.joinIdx = monthIdx(o.joined);
+    return o;
+  });
+
+  // Each org ramps from 60% at its join month to 100% in Sep 2026
+  function progressAt(o, m){
+    var span = LAST_IDX - o.joinIdx;
+    return span ? (m - o.joinIdx) / span : 1;
+  }
+  function orgRevenue(o, m){
+    if(m < o.joinIdx) return 0;
+    // Small month-to-month wobble that is zero in Sep 2026, so current MRR stays exact
+    var wobble = 1 + 0.05 * Math.sin((LAST_IDX - m) * (1.1 + o.idx * 0.07));
+    return Math.round(o.mrr * (0.6 + 0.4 * progressAt(o, m)) * wobble);
+  }
+  function orgUsers(o, m){
+    return m < o.joinIdx ? 0 : Math.round(o.users * (0.6 + 0.4 * progressAt(o, m)));
+  }
+
+  function monthBuckets(from, to){
+    var out = [];
+    for(var m = from; m <= to; m++) out.push({ label: MONTH_NAMES[m % 12], from: m, to: m });
+    return out;
+  }
+  var PERIOD_BUCKETS = {
+    Month:   monthBuckets(26, LAST_IDX),
+    Quarter: [{ label:'Q1', from:24, to:26 }, { label:'Q2', from:27, to:29 }, { label:'Q3', from:30, to:32 }],
+    Year:    monthBuckets(24, LAST_IDX),
+    All:     [{ label:'2024', from:0, to:11 }, { label:'2025', from:12, to:23 }, { label:'2026', from:24, to:32 }]
+  };
+
+  function revenueBetween(orgs, from, to){
+    var sum = 0;
+    orgs.forEach(function(o){
+      for(var m = from; m <= to; m++) sum += orgRevenue(o, m);
+    });
+    return sum;
+  }
+
+  function revenueSeries(orgs, buckets){
+    return buckets.map(function(b){
+      var revenue = revenueBetween(orgs, b.from, b.to);
+      return { label: b.label, revenue: revenue, expenses: Math.round(revenue * 0.66) };
+    });
+  }
+
+  function planCountSeries(orgs, buckets){
+    return buckets.map(function(b){
+      var row = { label: b.label, enterprise: 0, pro: 0, starter: 0, trial: 0 };
+      orgs.forEach(function(o){ if(o.joinIdx <= b.to) row[o.plan.toLowerCase()]++; });
+      return row;
+    });
+  }
+
+  function productSeries(orgs, buckets){
+    return buckets.map(function(b){
+      var row = { label: b.label, corerecon: 0, coreconnect: 0, corebuy: 0 };
+      orgs.forEach(function(o){
+        if(o.joinIdx <= b.to) o.products.forEach(function(p){ row[p]++; });
+      });
+      return row;
+    });
+  }
+
+  var KPI_WINDOWS = {
+    Month:   { from:32, to:32, prevFrom:31, prevTo:31, unit:'this month',   vs:'vs last month',   label:'Sep 2026' },
+    Quarter: { from:30, to:32, prevFrom:27, prevTo:29, unit:'this quarter', vs:'vs last quarter', label:'Q3 2026' },
+    Year:    { from:24, to:32, prevFrom:12, prevTo:20, unit:'this year',    vs:'vs last year',    label:'2026' },
+    All:     { from:0,  to:32, unit:'all time', label:'All time' }
+  };
+
+  // w is a KPI_WINDOWS entry, or dateWindow() for a single calendar day
+  function computeKpis(orgs, w){
+    var joinedIn = orgs.filter(function(o){
+      return w.day ? o.joined === w.day : o.joinIdx >= w.from && o.joinIdx <= w.to;
+    });
+    var users = 0, usersAdded = 0, products = 0, productsAdded = 0;
+    orgs.forEach(function(o){
+      users += orgUsers(o, w.to);
+      if(!w.day) usersAdded += orgUsers(o, w.to) - orgUsers(o, w.from - 1);
+      products += o.products.length;
+    });
+    joinedIn.forEach(function(o){
+      productsAdded += o.products.length;
+      if(w.day) usersAdded += orgUsers(o, o.joinIdx);
+    });
+
+    var revenue, prev;
+    if(w.day){
+      // Daily billing = the month's revenue spread evenly across its days
+      revenue = Math.round(revenueBetween(orgs, w.to, w.to) / daysInMonth(w.to));
+      prev = w.to > 0 ? Math.round(revenueBetween(orgs, w.to - 1, w.to - 1) / daysInMonth(w.to - 1)) : 0;
+    } else {
+      revenue = revenueBetween(orgs, w.from, w.to);
+      prev = w.prevFrom === undefined ? null : revenueBetween(orgs, w.prevFrom, w.prevTo);
+    }
+    var revTrend = 'up', revText = 'Total lifetime revenue';
+    if(prev !== null){
+      var pct = prev ? (revenue - prev) / prev * 100 : 0;
+      revTrend = pct < 0 ? 'down' : 'up';
+      revText = (pct < 0 ? '' : '+') + pct.toFixed(1) + '% ' + w.vs;
+    }
+
+    return {
+      orgs:     { num:String(orgs.length), sub:'Registered dealers', trend:'up', trendText:'+' + joinedIn.length + ' ' + w.unit, window:w.label },
+      users:    { num:users.toLocaleString('en-US'), sub:'Users across all organizations', trend:'up', trendText:'+' + usersAdded + ' ' + w.unit, window:w.label },
+      products: { num:String(products), sub:'Product subscriptions', trend:'up', trendText:'+' + productsAdded + ' ' + w.unit, window:w.label },
+      revenue:  { num:'$' + revenue.toLocaleString('en-US'), sub:w.day ? 'Billing on this day' : 'Total billing this period', trend:revTrend, trendText:revText, window:w.label }
+    };
+  }
+
+  function daysInMonth(m){ return new Date(2024 + Math.floor(m / 12), m % 12 + 1, 0).getDate(); }
+  function monthLabel(m){ return MONTH_NAMES[m % 12] + ' ' + (2024 + Math.floor(m / 12)); }
+  function isoDate(d){
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+
+  function dateWindow(date){
+    var m = Math.min(Math.max((date.getFullYear() - 2024) * 12 + date.getMonth(), 0), LAST_IDX);
+    var dayLabel = MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
+    return { from:m, to:m, day:isoDate(date), unit:'on ' + dayLabel, vs:'vs last month', label:dayLabel + ', ' + date.getFullYear() };
+  }
+
+  // ── Revenue Over Time (CoreConnect-style area chart) ───────────────────
+  var seriesCfg = [
+    { key:'revenue',  label:'Revenue',  color:'rgba(79,124,255,1)', areaColor:'rgba(79,124,255,.10)' },
+    { key:'expenses', label:'Expenses', color:'rgba(232,85,85,1)',  areaColor:'rgba(232,85,85,.10)' }
+  ];
+  var chartData = revenueSeries(ORGS, PERIOD_BUCKETS.Month);
+  var chartHidden = { revenue: false, expenses: false };
+  var n = chartData.length;
+
+  function renderRevenueChart(){
+    var body = document.getElementById('chart-revenue');
+    var padL = 42, padR = 12, padT = 10, padB = 24;
+    var measuredW = Math.max(280, Math.round(body.getBoundingClientRect().width || 640));
+    var W = measuredW, H = 240;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+
+    var peak = 1;
+    seriesCfg.forEach(function(s){
+      if(chartHidden[s.key]) return;
+      chartData.forEach(function(d){ if(d[s.key] > peak) peak = d[s.key]; });
+    });
+    var yMax = niceMax(peak);
+
+    function xAt(i){ return padL + (n === 1 ? plotW/2 : (plotW * i / (n - 1))); }
+    function yAt(v){ return padT + plotH - (plotH * v / yMax); }
+
+    var ySteps = 4;
+    if(yMax <= 5) ySteps = yMax;
+    else if(yMax % 4 === 0) ySteps = 4;
+    else if(yMax % 5 === 0) ySteps = 5;
+    else if(yMax % 3 === 0) ySteps = 3;
+
+    var grid = '';
+    for(var s = 0; s <= ySteps; s++){
+      var val = Math.round(yMax * s / ySteps);
+      var y = yAt(val);
+      grid += '<line class="chart-grid-line" x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'"/>';
+      grid += '<text class="chart-axis-label" x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end">'+fmt$(val)+'</text>';
+    }
+
+    var xlabels = '';
+    chartData.forEach(function(d, i){
+      xlabels += '<text class="chart-axis-label" x="'+xAt(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+d.label+'</text>';
+    });
+
+    var paths = '';
+    var order = ['expenses','revenue'];
+    order.forEach(function(key){
+      var cfg = seriesCfg.filter(function(s){return s.key===key;})[0];
+      var hidden = chartHidden[key] ? ' hidden' : '';
+      var pts = chartData.map(function(d,i){ return [+xAt(i).toFixed(1), +yAt(d[key]).toFixed(1)]; });
+      var line = smoothPath(pts);
+      var baseY = yAt(0);
+      var area = line + ' L '+pts[pts.length-1][0]+' '+baseY+' L '+pts[0][0]+' '+baseY+' Z';
+      paths += '<g class="chart-series '+key+hidden+'" data-series="'+key+'">';
+      paths += '<path class="chart-area" d="'+area+'" fill="'+cfg.areaColor+'"/>';
+      paths += '<path class="chart-line" d="'+line+'" stroke="'+cfg.color+'"/>';
+      paths += '</g>';
+    });
+
+    var dots = seriesCfg.map(function(s){
+      return '<circle class="chart-dot" data-dot="'+s.key+'" r="3.5" cx="0" cy="0" fill="'+s.color+'"/>';
+    }).join('');
+
+    var legendHtml = seriesCfg.map(function(s){
+      return '<span class="chart-leg '+s.key+(chartHidden[s.key]?' off':'')+'" data-leg="'+s.key+'" onclick="toggleRevSeries(\''+s.key+'\')"><span class="chart-leg-dot" style="background:'+s.color+'"></span>'+s.label+'</span>';
+    }).join('');
+
+    body.innerHTML =
+      '<div class="chart-legend">'+legendHtml+'</div>'+
+      '<div class="chart-wrap" id="rev-chart-wrap">'+
+        '<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMinYMin meet" id="rev-chart-svg">'+
+          grid + paths +
+          '<line class="chart-tracer" id="rev-tracer" x1="0" y1="'+padT+'" x2="0" y2="'+(padT+plotH)+'"/>'+
+          dots + xlabels +
+          '<rect id="rev-hit" x="'+padL+'" y="'+padT+'" width="'+plotW+'" height="'+plotH+'" fill="transparent"/>'+
+        '</svg>'+
+        '<div class="chart-tip" id="rev-tip"></div>'+
+      '</div>'+
+      '<div class="ca-window"><span class="ca-window-dot"></span><span>Mar – Sep 2026</span></div>';
+
+    // Wire hover
+    var svg = document.getElementById('rev-chart-svg');
+    var hit = document.getElementById('rev-hit');
+    var tracer = document.getElementById('rev-tracer');
+    var tip = document.getElementById('rev-tip');
+    var wrap = document.getElementById('rev-chart-wrap');
+    if(!svg || !hit) return;
+
+    var dotEls = {};
+    seriesCfg.forEach(function(s){
+      dotEls[s.key] = svg.querySelector('[data-dot="'+s.key+'"]');
+    });
+
+    function nearestIndex(clientX){
+      var rect = svg.getBoundingClientRect();
+      var vbX = (clientX - rect.left) / rect.width * W;
+      var best = 0, bestD = Infinity;
+      for(var i = 0; i < n; i++){
+        var d = Math.abs(xAt(i) - vbX);
+        if(d < bestD){ bestD = d; best = i; }
+      }
+      return best;
+    }
+
+    function showTip(tipEl, leftPx){
+      var wasHidden = !tipEl.classList.contains('on');
+      if(wasHidden) tipEl.classList.add('tip-positioning');
+      tipEl.style.left = leftPx + 'px';
+      tipEl.classList.add('on');
+      if(wasHidden){
+        void tipEl.offsetWidth;
+        requestAnimationFrame(function(){ tipEl.classList.remove('tip-positioning'); });
+      }
+    }
+
+    function onMove(ev){
+      var clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      var i = nearestIndex(clientX);
+      var vx = xAt(i);
+
+      tracer.setAttribute('x1', vx); tracer.setAttribute('x2', vx);
+      tracer.classList.add('on');
+
+      var rows = '';
+      seriesCfg.forEach(function(s){
+        var dot = dotEls[s.key];
+        if(chartHidden[s.key]){ if(dot) dot.classList.remove('on'); return; }
+        var val = chartData[i][s.key];
+        var vy = yAt(val);
+        if(dot){
+          dot.setAttribute('cx', vx); dot.setAttribute('cy', vy);
+          dot.classList.add('on');
+        }
+        rows += '<div class="chart-tip-row"><span class="chart-tip-left"><span class="chart-tip-dot" style="background:'+s.color+'"></span>'+s.label+'</span><span class="chart-tip-val">'+fmt$(val)+'</span></div>';
+      });
+
+      var rect = svg.getBoundingClientRect();
+      var wrapRect = wrap.getBoundingClientRect();
+      var pxX = (vx / W) * rect.width + (rect.left - wrapRect.left);
+      tip.innerHTML = '<div class="chart-tip-time">'+chartData[i].label+' 2026</div>'+rows;
+      tip.style.top = '0px';
+      tip.style.left = '0px';
+      var tipW = tip.offsetWidth || 140;
+      var minLeft = 4;
+      var maxLeft = Math.max(minLeft, wrapRect.width - tipW - 4);
+      var clampedLeft = Math.min(maxLeft, Math.max(minLeft, pxX - tipW / 2));
+      showTip(tip, clampedLeft);
+    }
+
+    function onLeave(){
+      tracer.classList.remove('on');
+      tip.classList.remove('on');
+      seriesCfg.forEach(function(s){
+        var dot = dotEls[s.key];
+        if(dot) dot.classList.remove('on');
+      });
+    }
+
+    hit.addEventListener('mousemove', onMove);
+    hit.addEventListener('mouseleave', onLeave);
+    hit.addEventListener('touchstart', onMove, {passive:true});
+    hit.addEventListener('touchmove', onMove, {passive:true});
+    hit.addEventListener('touchend', onLeave);
+  }
+
+  renderRevenueChart();
+
+  window.toggleRevSeries = function(key){
+    chartHidden[key] = !chartHidden[key];
+    renderRevenueChart();
+  };
+
+  // ── Organizations by Plan (CoreConnect-style area chart) ─────────────────
+  var planSeries = [
+    { key:'enterprise', label:'Enterprise', color:'rgba(79,124,255,1)', areaColor:'rgba(79,124,255,.10)' },
+    { key:'pro',        label:'Pro',        color:'rgba(34,200,138,1)', areaColor:'rgba(34,200,138,.10)' },
+    { key:'starter',    label:'Starter',    color:'rgba(245,166,35,1)', areaColor:'rgba(245,166,35,.10)' },
+    { key:'trial',      label:'Trial',      color:'rgba(232,85,85,1)',  areaColor:'rgba(232,85,85,.10)' }
+  ];
+  var planData = planCountSeries(ORGS, PERIOD_BUCKETS.Month);
+  var planHidden = {};
+  planSeries.forEach(function(s){ planHidden[s.key] = false; });
+  var planN = planData.length;
+
+  function renderPlanChart(){
+    var body = document.getElementById('chart-plans');
+    var padL = 26, padR = 8, padT = 10, padB = 24;
+    var measuredW = Math.max(200, Math.round(body.getBoundingClientRect().width || 400));
+    var W = measuredW, H = 240;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+
+    var peak = 1;
+    planSeries.forEach(function(s){
+      if(planHidden[s.key]) return;
+      planData.forEach(function(d){ if(d[s.key] > peak) peak = d[s.key]; });
+    });
+    var yMax = niceMax(peak);
+
+    function xAt(i){ return padL + (planN === 1 ? plotW/2 : (plotW * i / (planN - 1))); }
+    function yAt(v){ return padT + plotH - (plotH * v / yMax); }
+
+    var ySteps = 4;
+    if(yMax <= 5) ySteps = yMax;
+    else if(yMax % 4 === 0) ySteps = 4;
+    else if(yMax % 5 === 0) ySteps = 5;
+    else if(yMax % 3 === 0) ySteps = 3;
+
+    var grid = '';
+    for(var s = 0; s <= ySteps; s++){
+      var val = Math.round(yMax * s / ySteps);
+      var y = yAt(val);
+      grid += '<line class="chart-grid-line" x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'"/>';
+      grid += '<text class="chart-axis-label" x="'+(padL-4)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end">'+val+'</text>';
+    }
+
+    var xlabels = '';
+    var maxLabels = Math.max(2, Math.floor(plotW / 40));
+    var labelStep = Math.max(1, Math.ceil(planN / maxLabels));
+    planData.forEach(function(d, i){
+      if(i % labelStep !== 0 && i !== planN-1) return;
+      xlabels += '<text class="chart-axis-label" x="'+xAt(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+d.label+'</text>';
+    });
+
+    var paths = '';
+    var order = ['trial','starter','pro','enterprise'];
+    order.forEach(function(key){
+      var cfg = planSeries.filter(function(s){return s.key===key;})[0];
+      var hidden = planHidden[key] ? ' hidden' : '';
+      var pts = planData.map(function(d,i){ return [+xAt(i).toFixed(1), +yAt(d[key]).toFixed(1)]; });
+      var line = smoothPath(pts);
+      var baseY = yAt(0);
+      var area = line + ' L '+pts[pts.length-1][0]+' '+baseY+' L '+pts[0][0]+' '+baseY+' Z';
+      paths += '<g class="chart-series '+key+hidden+'" data-series="'+key+'">';
+      paths += '<path class="chart-area" d="'+area+'" fill="'+cfg.areaColor+'"/>';
+      paths += '<path class="chart-line" d="'+line+'" stroke="'+cfg.color+'"/>';
+      paths += '</g>';
+    });
+
+    var dots = planSeries.map(function(s){
+      return '<circle class="chart-dot" data-dot-plan="'+s.key+'" r="3" cx="0" cy="0" fill="'+s.color+'"/>';
+    }).join('');
+
+    var legendHtml = planSeries.map(function(s){
+      return '<span class="chart-leg '+(planHidden[s.key]?' off':'')+'" onclick="togglePlanSeries(\''+s.key+'\')"><span class="chart-leg-dot" style="background:'+s.color+'"></span>'+s.label+'</span>';
+    }).join('');
+
+    body.innerHTML =
+      '<div class="chart-legend">'+legendHtml+'</div>'+
+      '<div class="chart-wrap" id="plan-chart-wrap">'+
+        '<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMinYMin meet" id="plan-chart-svg">'+
+          grid + paths +
+          '<line class="chart-tracer" id="plan-tracer" x1="0" y1="'+padT+'" x2="0" y2="'+(padT+plotH)+'"/>'+
+          dots + xlabels +
+          '<rect id="plan-hit" x="'+padL+'" y="'+padT+'" width="'+plotW+'" height="'+plotH+'" fill="transparent"/>'+
+        '</svg>'+
+        '<div class="chart-tip" id="plan-tip"></div>'+
+      '</div>'+
+      '<div class="ca-window"><span class="ca-window-dot"></span><span>Mar – Sep 2026</span></div>';
+
+    // Wire hover
+    var svg = document.getElementById('plan-chart-svg');
+    var hit = document.getElementById('plan-hit');
+    var tracer = document.getElementById('plan-tracer');
+    var tip = document.getElementById('plan-tip');
+    var wrap = document.getElementById('plan-chart-wrap');
+    if(!svg || !hit) return;
+
+    var dotEls = {};
+    planSeries.forEach(function(s){
+      dotEls[s.key] = svg.querySelector('[data-dot-plan="'+s.key+'"]');
+    });
+
+    function nearestIdx(clientX){
+      var rect = svg.getBoundingClientRect();
+      var vbX = (clientX - rect.left) / rect.width * W;
+      var best = 0, bestD = Infinity;
+      for(var i = 0; i < planN; i++){
+        var d = Math.abs(xAt(i) - vbX);
+        if(d < bestD){ bestD = d; best = i; }
+      }
+      return best;
+    }
+
+    function showTipPlan(tipEl, leftPx){
+      var wasHidden = !tipEl.classList.contains('on');
+      if(wasHidden) tipEl.classList.add('tip-positioning');
+      tipEl.style.left = leftPx + 'px';
+      tipEl.classList.add('on');
+      if(wasHidden){
+        void tipEl.offsetWidth;
+        requestAnimationFrame(function(){ tipEl.classList.remove('tip-positioning'); });
+      }
+    }
+
+    function onMovePlan(ev){
+      var clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      var i = nearestIdx(clientX);
+      var vx = xAt(i);
+      tracer.setAttribute('x1', vx); tracer.setAttribute('x2', vx);
+      tracer.classList.add('on');
+
+      var rows = '';
+      planSeries.forEach(function(s){
+        var dot = dotEls[s.key];
+        if(planHidden[s.key]){ if(dot) dot.classList.remove('on'); return; }
+        var val = planData[i][s.key];
+        var vy = yAt(val);
+        if(dot){ dot.setAttribute('cx', vx); dot.setAttribute('cy', vy); dot.classList.add('on'); }
+        rows += '<div class="chart-tip-row"><span class="chart-tip-left"><span class="chart-tip-dot" style="background:'+s.color+'"></span>'+s.label+'</span><span class="chart-tip-val">'+val+'</span></div>';
+      });
+
+      var rect = svg.getBoundingClientRect();
+      var wrapRect = wrap.getBoundingClientRect();
+      var pxX = (vx / W) * rect.width + (rect.left - wrapRect.left);
+      tip.innerHTML = '<div class="chart-tip-time">'+planData[i].label+' 2026</div>'+rows;
+      tip.style.top = '0px';
+      tip.style.left = '0px';
+      var tipW = tip.offsetWidth || 120;
+      var minLeft = 4;
+      var maxLeft = Math.max(minLeft, wrapRect.width - tipW - 4);
+      var clampedLeft = Math.min(maxLeft, Math.max(minLeft, pxX - tipW / 2));
+      showTipPlan(tip, clampedLeft);
+    }
+
+    function onLeavePlan(){
+      tracer.classList.remove('on');
+      tip.classList.remove('on');
+      planSeries.forEach(function(s){
+        var dot = dotEls[s.key];
+        if(dot) dot.classList.remove('on');
+      });
+    }
+
+    hit.addEventListener('mousemove', onMovePlan);
+    hit.addEventListener('mouseleave', onLeavePlan);
+    hit.addEventListener('touchstart', onMovePlan, {passive:true});
+    hit.addEventListener('touchmove', onMovePlan, {passive:true});
+    hit.addEventListener('touchend', onLeavePlan);
+  }
+
+  renderPlanChart();
+
+  window.togglePlanSeries = function(key){
+    planHidden[key] = !planHidden[key];
+    renderPlanChart();
+  };
+
+  // ── Product Adoption (CoreConnect-style area chart) ─────────────────────
+  var prodSeries = [
+    { key:'corerecon',   label:'CoreRecon',   color:'rgba(79,124,255,1)', areaColor:'rgba(79,124,255,.10)' },
+    { key:'coreconnect', label:'CoreConnect', color:'rgba(34,200,138,1)', areaColor:'rgba(34,200,138,.10)' },
+    { key:'corebuy',     label:'CoreBuy',     color:'rgba(155,89,182,1)', areaColor:'rgba(155,89,182,.10)' }
+  ];
+  var prodData = productSeries(ORGS, PERIOD_BUCKETS.Month);
+  var prodHidden = {};
+  prodSeries.forEach(function(s){ prodHidden[s.key] = false; });
+  var prodN = prodData.length;
+
+  function renderProdChart(){
+    var body = document.getElementById('chart-products');
+    var padL = 26, padR = 8, padT = 10, padB = 24;
+    var measuredW = Math.max(200, Math.round(body.getBoundingClientRect().width || 400));
+    var W = measuredW, H = 240;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+
+    var peak = 1;
+    prodSeries.forEach(function(s){
+      if(prodHidden[s.key]) return;
+      prodData.forEach(function(d){ if(d[s.key] > peak) peak = d[s.key]; });
+    });
+    var yMax = niceMax(peak);
+
+    function xAt(i){ return padL + (prodN === 1 ? plotW/2 : (plotW * i / (prodN - 1))); }
+    function yAt(v){ return padT + plotH - (plotH * v / yMax); }
+
+    var ySteps = 4;
+    if(yMax <= 5) ySteps = yMax;
+    else if(yMax % 4 === 0) ySteps = 4;
+    else if(yMax % 5 === 0) ySteps = 5;
+    else if(yMax % 3 === 0) ySteps = 3;
+
+    var grid = '';
+    for(var s = 0; s <= ySteps; s++){
+      var val = Math.round(yMax * s / ySteps);
+      var y = yAt(val);
+      grid += '<line class="chart-grid-line" x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'"/>';
+      grid += '<text class="chart-axis-label" x="'+(padL-4)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end">'+val+'</text>';
+    }
+
+    var xlabels = '';
+    var maxLabels = Math.max(2, Math.floor(plotW / 40));
+    var labelStep = Math.max(1, Math.ceil(prodN / maxLabels));
+    prodData.forEach(function(d, i){
+      if(i % labelStep !== 0 && i !== prodN-1) return;
+      xlabels += '<text class="chart-axis-label" x="'+xAt(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+d.label+'</text>';
+    });
+
+    var paths = '';
+    var order = ['corebuy','coreconnect','corerecon'];
+    order.forEach(function(key){
+      var cfg = prodSeries.filter(function(s){return s.key===key;})[0];
+      var hidden = prodHidden[key] ? ' hidden' : '';
+      var pts = prodData.map(function(d,i){ return [+xAt(i).toFixed(1), +yAt(d[key]).toFixed(1)]; });
+      var line = smoothPath(pts);
+      var baseY = yAt(0);
+      var area = line + ' L '+pts[pts.length-1][0]+' '+baseY+' L '+pts[0][0]+' '+baseY+' Z';
+      paths += '<g class="chart-series '+key+hidden+'" data-series="'+key+'">';
+      paths += '<path class="chart-area" d="'+area+'" fill="'+cfg.areaColor+'"/>';
+      paths += '<path class="chart-line" d="'+line+'" stroke="'+cfg.color+'"/>';
+      paths += '</g>';
+    });
+
+    var dots = prodSeries.map(function(s){
+      return '<circle class="chart-dot" data-dot-prod="'+s.key+'" r="3" cx="0" cy="0" fill="'+s.color+'"/>';
+    }).join('');
+
+    var legendHtml = prodSeries.map(function(s){
+      return '<span class="chart-leg '+(prodHidden[s.key]?' off':'')+'" onclick="toggleProdSeries(\''+s.key+'\')"><span class="chart-leg-dot" style="background:'+s.color+'"></span>'+s.label+'</span>';
+    }).join('');
+
+    body.innerHTML =
+      '<div class="chart-legend">'+legendHtml+'</div>'+
+      '<div class="chart-wrap" id="prod-chart-wrap">'+
+        '<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMinYMin meet" id="prod-chart-svg">'+
+          grid + paths +
+          '<line class="chart-tracer" id="prod-tracer" x1="0" y1="'+padT+'" x2="0" y2="'+(padT+plotH)+'"/>'+
+          dots + xlabels +
+          '<rect id="prod-hit" x="'+padL+'" y="'+padT+'" width="'+plotW+'" height="'+plotH+'" fill="transparent"/>'+
+        '</svg>'+
+        '<div class="chart-tip" id="prod-tip"></div>'+
+      '</div>'+
+      '<div class="ca-window"><span class="ca-window-dot"></span><span>Mar – Sep 2026</span></div>';
+
+    var svg = document.getElementById('prod-chart-svg');
+    var hit = document.getElementById('prod-hit');
+    var tracer = document.getElementById('prod-tracer');
+    var tip = document.getElementById('prod-tip');
+    var wrap = document.getElementById('prod-chart-wrap');
+    if(!svg || !hit) return;
+
+    var dotEls = {};
+    prodSeries.forEach(function(s){
+      dotEls[s.key] = svg.querySelector('[data-dot-prod="'+s.key+'"]');
+    });
+
+    function nearestIdx(clientX){
+      var rect = svg.getBoundingClientRect();
+      var vbX = (clientX - rect.left) / rect.width * W;
+      var best = 0, bestD = Infinity;
+      for(var i = 0; i < prodN; i++){
+        var d = Math.abs(xAt(i) - vbX);
+        if(d < bestD){ bestD = d; best = i; }
+      }
+      return best;
+    }
+
+    function showTipProd(tipEl, leftPx){
+      var wasHidden = !tipEl.classList.contains('on');
+      if(wasHidden) tipEl.classList.add('tip-positioning');
+      tipEl.style.left = leftPx + 'px';
+      tipEl.classList.add('on');
+      if(wasHidden){
+        void tipEl.offsetWidth;
+        requestAnimationFrame(function(){ tipEl.classList.remove('tip-positioning'); });
+      }
+    }
+
+    function onMoveProd(ev){
+      var clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      var i = nearestIdx(clientX);
+      var vx = xAt(i);
+      tracer.setAttribute('x1', vx); tracer.setAttribute('x2', vx);
+      tracer.classList.add('on');
+
+      var rows = '';
+      prodSeries.forEach(function(s){
+        var dot = dotEls[s.key];
+        if(prodHidden[s.key]){ if(dot) dot.classList.remove('on'); return; }
+        var val = prodData[i][s.key];
+        var vy = yAt(val);
+        if(dot){ dot.setAttribute('cx', vx); dot.setAttribute('cy', vy); dot.classList.add('on'); }
+        rows += '<div class="chart-tip-row"><span class="chart-tip-left"><span class="chart-tip-dot" style="background:'+s.color+'"></span>'+s.label+'</span><span class="chart-tip-val">'+val+' orgs</span></div>';
+      });
+
+      var rect = svg.getBoundingClientRect();
+      var wrapRect = wrap.getBoundingClientRect();
+      var pxX = (vx / W) * rect.width + (rect.left - wrapRect.left);
+      tip.innerHTML = '<div class="chart-tip-time">'+prodData[i].label+' 2026</div>'+rows;
+      tip.style.top = '0px';
+      tip.style.left = '0px';
+      var tipW = tip.offsetWidth || 120;
+      var minLeft = 4;
+      var maxLeft = Math.max(minLeft, wrapRect.width - tipW - 4);
+      var clampedLeft = Math.min(maxLeft, Math.max(minLeft, pxX - tipW / 2));
+      showTipProd(tip, clampedLeft);
+    }
+
+    function onLeaveProd(){
+      tracer.classList.remove('on');
+      tip.classList.remove('on');
+      prodSeries.forEach(function(s){
+        var dot = dotEls[s.key];
+        if(dot) dot.classList.remove('on');
+      });
+    }
+
+    hit.addEventListener('mousemove', onMoveProd);
+    hit.addEventListener('mouseleave', onLeaveProd);
+    hit.addEventListener('touchstart', onMoveProd, {passive:true});
+    hit.addEventListener('touchmove', onMoveProd, {passive:true});
+    hit.addEventListener('touchend', onLeaveProd);
+  }
+
+  renderProdChart();
+
+  window.toggleProdSeries = function(key){
+    prodHidden[key] = !prodHidden[key];
+    renderProdChart();
+  };
+
+  // ── Phase 3: Data tables ───────────────────────────────────────────────
+  var LB_COLORS = ['#4f7cff','#22c88a','#e85555','#9b59b6','#f5a623','#2dd4bf','#e74c8b','#6c5ce7'];
+
+  function orgColor(o){ return LB_COLORS[o.idx % LB_COLORS.length]; }
+  function orgInitials(name){ return name.split(' ').map(function(w){ return w[0]; }).join('').substring(0, 2); }
+  function emptyListMsg(msg){
+    return '<div style="padding:24px 12px;text-align:center;color:var(--mu);font-size:12.5px;">' + msg + '</div>';
+  }
+  function orgNames(orgs){ return orgs.map(function(o){ return o.name; }); }
+
+  // Recent Organizations
+  function renderRecentOrgs(orgs, m){
+    var rows = orgs.slice().sort(function(a, b){ return a.joined < b.joined ? 1 : -1; });
+    var html = '<div class="lb lb-orgs">';
+    html += '<div class="lb-head"><span>#</span><span>Organization</span><span>Plan</span><span class="lb-col-users">Users</span><span>Status</span></div>';
+    html += '<div class="w-body-scroll">';
+    if(!rows.length) html += emptyListMsg('No organizations match the filters');
+    rows.forEach(function(o, i){
+      var topCls = i === 0 ? ' top' : '';
+      var color = orgColor(o);
+      var initials = orgInitials(o.name);
+      var badge = '<span class="lb-badge '+o.status+'">'+o.status.charAt(0).toUpperCase()+o.status.slice(1)+'</span>';
+      html += '<div class="lb-row'+topCls+'">';
+      html += '<span class="lb-rank">'+(i+1)+'</span>';
+      html += '<span class="lb-name-cell"><span class="lb-av" style="background:'+color+'">'+initials+'</span><span class="lb-name">'+o.name+'</span></span>';
+      html += '<span class="lb-stat lb-col-plan">'+o.plan+'</span>';
+      html += '<span class="lb-stat lb-col-users">'+orgUsers(o, m)+'</span>';
+      html += '<span>'+badge+'</span>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    html += '<div class="ca-window"><span class="ca-window-dot"></span><span>Sep 2026</span></div>';
+    document.getElementById('table-recent-orgs').innerHTML = html;
+  }
+
+  // Recent Activity
+  var actFeed = [
+    { org:'Sunset Auto Group', icon:'user-plus', bg:'rgba(79,124,255,.14)', color:'var(--ac)',
+      text:'added 3 new users', time:'12 min ago' },
+    { org:'Tri-State Motors', icon:'package', bg:'rgba(34,200,138,.14)', color:'var(--gr)',
+      text:'activated CoreRecon', time:'1 hr ago' },
+    { org:'Mountain View Motors', icon:'alert', bg:'rgba(245,166,35,.14)', color:'var(--am)',
+      text:'trial expires in 5 days', time:'2 hr ago' },
+    { org:'Premier Fleet Sales', icon:'credit-card', bg:'rgba(155,89,182,.14)', color:'#9b59b6',
+      text:'upgraded to Enterprise', time:'4 hr ago' },
+    { org:'Liberty Car Sales', icon:'log-out', bg:'rgba(232,85,85,.14)', color:'var(--rd)',
+      text:'subscription cancelled', time:'6 hr ago' },
+    { org:'Pacific Coast Auto', icon:'user-plus', bg:'rgba(79,124,255,.14)', color:'var(--ac)',
+      text:'invited 2 users', time:'8 hr ago' },
+    { org:'Sunset Auto Group', icon:'package', bg:'rgba(34,200,138,.14)', color:'var(--gr)',
+      text:'activated CoreBuy', time:'1 day ago' },
+    { org:'Acme Motors', icon:'credit-card', bg:'rgba(155,89,182,.14)', color:'#9b59b6',
+      text:'renewed Enterprise plan', time:'2 days ago' },
+    { org:'Eastside Auto Exchange', icon:'package', bg:'rgba(34,200,138,.14)', color:'var(--gr)',
+      text:'activated CoreConnect', time:'3 days ago' }
+  ];
+  var actIcons = {
+    'user-plus': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',
+    'package': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+    'alert': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    'credit-card': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+    'log-out': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>'
+  };
+  function renderActivity(orgs){
+    var names = orgNames(orgs);
+    var items = actFeed.filter(function(a){ return names.indexOf(a.org) >= 0; });
+    var html = '<div class="act-feed"><div class="w-body-scroll">';
+    if(!items.length) html += emptyListMsg('No recent activity for the selected organizations');
+    items.forEach(function(a){
+      html += '<div class="act-feed-item">';
+      html += '<div class="act-feed-icon" style="background:'+a.bg+';color:'+a.color+'">'+actIcons[a.icon]+'</div>';
+      html += '<div class="act-feed-body"><div class="act-feed-text"><strong>'+a.org+'</strong> '+a.text+'</div><div class="act-feed-time">'+a.time+'</div></div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    html += '<div class="ca-window"><span class="ca-window-dot"></span><span>Sep 2026</span></div>';
+    document.getElementById('table-activity').innerHTML = html;
+  }
+
+  // Top Organizations by Spend
+  function renderTopSpend(orgs, m){
+    var rows = orgs.map(function(o){
+      return { name:o.name, plan:o.plan, idx:o.idx, users:orgUsers(o, m), mrr:orgRevenue(o, m) };
+    }).filter(function(r){ return r.mrr > 0; }).sort(function(a, b){ return b.mrr - a.mrr; });
+    var maxMrr = rows.length ? rows[0].mrr : 1;
+    var html = '<div class="lb lb-spend">';
+    html += '<div class="lb-head"><span>#</span><span>Organization</span><span class="lb-col-plan">Plan</span><span>Users</span><span>MRR</span></div>';
+    html += '<div class="w-body-scroll">';
+    if(!rows.length) html += emptyListMsg('No paying organizations match the filters');
+    rows.forEach(function(o, i){
+      var topCls = i === 0 ? ' top' : '';
+      var color = orgColor(o);
+      var initials = orgInitials(o.name);
+      var barPct = (o.mrr / maxMrr * 100).toFixed(1);
+      html += '<div class="lb-row'+topCls+'">';
+      html += '<span class="lb-rank">'+(i+1)+'</span>';
+      html += '<span class="lb-name-cell"><span class="lb-av" style="background:'+color+'">'+initials+'</span><span class="lb-name">'+o.name+'</span></span>';
+      html += '<span class="lb-stat lb-col-plan">'+o.plan+'</span>';
+      html += '<span class="lb-stat">'+o.users+'</span>';
+      html += '<span class="lb-total">$'+o.mrr.toLocaleString()+'</span>';
+      html += '<div class="lb-bar-track"><div class="lb-bar-fill" style="width:'+barPct+'%"></div></div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    html += '<div class="ca-window"><span class="ca-window-dot"></span><span>Sep 2026</span></div>';
+    document.getElementById('table-top-spend').innerHTML = html;
+  }
+
+  // ── Phase 4: System Status ──────────────────────────────────────────────
+  (function(){
+    var services = [
+      { name:'CoreRecon API',   status:'operational', uptime:'99.98%' },
+      { name:'CoreConnect API', status:'operational', uptime:'99.95%' },
+      { name:'CoreBuy API',     status:'degraded',    uptime:'98.70%' },
+      { name:'Payment Gateway', status:'operational', uptime:'99.99%' },
+      { name:'Auth Service',    status:'operational', uptime:'99.97%' },
+      { name:'Database Cluster',status:'operational', uptime:'99.99%' },
+      { name:'CDN / Assets',    status:'operational', uptime:'99.96%' }
+    ];
+    var dotClass = { operational:'green', degraded:'yellow', down:'red' };
+    var tagLabel = { operational:'Operational', degraded:'Degraded', down:'Down' };
+    var html = '<div class="sys-list"><div class="w-body-scroll">';
+    services.forEach(function(s){
+      html += '<div class="sys-row">';
+      html += '<span class="sys-dot '+dotClass[s.status]+'"></span>';
+      html += '<span class="sys-name">'+s.name+'</span>';
+      html += '<span class="sys-uptime">'+s.uptime+'</span>';
+      html += '<span class="sys-tag '+s.status+'">'+tagLabel[s.status]+'</span>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    html += '<div class="ca-window"><span class="ca-window-dot"></span><span>Last checked 2 min ago</span></div>';
+    document.getElementById('sys-status').innerHTML = html;
+  })();
+
+  // ── Phase 4: Quick Actions ──────────────────────────────────────────────
+  (function(){
+    var actions = [
+      { label:'Add Organization', sub:'Create new org', bg:'rgba(79,124,255,.12)', color:'#4f7cff',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/><line x1="13" y1="2" x2="13" y2="6"/><line x1="11" y1="4" x2="15" y2="4"/></svg>' },
+      { label:'Create Invoice', sub:'Bill an organization', bg:'rgba(34,200,138,.12)', color:'#22c88a',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="1" width="10" height="14" rx="1.5"/><line x1="6" y1="5" x2="10" y2="5"/><line x1="6" y1="8" x2="10" y2="8"/><line x1="6" y1="11" x2="8" y2="11"/></svg>' },
+      { label:'Manage Products', sub:'Edit product catalog', bg:'rgba(155,89,182,.12)', color:'#9b59b6',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>' },
+      { label:'View Reports', sub:'Analytics & exports', bg:'rgba(245,166,35,.12)', color:'#f5a623',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="8" width="3" height="6" rx=".5"/><rect x="6.5" y="5" width="3" height="9" rx=".5"/><rect x="11" y="2" width="3" height="12" rx=".5"/></svg>' },
+      { label:'Send Notification', sub:'Broadcast to orgs', bg:'rgba(79,124,255,.12)', color:'#4f7cff',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5C4.4 1.5 1.5 4.4 1.5 8v2.5l-1 2h15l-1-2V8c0-3.6-2.9-6.5-6.5-6.5z"/><path d="M6 13a2 2 0 004 0"/></svg>' },
+      { label:'System Settings', sub:'Config & preferences', bg:'rgba(255,255,255,.06)', color:'var(--mu)',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>' }
+    ];
+    var html = '<div class="qa-grid">';
+    actions.forEach(function(a){
+      html += '<div class="qa-btn">';
+      html += '<div class="qa-btn-icon" style="background:'+a.bg+';color:'+a.color+'">'+a.icon+'</div>';
+      html += '<div><div class="qa-btn-text">'+a.label+'</div><div class="qa-btn-sub">'+a.sub+'</div></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    document.getElementById('quick-actions').innerHTML = html;
+  })();
+
+  // ── Phase 4: Pending Alerts ─────────────────────────────────────────────
+  // Alerts without an org are system-wide and always shown
+  function renderAlerts(orgs){
+    var alerts = [
+      { text:'<strong>CoreBuy API</strong> response time exceeded 2s threshold', time:'3 min ago', sev:'critical',
+        bg:'rgba(232,85,85,.12)', color:'#e85555',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1L1 14h14L8 1z"/><line x1="8" y1="6" x2="8" y2="10"/><circle cx="8" cy="12" r=".5" fill="currentColor"/></svg>' },
+      { org:'Mountain View Motors', text:'<strong>Mountain View Motors</strong> trial expires in 3 days', time:'1 hr ago', sev:'warning',
+        bg:'rgba(245,166,35,.12)', color:'#f5a623',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><polyline points="8 4 8 8 11 10"/></svg>' },
+      { text:'<strong>3 organizations</strong> pending onboarding approval', time:'2 hr ago', sev:'info',
+        bg:'rgba(79,124,255,.12)', color:'#4f7cff',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="5" x2="8" y2="8.5"/><circle cx="8" cy="11" r=".5" fill="currentColor"/></svg>' },
+      { text:'<strong>Payment Gateway</strong> SSL certificate renews in 14 days', time:'5 hr ago', sev:'info',
+        bg:'rgba(79,124,255,.12)', color:'#4f7cff',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 016 0v2"/></svg>' },
+      { org:'Tri-State Motors', text:'<strong>Tri-State Motors</strong> exceeded monthly API call limit', time:'6 hr ago', sev:'warning',
+        bg:'rgba(245,166,35,.12)', color:'#f5a623',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1L1 14h14L8 1z"/><line x1="8" y1="6" x2="8" y2="10"/><circle cx="8" cy="12" r=".5" fill="currentColor"/></svg>' },
+      { text:'<strong>Database Cluster</strong> storage at 82% capacity', time:'8 hr ago', sev:'warning',
+        bg:'rgba(245,166,35,.12)', color:'#f5a623',
+        icon:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="8" cy="4" rx="5.5" ry="2.5"/><path d="M2.5 4v8c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5V4"/><path d="M2.5 8c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5"/></svg>' }
+    ];
+    var names = orgNames(orgs);
+    alerts = alerts.filter(function(a){ return !a.org || names.indexOf(a.org) >= 0; });
+    var html = '<div class="alert-feed"><div class="w-body-scroll">';
+    alerts.forEach(function(a){
+      html += '<div class="alert-item">';
+      html += '<div class="alert-icon" style="background:'+a.bg+';color:'+a.color+'">'+a.icon+'</div>';
+      html += '<div class="alert-body">';
+      html += '<div class="alert-text">'+a.text+'</div>';
+      html += '<div class="alert-meta"><span class="alert-time">'+a.time+'</span><span class="alert-sev '+a.sev+'">'+a.sev+'</span></div>';
+      html += '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    html += '<div class="ca-window"><span class="ca-window-dot"></span><span>' + alerts.length + ' pending alert' + (alerts.length === 1 ? '' : 's') + '</span></div>';
+    document.getElementById('pending-alerts').innerHTML = html;
+  }
+
+  // ── Phase 5: Toolbar interactions ───────────────────────────────────────
+
+  // -- Period Toggle --
+  var currentPeriod = 'Month';
+  var ptSegs = document.querySelectorAll('.pt-seg');
+
+  var chartWindowLabels = {
+    Month: 'Mar – Sep 2026',
+    Quarter: 'Q1 – Q3 2026',
+    Year: 'Jan – Sep 2026',
+    All: '2024 – 2026'
+  };
+
+  var tableWindowLabels = {
+    Month: 'Sep 2026',
+    Quarter: 'Q3 2026',
+    Year: '2026',
+    All: 'All time'
+  };
+
+  var trendUpSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
+  var trendDownSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>';
+
+  function updateKpi(id, cfg){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.querySelector('.kpi-num').textContent = cfg.num;
+    el.querySelector('.kpi-sub').textContent = cfg.sub;
+    var trendEl = el.querySelector('.kpi-trend');
+    trendEl.className = 'kpi-trend ' + cfg.trend;
+    trendEl.innerHTML = (cfg.trend === 'up' ? trendUpSvg : trendDownSvg) + ' ' + cfg.trendText;
+    el.querySelector('.kpi-window span:last-child').textContent = cfg.window;
+  }
+
+  // A selected calendar date takes over from the period toggle
+  function currentView(){
+    if(calSelected){
+      var w = dateWindow(calSelected);
+      var start = Math.max(0, w.to - 6);
+      var sameYear = Math.floor(start / 12) === Math.floor(w.to / 12);
+      return {
+        kpi: w, buckets: monthBuckets(start, w.to), month: w.to, asOf: w.day,
+        chartLabel: (sameYear ? MONTH_NAMES[start % 12] : monthLabel(start)) + ' – ' + monthLabel(w.to),
+        tableLabel: w.label
+      };
+    }
+    var p = currentPeriod;
+    return {
+      kpi: KPI_WINDOWS[p], buckets: PERIOD_BUCKETS[p], month: LAST_IDX, asOf: null,
+      chartLabel: chartWindowLabels[p], tableLabel: tableWindowLabels[p]
+    };
+  }
+
+  function refreshWidgets(){
+    var view = currentView();
+    var orgs = filteredOrgs();
+    if(view.asOf) orgs = orgs.filter(function(o){ return o.joined <= view.asOf; });
+    var kpi = computeKpis(orgs, view.kpi);
+    updateKpi('kpi-orgs', kpi.orgs);
+    updateKpi('kpi-users', kpi.users);
+    updateKpi('kpi-products', kpi.products);
+    updateKpi('kpi-revenue', kpi.revenue);
+
+    chartData = revenueSeries(orgs, view.buckets);
+    n = chartData.length;
+    renderRevenueChart();
+
+    planData = planCountSeries(orgs, view.buckets);
+    planN = planData.length;
+    renderPlanChart();
+
+    prodData = productSeries(orgs, view.buckets);
+    prodN = prodData.length;
+    renderProdChart();
+
+    renderRecentOrgs(orgs, view.month);
+    renderActivity(orgs);
+    renderTopSpend(orgs, view.month);
+    renderAlerts(orgs);
+
+    document.querySelectorAll('.ca-window span:last-child').forEach(function(span){
+      var parent = span.closest('[id^="chart-"], [id^="table-"]');
+      if(!parent) return;
+      span.textContent = parent.id.indexOf('chart-') === 0 ? view.chartLabel : view.tableLabel;
+    });
+  }
+
+  ptSegs.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var val = btn.getAttribute('data-period');
+      if(val === currentPeriod && !calSelected) return;
+      currentPeriod = val;
+      ptSegs.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-period') === val); });
+      if(calSelected){ calSelected = null; calBtn.classList.remove('open'); renderCalendar(); }
+      refreshWidgets();
+    });
+  });
+
+  // -- Calendar Date Picker --
+  var calBtn = document.getElementById('cal-btn');
+  var calPanel = document.getElementById('cal-panel');
+  var calGrid = document.getElementById('cal-grid');
+  var calLabel = document.getElementById('cal-label');
+  var calPrev = document.getElementById('cal-prev');
+  var calNext = document.getElementById('cal-next');
+  var calTodayBtn = document.getElementById('cal-today-btn');
+  var calDoneBtn = document.getElementById('cal-done-btn');
+
+  var calToday = new Date(); calToday.setHours(0,0,0,0);
+  var calViewYear = calToday.getFullYear();
+  var calViewMonth = calToday.getMonth();
+  var calSelected = null;
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  function renderCalendar(){
+    calLabel.textContent = MONTHS[calViewMonth] + ' ' + calViewYear;
+    var isCurrentMonth = calViewYear === calToday.getFullYear() && calViewMonth === calToday.getMonth();
+    calNext.disabled = isCurrentMonth;
+
+    var firstDay = new Date(calViewYear, calViewMonth, 1).getDay();
+    var daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+    var prevDays = new Date(calViewYear, calViewMonth, 0).getDate();
+
+    var cells = '';
+    for(var i = 0; i < firstDay; i++){
+      var d = prevDays - firstDay + 1 + i;
+      cells += '<button class="cal-day other disabled" disabled>'+d+'</button>';
+    }
+    for(var d = 1; d <= daysInMonth; d++){
+      var dt = new Date(calViewYear, calViewMonth, d);
+      var cls = 'cal-day';
+      if(dt.getTime() === calToday.getTime()) cls += ' today';
+      if(calSelected && dt.getTime() === calSelected.getTime()) cls += ' selected';
+      if(dt > calToday) cls += ' disabled';
+      var dis = dt > calToday ? ' disabled' : '';
+      cells += '<button class="'+cls+'"'+dis+' data-d="'+d+'">'+d+'</button>';
+    }
+    var totalCells = firstDay + daysInMonth;
+    var remaining = (totalCells % 7 === 0) ? 0 : 7 - (totalCells % 7);
+    for(var i = 1; i <= remaining; i++){
+      cells += '<button class="cal-day other disabled" disabled>'+i+'</button>';
+    }
+    calGrid.innerHTML = cells;
+
+    calGrid.querySelectorAll('.cal-day:not(.other):not(.disabled)').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var day = parseInt(btn.getAttribute('data-d'));
+        calSelected = new Date(calViewYear, calViewMonth, day);
+        calBtn.classList.add('open');
+        ptSegs.forEach(function(b){ b.classList.remove('active'); });
+        renderCalendar();
+        refreshWidgets();
+      });
+    });
+  }
+
+  function positionPanel(btn, panel, align){
+    var r = btn.getBoundingClientRect();
+    panel.style.top = (r.bottom + 5) + 'px';
+    if(align === 'right'){
+      panel.style.left = '';
+      panel.style.right = (window.innerWidth - r.right) + 'px';
+    } else {
+      panel.style.left = r.left + 'px';
+      panel.style.right = '';
+    }
+    var pRect = panel.getBoundingClientRect();
+    if(pRect.right > window.innerWidth - 8){
+      panel.style.left = '';
+      panel.style.right = '8px';
+    }
+  }
+
+  calBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    var isOpen = calPanel.classList.contains('open');
+    closeAllDropdowns();
+    if(!isOpen){
+      calPanel.classList.add('open');
+      renderCalendar();
+      positionPanel(calBtn, calPanel);
+    }
+  });
+  calPrev.addEventListener('click', function(){
+    calViewMonth--;
+    if(calViewMonth < 0){ calViewMonth = 11; calViewYear--; }
+    renderCalendar();
+  });
+  calNext.addEventListener('click', function(){
+    if(calNext.disabled) return;
+    calViewMonth++;
+    if(calViewMonth > 11){ calViewMonth = 0; calViewYear++; }
+    renderCalendar();
+  });
+  calTodayBtn.addEventListener('click', function(){
+    calViewYear = calToday.getFullYear();
+    calViewMonth = calToday.getMonth();
+    calSelected = new Date(calToday.getTime());
+    calBtn.classList.add('open');
+    ptSegs.forEach(function(b){ b.classList.remove('active'); });
+    renderCalendar();
+    refreshWidgets();
+  });
+  calDoneBtn.addEventListener('click', function(){ calPanel.classList.remove('open'); });
+
+  renderCalendar();
+
+  // -- Filter Dropdown --
+  var dfBtn = document.getElementById('df-btn');
+  var dfMenu = document.getElementById('df-menu');
+  var dfCatlist = document.getElementById('df-catlist');
+  var dfOpts = document.getElementById('df-opts');
+  var dfSearch = document.getElementById('df-search');
+  var dfBadge = document.getElementById('df-badge');
+  var dfBtnLabel = document.getElementById('df-btn-label');
+  var dfClear = document.getElementById('df-clear');
+  var dfMTitle = document.getElementById('df-mtitle');
+  var DF_PHONE_MAX = 640;
+  // Escape the toolbar's stacking context so the phone full-screen view sits above the page header
+  document.body.appendChild(dfMenu);
+
+  var filterCategories = [
+    { key:'organization', label:'Organization', items: ORGS.map(function(o){
+      return { id: o.id, name: o.name, color: orgColor(o) };
+    })},
+    { key:'plan',   label:'Plan',        items:[
+      {id:'enterprise', name:'Enterprise', color:'#4f7cff'},
+      {id:'pro',        name:'Pro',        color:'#22c88a'},
+      {id:'starter',    name:'Starter',    color:'#f5a623'},
+      {id:'trial',      name:'Trial',      color:'#e85555'}
+    ]},
+    { key:'product', label:'Product',     items:[
+      {id:'corerecon',   name:'CoreRecon',   color:'#4f7cff'},
+      {id:'coreconnect', name:'CoreConnect', color:'#22c88a'},
+      {id:'corebuy',     name:'CoreBuy',     color:'#9b59b6'}
+    ]},
+    { key:'status',  label:'Status',      items:[
+      {id:'active',   name:'Active',   color:'#22c88a'},
+      {id:'trial',    name:'Trial',     color:'#f5a623'},
+      {id:'inactive', name:'Inactive',  color:'#666'}
+    ]}
+  ];
+
+  var dfActiveCat = filterCategories[0].key;
+  var dfChosen = {};
+  filterCategories.forEach(function(c){ dfChosen[c.key] = []; });
+
+  // OR within a category, AND across categories; an empty category doesn't restrict
+  function filteredOrgs(){
+    var c = dfChosen;
+    return ORGS.filter(function(o){
+      return (!c.organization.length || c.organization.indexOf(o.id) >= 0) &&
+        (!c.plan.length || c.plan.indexOf(o.plan.toLowerCase()) >= 0) &&
+        (!c.status.length || c.status.indexOf(o.status) >= 0) &&
+        (!c.product.length || o.products.some(function(p){ return c.product.indexOf(p) >= 0; }));
+    });
+  }
+
+  function dfRenderCats(){
+    var html = '';
+    filterCategories.forEach(function(c){
+      var cls = c.key === dfActiveCat ? ' active' : '';
+      var count = dfChosen[c.key].length;
+      var badge = count > 0 ? ' <span style="font-size:10px;color:var(--ac);font-family:var(--mono);">('+count+')</span>' : '';
+      html += '<button class="df-cat'+cls+'" data-cat="'+c.key+'">'+c.label+badge+'<span class="df-cat-chev">&rsaquo;</span></button>';
+    });
+    dfCatlist.innerHTML = html;
+    dfCatlist.querySelectorAll('.df-cat').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        dfActiveCat = btn.getAttribute('data-cat');
+        dfSearch.value = '';
+        dfRenderCats();
+        dfRenderOpts();
+        if(window.innerWidth <= DF_PHONE_MAX){
+          dfMenu.classList.add('show-opts');
+          dfMTitle.textContent = filterCategories.filter(function(c){ return c.key === dfActiveCat; })[0].label;
+        }
+      });
+    });
+  }
+
+  window.dfRenderOpts = function(){
+    var cat = filterCategories.filter(function(c){ return c.key === dfActiveCat; })[0];
+    if(!cat) return;
+    var q = (dfSearch.value || '').toLowerCase();
+    var items = cat.items.filter(function(it){ return !q || it.name.toLowerCase().indexOf(q) >= 0; });
+    var chosen = dfChosen[cat.key];
+    var html = '';
+    items.forEach(function(it){
+      var isCh = chosen.indexOf(it.id) >= 0;
+      var cls = isCh ? ' chosen' : '';
+      var words = it.name.split(' ');
+      var initials = (words.length > 1 ? words[0][0] + words[1][0] : it.name.substring(0, 2)).toUpperCase();
+      html += '<button class="df-opt'+cls+'" data-id="'+it.id+'">';
+      html += '<span class="df-radio"></span>';
+      html += '<span class="df-opt-av" style="background:'+it.color+'">'+initials+'</span>';
+      html += '<span class="df-opt-label">'+it.name+'</span>';
+      html += '</button>';
+    });
+    if(!items.length) html = '<div style="padding:20px;text-align:center;color:var(--mu);font-size:12px;">No results</div>';
+    dfOpts.innerHTML = html;
+    dfOpts.querySelectorAll('.df-opt').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-id');
+        var arr = dfChosen[dfActiveCat];
+        var idx = arr.indexOf(id);
+        if(idx >= 0) arr.splice(idx, 1); else arr.push(id);
+        dfRenderOpts();
+        dfRenderCats();
+        dfSyncBtn();
+        refreshWidgets();
+      });
+    });
+  };
+
+  function dfSyncBtn(){
+    var total = 0;
+    filterCategories.forEach(function(c){ total += dfChosen[c.key].length; });
+    if(total > 0){
+      dfBtnLabel.textContent = 'Filter (' + total + ')';
+      dfBadge.style.display = '';
+    } else {
+      dfBtnLabel.textContent = 'Filter';
+      dfBadge.style.display = 'none';
+    }
+  }
+
+  dfBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    var isOpen = dfMenu.classList.contains('open');
+    closeAllDropdowns();
+    if(!isOpen){
+      dfMenu.classList.remove('show-opts');
+      dfMTitle.textContent = 'Filter';
+      dfSearch.value = '';
+      dfBtn.classList.add('open');
+      dfMenu.classList.add('open');
+      dfRenderCats();
+      dfRenderOpts();
+      if(window.innerWidth > DF_PHONE_MAX) positionPanel(dfBtn, dfMenu);
+    }
+  });
+
+  document.getElementById('df-mback').addEventListener('click', function(){
+    dfMenu.classList.remove('show-opts');
+    dfMTitle.textContent = 'Filter';
+  });
+  document.getElementById('df-mclose').addEventListener('click', function(){ closeAllDropdowns(); });
+
+  dfClear.addEventListener('click', function(){
+    filterCategories.forEach(function(c){ dfChosen[c.key] = []; });
+    dfRenderCats();
+    dfRenderOpts();
+    dfSyncBtn();
+    refreshWidgets();
+  });
+
+  refreshWidgets();
+
+  // -- Close all dropdowns helper --
+  function closeAllDropdowns(){
+    calPanel.classList.remove('open');
+    dfMenu.classList.remove('open', 'show-opts');
+    dfBtn.classList.remove('open');
+  }
+
+  // Picking a day re-renders the grid, detaching the click target, so the outside-click check would misfire
+  calPanel.addEventListener('click', function(e){ e.stopPropagation(); });
+  dfMenu.addEventListener('click', function(e){ e.stopPropagation(); });
+  document.addEventListener('click', function(e){
+    if(!calPanel.contains(e.target) && e.target !== calBtn){
+      calPanel.classList.remove('open');
+    }
+    if(!dfBtn.contains(e.target)){
+      dfMenu.classList.remove('open');
+      dfBtn.classList.remove('open');
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeAllDropdowns();
+  });
+
+  // ── Phase 6: Widget Management ──────────────────────────────────────────
+
+  var DRAG_SVG = '<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="5" cy="2" r="1.2"/><circle cx="9" cy="2" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="12" r="1.2"/><circle cx="9" cy="12" r="1.2"/></svg>';
+  var HIDE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  var GRID_SVG = '<svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.2"/></svg>';
+  var PLUS_SVG = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>';
+
+  var widgetRegistry = [];
+  var dropGrids = Array.prototype.slice.call(document.querySelectorAll('.widget-grid, .widget-grid-chart'));
+
+  dropGrids.forEach(function(grid){
+    grid.querySelectorAll('.widget[data-wid]').forEach(function(card, ci){
+      widgetRegistry.push({
+        id: card.getAttribute('data-wid'),
+        visible: true,
+        el: card,
+        homeGrid: grid,
+        homeIndex: ci,
+        title: card.querySelector('.w-title').textContent
+      });
+    });
+  });
+
+  // Inject drag handles and kebab menus
+  widgetRegistry.forEach(function(w){
+    var head = w.el.querySelector('.w-head');
+    var kebabBtn = head.querySelector('.w-kebab');
+
+    // Add drag handle before the title
+    var dragEl = document.createElement('div');
+    dragEl.className = 'w-drag';
+    dragEl.innerHTML = DRAG_SVG;
+    head.insertBefore(dragEl, head.firstChild);
+
+    // Add dropdown menu after kebab button
+    var menu = document.createElement('div');
+    menu.className = 'w-menu';
+    menu.id = 'w-menu-' + w.id;
+    menu.innerHTML = '<button class="w-menu-item" data-action="hide" data-wid="' + w.id + '">' + HIDE_SVG + ' Hide widget</button>';
+    head.appendChild(menu);
+
+    // Kebab click toggles menu
+    kebabBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var wasOpen = menu.classList.contains('open');
+      closeAllWidgetMenus();
+      if(!wasOpen) menu.classList.add('open');
+    });
+
+    // Menu item click
+    menu.addEventListener('click', function(e){
+      e.stopPropagation();
+      var btn = e.target.closest('[data-action]');
+      if(!btn) return;
+      if(btn.getAttribute('data-action') === 'hide'){
+        hideWidget(btn.getAttribute('data-wid'));
+      }
+    });
+  });
+
+  function closeAllWidgetMenus(){
+    document.querySelectorAll('.w-menu.open').forEach(function(m){ m.classList.remove('open'); });
+  }
+
+  document.addEventListener('click', function(){
+    closeAllWidgetMenus();
+  });
+
+  function findWidget(id){
+    return widgetRegistry.filter(function(r){ return r.id === id; })[0];
+  }
+
+  function hideWidget(id){
+    var w = findWidget(id);
+    w.visible = false;
+    w.el.style.display = 'none';
+    closeAllWidgetMenus();
+    refreshLayout();
+    renderWidgetsPanel();
+  }
+
+  window.showWidget = function(id){
+    var w = findWidget(id);
+    w.visible = true;
+    w.el.style.display = '';
+    refreshLayout();
+    renderWidgetsPanel();
+  };
+
+  window.resetWidgets = function(){
+    dropGrids.forEach(function(grid){
+      widgetRegistry
+        .filter(function(w){ return w.homeGrid === grid; })
+        .sort(function(a, b){ return a.homeIndex - b.homeIndex; })
+        .forEach(function(w){
+          w.visible = true;
+          w.el.style.display = '';
+          grid.appendChild(w.el);
+        });
+    });
+    refreshLayout();
+    renderWidgetsPanel();
+  };
+
+  // Empty states per row, then re-render charts since row widths may have changed
+  var emptyEls = [];
+  function refreshLayout(){
+    dropGrids.forEach(function(grid, gi){
+      var hasVisible = Array.prototype.some.call(grid.querySelectorAll('.widget[data-wid]'), function(card){
+        return card.style.display !== 'none';
+      });
+      if(!emptyEls[gi]){
+        emptyEls[gi] = document.createElement('div');
+        emptyEls[gi].className = 'widget-empty';
+        emptyEls[gi].innerHTML =
+          '<div class="widget-empty-icon">' + GRID_SVG + '</div>' +
+          '<div class="widget-empty-title">No widgets visible</div>' +
+          '<div class="widget-empty-body">Drag a widget into this row, or open the Widgets panel to add one.</div>' +
+          '<button class="widget-empty-cta" onclick="toggleWidgetsPanel()">' + PLUS_SVG + ' Add widgets</button>';
+      }
+      if(!hasVisible && !grid.contains(emptyEls[gi])) grid.appendChild(emptyEls[gi]);
+      if(hasVisible && grid.contains(emptyEls[gi])) grid.removeChild(emptyEls[gi]);
+    });
+    renderRevenueChart();
+    renderPlanChart();
+    renderProdChart();
+  }
+
+  // Widgets panel
+  var widgetsPanel = document.getElementById('widgets-menu');
+  var wmList = document.getElementById('wm-list');
+
+  var widgetsBtn = document.getElementById('widgets-btn');
+  window.toggleWidgetsPanel = function(){
+    widgetsPanel.classList.toggle('open');
+    widgetsBtn.classList.toggle('open', widgetsPanel.classList.contains('open'));
+    if(widgetsPanel.classList.contains('open')) renderWidgetsPanel();
+  };
+
+  function renderWidgetsPanel(){
+    var hidden = widgetRegistry.filter(function(w){ return !w.visible; });
+    if(hidden.length === 0){
+      wmList.innerHTML = '<div class="wm-empty">All widgets are on your dashboard.<br>Click a widget\'s ⋮ menu → Hide to move it here.</div>';
+      return;
+    }
+    wmList.innerHTML = '';
+    hidden.forEach(function(w){
+      var tile = document.createElement('div');
+      tile.className = 'wm-tile';
+      tile.setAttribute('data-wm-id', w.id);
+
+      var prevWidget = w.el.cloneNode(true);
+      prevWidget.style.display = '';
+      prevWidget.className = 'widget wm-prev-widget';
+      prevWidget.removeAttribute('data-wid');
+      prevWidget.removeAttribute('draggable');
+      prevWidget.removeAttribute('id');
+      prevWidget.querySelectorAll('[id]').forEach(function(el){ el.removeAttribute('id'); });
+      var menu = prevWidget.querySelector('.w-menu');
+      if(menu) menu.remove();
+      var kebab = prevWidget.querySelector('.w-kebab');
+      if(kebab){
+        kebab.outerHTML = '<button class="wm-tile-add" onclick="showWidget(\'' + w.id + '\')" title="Add back">+</button>';
+      }
+      tile.appendChild(prevWidget);
+
+      prevWidget.querySelector('.w-drag').addEventListener('mousedown', function(){
+        tile.setAttribute('draggable', 'true');
+      });
+      tile.addEventListener('dragstart', function(e){
+        if(tile.getAttribute('draggable') !== 'true'){ e.preventDefault(); return; }
+        dragWid = w.id;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', w.id);
+        setTimeout(function(){ tile.classList.add('dragging'); }, 0);
+      });
+      tile.addEventListener('dragend', function(){
+        tile.classList.remove('dragging');
+        tile.setAttribute('draggable', 'false');
+        endDrag();
+      });
+
+      wmList.appendChild(tile);
+    });
+  }
+
+  // ── Drag & drop: reorder, move between rows, add from Widgets panel ─────
+  var dragWid = null;
+
+  function clearDropMarkers(){
+    document.querySelectorAll('.wm-drop-before, .wm-drop-after').forEach(function(el){
+      el.classList.remove('wm-drop-before', 'wm-drop-after');
+    });
+  }
+
+  function endDrag(){
+    dragWid = null;
+    clearDropMarkers();
+    document.querySelectorAll('.wm-drop-active').forEach(function(g){ g.classList.remove('wm-drop-active'); });
+  }
+
+  // Nearest visible card to the pointer (excluding the one being dragged), and whether to insert after it
+  function dropSpot(grid, x, y, draggedEl){
+    var best = null, bestD = Infinity;
+    grid.querySelectorAll('.widget[data-wid]').forEach(function(card){
+      if(card === draggedEl || card.style.display === 'none') return;
+      var r = card.getBoundingClientRect();
+      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var d = Math.pow(x - cx, 2) + Math.pow(y - cy, 2);
+      if(d < bestD){ bestD = d; best = { card: card, after: x > cx }; }
+    });
+    return best;
+  }
+
+  dropGrids.forEach(function(grid){
+    grid.addEventListener('dragover', function(e){
+      if(!dragWid) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      clearDropMarkers();
+      dropGrids.forEach(function(g){ g.classList.toggle('wm-drop-active', g === grid); });
+      var spot = dropSpot(grid, e.clientX, e.clientY, findWidget(dragWid).el);
+      if(spot) spot.card.classList.add(spot.after ? 'wm-drop-after' : 'wm-drop-before');
+    });
+
+    grid.addEventListener('dragleave', function(e){
+      if(grid.contains(e.relatedTarget)) return;
+      grid.classList.remove('wm-drop-active');
+      clearDropMarkers();
+    });
+
+    grid.addEventListener('drop', function(e){
+      if(!dragWid) return;
+      e.preventDefault();
+      var w = findWidget(dragWid);
+      var spot = dropSpot(grid, e.clientX, e.clientY, w.el);
+      grid.insertBefore(w.el, spot ? (spot.after ? spot.card.nextSibling : spot.card) : grid.firstChild);
+      // Moving the node can suppress dragend, so clean up here too
+      w.el.classList.remove('dragging');
+      w.el.setAttribute('draggable', 'false');
+      endDrag();
+      if(w.visible) refreshLayout();
+      else showWidget(w.id);
+    });
+  });
+
+  widgetRegistry.forEach(function(w){
+    w.el.querySelector('.w-drag').addEventListener('mousedown', function(){
+      w.el.setAttribute('draggable', 'true');
+    });
+
+    w.el.addEventListener('dragstart', function(e){
+      if(w.el.getAttribute('draggable') !== 'true'){ e.preventDefault(); return; }
+      dragWid = w.id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', w.id);
+      setTimeout(function(){ w.el.classList.add('dragging'); }, 0);
+    });
+
+    w.el.addEventListener('dragend', function(){
+      w.el.classList.remove('dragging');
+      w.el.setAttribute('draggable', 'false');
+      endDrag();
+    });
+  });
+
+  document.addEventListener('mouseup', function(){
+    document.querySelectorAll('.widget[draggable="true"], .wm-tile[draggable="true"]').forEach(function(el){
+      if(!el.classList.contains('dragging')) el.setAttribute('draggable', 'false');
+    });
+  });
+
+})();
+</script>
+
+</body>
+</html>

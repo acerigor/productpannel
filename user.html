@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User — CorePanel</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.usr-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--mu);text-decoration:none;padding:0;background:none;border:none;cursor:pointer;font-family:var(--font);transition:color .15s;}
+.usr-back:hover{color:var(--ac);}
+.usr-back svg{width:16px;height:16px;}
+.usr-header{display:flex;align-items:center;gap:14px;padding:16px 24px 16px;border-bottom:1px solid var(--brd2);}
+@media (max-width:640px){.usr-header{padding:12px 16px;}}
+.usr-header-name{font-size:20px;font-weight:700;color:var(--tx);font-family:var(--font);}
+.usr-profile{flex:1;overflow-y:auto;}
+.up-wrap{padding:28px 32px;display:flex;flex-direction:column;gap:28px;max-width:720px;}
+@media (max-width:640px){.up-wrap{padding:20px 16px;gap:20px;}}
+.up-avatar-area{display:flex;align-items:center;gap:20px;}
+.up-avatar{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;font-family:var(--font);text-transform:uppercase;flex-shrink:0;}
+.up-avatar-info{display:flex;flex-direction:column;gap:4px;}
+.up-avatar-name{font-size:18px;font-weight:700;color:var(--tx);font-family:var(--font);}
+.up-avatar-role{font-size:12.5px;color:var(--mu);font-family:var(--font);}
+.up-avatar-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mu);font-family:var(--font);}
+.up-avatar-status .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.up-avatar-status .dot--on{background:var(--gr);}
+.up-avatar-status .dot--off{background:var(--mu);opacity:.5;}
+.up-section{display:flex;flex-direction:column;gap:8px;}
+.up-section-title{font-size:14px;font-weight:700;color:var(--tx);letter-spacing:0;font-family:var(--font);}
+.up-details{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media (max-width:640px){.up-details{grid-template-columns:1fr;}}
+.up-field{display:flex;flex-direction:column;gap:6px;}
+.up-field label{font-size:11.5px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;font-family:var(--font);}
+.up-field input,.up-field select{height:40px;padding:0 12px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;outline:none;transition:border-color .15s;}
+.up-field input:focus,.up-field select:focus{border-color:var(--ac);}
+.up-field select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f94' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.up-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <a class="usr-back" id="usr-back-link" href="organization.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      <span id="usr-back-text">Back to Organization</span>
+    </a>
+  </div>
+
+  <div class="usr-header">
+    <div class="usr-header-name" id="usr-page-name"></div>
+  </div>
+
+  <div class="usr-profile">
+    <div class="up-wrap">
+      <div class="up-avatar-area">
+        <div class="up-avatar" id="up-avatar"></div>
+        <div class="up-avatar-info">
+          <div class="up-avatar-name" id="up-display-name"></div>
+          <div class="up-avatar-role" id="up-display-role"></div>
+          <div class="up-avatar-status" id="up-display-status"></div>
+        </div>
+      </div>
+
+      <div class="up-section">
+        <div class="up-section-title">Personal Info</div>
+        <div class="up-details">
+          <div class="up-field">
+            <label for="up-f-name">Full Name</label>
+            <input type="text" id="up-f-name" placeholder="Full name"/>
+          </div>
+          <div class="up-field">
+            <label for="up-f-email">Email</label>
+            <input type="email" id="up-f-email" placeholder="email@company.com"/>
+          </div>
+          <div class="up-field">
+            <label for="up-f-phone">Phone</label>
+            <input type="tel" id="up-f-phone" placeholder="(555) 000-0000"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="up-section">
+        <div class="up-section-title">Role &amp; Access</div>
+        <div class="up-details">
+          <div class="up-field">
+            <label for="up-f-dept">Department</label>
+            <input type="text" id="up-f-dept" placeholder="Department"/>
+          </div>
+          <div class="up-field">
+            <label for="up-f-role">Role</label>
+            <select id="up-f-role">
+              <option value="Admin">Admin</option>
+              <option value="User">User</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="up-section">
+        <div class="up-section-title">Status</div>
+        <div class="up-details">
+          <div class="up-field">
+            <label for="up-f-status">Account Status</label>
+            <select id="up-f-status">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="up-actions">
+        <button class="btn btn-primary" onclick="window.showNavToast('Saved','User profile saved successfully.')">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>BuySmartShell.init({ page: 'products', title: 'User Profile' });</script>
+<script>
+var ORGS = [
+  { id:1, name:'Acme Motors' },{ id:2, name:'Big Sky Auto' },{ id:3, name:'USA Direct Auto' },
+  { id:4, name:'Sunset Auto Group' },{ id:5, name:'Liberty Car Sales' },{ id:6, name:'Apex Automotive' },
+  { id:7, name:'Tri-State Motors' },{ id:8, name:'Pacific Coast Auto' },{ id:9, name:'Lone Star Dealers' },
+  { id:10, name:'Great Lakes Auto' },{ id:11, name:'Mountain View Motors' },{ id:12, name:'Eastside Auto Exchange' },
+  { id:13, name:'Premier Fleet Sales' }
+];
+
+var ORG_USERS = {
+  1: [
+    { name:'John Carter', email:'john@acmemotors.com', phone:'(602) 555-0143', dept:'Sales', role:'Admin', status:'Active', online:true },
+    { name:'Maria Lopez', email:'maria@acmemotors.com', phone:'(602) 555-0144', dept:'Sales', role:'User', status:'Active', online:true },
+    { name:'David Chen', email:'david@acmemotors.com', phone:'(602) 555-0145', dept:'Agent', role:'User', status:'Active', online:false },
+    { name:'Sarah Kim', email:'sarah@acmemotors.com', phone:'(602) 555-0146', dept:'Sales', role:'User', status:'Inactive', online:false }
+  ],
+  2: [
+    { name:'Mike Thompson', email:'mike@bigskyauto.com', phone:'(406) 555-0288', dept:'Sales', role:'Admin', status:'Active', online:true },
+    { name:'Lisa Nguyen', email:'lisa@bigskyauto.com', phone:'(406) 555-0289', dept:'Agent', role:'User', status:'Active', online:false },
+    { name:'Jake Morrison', email:'jake@bigskyauto.com', phone:'(406) 555-0290', dept:'Sales', role:'User', status:'Active', online:true }
+  ],
+  3: [
+    { name:'Rachel Green', email:'rachel@usadirectauto.com', phone:'(404) 555-0392', dept:'Agent', role:'Admin', status:'Active', online:true },
+    { name:'Omar Patel', email:'omar@usadirectauto.com', phone:'(404) 555-0393', dept:'Sales', role:'User', status:'Active', online:false },
+    { name:'Amy Torres', email:'amy@usadirectauto.com', phone:'(404) 555-0394', dept:'Sales', role:'User', status:'Inactive', online:false },
+    { name:'Chris Walker', email:'chris@usadirectauto.com', phone:'(404) 555-0395', dept:'Agent', role:'User', status:'Active', online:true }
+  ],
+  4: [
+    { name:'Carlos Mendez', email:'carlos@sunsetautogroup.com', phone:'(619) 555-0211', dept:'Sales', role:'Admin', status:'Active', online:true },
+    { name:'Nina Patel', email:'nina@sunsetautogroup.com', phone:'(619) 555-0212', dept:'Sales', role:'User', status:'Active', online:false }
+  ],
+  5: [
+    { name:'Tom Russo', email:'tom@libertycarsales.com', phone:'(201) 555-0179', dept:'Sales', role:'Admin', status:'Active', online:true },
+    { name:'Dana Brooks', email:'dana@libertycarsales.com', phone:'(201) 555-0180', dept:'Agent', role:'User', status:'Active', online:true }
+  ],
+  6: [
+    { name:'Kevin Park', email:'kevin@apexautomotive.com', phone:'(303) 555-0264', dept:'Sales', role:'Admin', status:'Active', online:false },
+    { name:'Jessica Lane', email:'jessica@apexautomotive.com', phone:'(303) 555-0265', dept:'Sales', role:'User', status:'Active', online:true },
+    { name:'Marcus Webb', email:'marcus@apexautomotive.com', phone:'(303) 555-0266', dept:'Agent', role:'User', status:'Inactive', online:false }
+  ],
+  7: [
+    { name:'Frank DiNardo', email:'frank@tristatemotors.com', phone:'(215) 555-0325', dept:'Agent', role:'Admin', status:'Active', online:true },
+    { name:'Lina Choi', email:'lina@tristatemotors.com', phone:'(215) 555-0326', dept:'Sales', role:'User', status:'Active', online:false }
+  ],
+  8: [
+    { name:'Ryan Olsen', email:'ryan@pacificcoastauto.com', phone:'(503) 555-0416', dept:'Sales', role:'Admin', status:'Active', online:true },
+    { name:'Mei Lin', email:'mei@pacificcoastauto.com', phone:'(503) 555-0417', dept:'Sales', role:'User', status:'Active', online:true },
+    { name:'Jake Torres', email:'jake@pacificcoastauto.com', phone:'(503) 555-0418', dept:'Agent', role:'User', status:'Active', online:false }
+  ],
+  9: [
+    { name:'Billy Ray Dawson', email:'billy@lonestardealers.com', phone:'(713) 555-0188', dept:'Sales', role:'Admin', status:'Active', online:true },
+    { name:'Priya Sharma', email:'priya@lonestardealers.com', phone:'(713) 555-0189', dept:'Agent', role:'User', status:'Active', online:false },
+    { name:'Derek Hayes', email:'derek@lonestardealers.com', phone:'(713) 555-0190', dept:'Sales', role:'User', status:'Inactive', online:false }
+  ],
+  10: [
+    { name:'Angela Foster', email:'angela@greatlakesauto.com', phone:'(313) 555-0300', dept:'Sales', role:'Admin', status:'Active', online:true },
+    { name:'Dmitri Volkov', email:'dmitri@greatlakesauto.com', phone:'(313) 555-0301', dept:'Agent', role:'User', status:'Active', online:true }
+  ],
+  11: [
+    { name:'Cody Barrett', email:'cody@mountainviewmotors.com', phone:'(801) 555-0347', dept:'Sales', role:'Admin', status:'Active', online:false },
+    { name:'Sofia Reyes', email:'sofia@mountainviewmotors.com', phone:'(801) 555-0348', dept:'Sales', role:'User', status:'Active', online:true }
+  ],
+  12: [
+    { name:'Tanya Mitchell', email:'tanya@eastsideautoexchange.com', phone:'(704) 555-0423', dept:'Agent', role:'Admin', status:'Active', online:true },
+    { name:'Brian Keller', email:'brian@eastsideautoexchange.com', phone:'(704) 555-0424', dept:'Sales', role:'User', status:'Active', online:false },
+    { name:'Jasmine Ford', email:'jasmine@eastsideautoexchange.com', phone:'(704) 555-0425', dept:'Sales', role:'User', status:'Inactive', online:false }
+  ],
+  13: [
+    { name:'Alan Whitfield', email:'alan@premierfleet.com', phone:'(312) 555-0509', dept:'Sales', role:'Admin', status:'Active', online:true },
+    { name:'Rosa Gutierrez', email:'rosa@premierfleet.com', phone:'(312) 555-0510', dept:'Agent', role:'User', status:'Active', online:true }
+  ]
+};
+
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var orgId = parseInt(params.get('org'), 10);
+  var userIdx = parseInt(params.get('user'), 10);
+  var tab = params.get('tab');
+
+  var org = ORGS.find(function(o){ return o.id === orgId; });
+  if(!org) org = ORGS[0];
+  var users = ORG_USERS[org.id] || [];
+  var user = users[userIdx];
+  if(!user) user = users[0] || { name:'Unknown', email:'', phone:'', dept:'', role:'User', status:'Active', online:false };
+
+  var backLink = document.getElementById('usr-back-link');
+  var backText = document.getElementById('usr-back-text');
+  backText.textContent = 'Back to ' + org.name;
+  backLink.href = 'organization.html?id=' + org.id + (tab ? '&tab=' + tab : '');
+  backLink.onclick = function(){ if(document.referrer.indexOf('organization.html')!==-1){ history.back(); return false; } };
+
+  document.getElementById('usr-page-name').textContent = user.name;
+  document.title = user.name + ' — CorePanel';
+
+  var colors = ['var(--gr)','var(--ac)','var(--am,#f5a623)','rgba(167,139,250,1)','rgba(20,184,166,1)'];
+  var avatarEl = document.getElementById('up-avatar');
+  avatarEl.textContent = user.name.split(/\s+/).map(function(w){ return w[0]; }).join('').substring(0,2);
+  avatarEl.style.background = colors[userIdx % colors.length];
+
+  document.getElementById('up-display-name').textContent = user.name;
+  document.getElementById('up-display-role').textContent = user.dept + ' · ' + user.role;
+
+  var statusEl = document.getElementById('up-display-status');
+  var dotCls = user.online ? 'dot--on' : 'dot--off';
+  var onlineTxt = user.online ? 'Online' : 'Offline';
+  statusEl.innerHTML = '<span class="dot ' + dotCls + '"></span>' + onlineTxt;
+
+  document.getElementById('up-f-name').value = user.name;
+  document.getElementById('up-f-email').value = user.email;
+  document.getElementById('up-f-phone').value = user.phone;
+  document.getElementById('up-f-dept').value = user.dept;
+  document.getElementById('up-f-role').value = user.role;
+  document.getElementById('up-f-status').value = user.status;
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Damage Values — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.if-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 20px;}
+.if-grid > .us-add-field{grid-column:auto;margin-top:0;}
+@media (max-width:900px){ .if-grid{grid-template-columns:repeat(2,1fr);} }
+@media (max-width:560px){ .if-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section">
+      <div style="max-width:960px;margin:0;">
+        <div class="if-grid">
+          <div class="us-add-field"><label>Upholstery pieces</label><input type="number" id="if-upholstery" inputmode="decimal" step="any" placeholder="0"/></div>
+          <div class="us-add-field"><label>Paint Work</label><input type="number" id="if-paint" inputmode="decimal" step="any" placeholder="0"/></div>
+          <div class="us-add-field"><label>Body Work</label><input type="number" id="if-body" inputmode="decimal" step="any" placeholder="0"/></div>
+          <div class="us-add-field"><label>Tires</label><input type="number" id="if-tires" inputmode="decimal" step="any" placeholder="0"/></div>
+          <div class="us-add-field"><label>W/S</label><input type="number" id="if-ws" inputmode="decimal" step="any" placeholder="0"/></div>
+          <div class="us-add-field"><label>Rims</label><input type="number" id="if-rims" inputmode="decimal" step="any" placeholder="0"/></div>
+          <div class="us-add-field"><label>Misc. Exp</label><input type="number" id="if-misc" inputmode="decimal" step="any" placeholder="0"/></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+          <button class="modal-cancel" onclick="ifCancel()">Cancel</button>
+          <button class="modal-save"   onclick="ifSave()">Save</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>BuySmartShell.init({ page: 'settings', title: 'Damage Values' });
+
+const IF_KEYS = ['upholstery','paint','body','tires','ws','rims','misc'];
+const IF_STORE = 'buysmart:itemformula';
+
+function ifLoad(){
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(IF_STORE) || '{}'); } catch(e){}
+  IF_KEYS.forEach(function(k){
+    const el = document.getElementById('if-' + k);
+    if(el) el.value = (saved[k] != null) ? saved[k] : '';
+  });
+}
+
+function ifCollect(){
+  const out = {};
+  for(let i=0;i<IF_KEYS.length;i++){
+    const k = IF_KEYS[i];
+    const raw = document.getElementById('if-' + k).value;
+    if(raw === '' || raw == null){ out[k] = 0; continue; }
+    const n = parseFloat(raw);
+    if(isNaN(n)){
+      window.showNavToast('Invalid number', 'Check the ' + k + ' field.');
+      document.getElementById('if-' + k).focus();
+      return null;
+    }
+    out[k] = n;
+  }
+  return out;
+}
+
+function ifSave(){
+  const v = ifCollect();
+  if(!v) return;
+  try { localStorage.setItem(IF_STORE, JSON.stringify(v)); } catch(e){}
+  window.showNavToast('Damage Values saved', 'Values updated.');
+}
+
+function ifCancel(){
+  ifLoad();
+  window.showNavToast('Changes discarded', 'Values reverted.');
+}
+
+ifLoad();
+</script>
+
+</body>
+</html>

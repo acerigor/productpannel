@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Auction Assignment — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.uaa-sheet-cell{position:relative;display:inline-block;}
+.uaa-sheet-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid transparent;color:var(--tx);font:inherit;padding:4px 8px;border-radius:6px;cursor:pointer;}
+.uaa-sheet-btn:hover{border-color:var(--brd2);background:var(--sur2);}
+.uaa-sheet-menu{position:fixed;background:var(--sur2);border:1px solid var(--brd2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.55);min-width:120px;z-index:100;overflow:hidden;padding:4px;}
+.uaa-sheet-item{padding:8px 12px;cursor:pointer;color:var(--tx);font-size:13px;border-radius:6px;}
+.uaa-sheet-item:hover{background:var(--sur2);}
+.uaa-assign-cell{cursor:pointer;padding:4px 8px;border-radius:6px;display:inline-block;}
+.uaa-assign-cell:hover{background:var(--sur2);}
+.uaa-av-row{display:inline-flex;align-items:center;}
+.uaa-av-row > *:not(:first-child){margin-left:-6px;}
+.uaa-av{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;border:2px solid var(--sur);flex-shrink:0;}
+.uaa-av-more{background:var(--sur2);color:var(--tx);font-size:10px;}
+.uaa-av-empty{color:var(--mu);font-size:12px;padding:4px 8px;}
+.uaa-av[data-label]{position:relative;}
+.uaa-av[data-label]:hover{z-index:2;}
+.uaa-tooltip{position:fixed;pointer-events:none;background:var(--sur2);color:var(--ac2);border:0.5px solid var(--ac);border-radius:8px;padding:7px 14px;font-size:13px;font-weight:500;font-family:var(--font);white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,.4);opacity:0;transition:opacity .12s;z-index:9999;top:0;left:0;}
+.uaa-tooltip.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <div class="assign-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input id="uaa-search" placeholder="Search assignments…" oninput="uaaFilter(this.value)"/>
+    </div>
+    <button class="tbtn tbtn-p" onclick="uaaOpenAddModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Add User Auction Assignment</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0 0 24px;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:48px;text-align:center;"><input type="checkbox" id="uaa-check-all" onchange="uaaToggleAll(this)"/></th>
+                <th style="width:64px;text-align:center;">No.</th>
+                <th style="text-align:left;padding-left:24px;">Auction Name</th>
+                <th style="width:180px;text-align:left;">Sheet Type</th>
+                <th style="text-align:left;">Assigned Users</th>
+                <th style="width:180px;text-align:left;">ChannelId</th>
+              </tr>
+            </thead>
+            <tbody id="uaa-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="assign-popup" id="uaa-assign-popup" style="display:none;">
+  <div class="assign-popup-title">Assign to</div>
+  <div class="assign-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input id="uaa-assign-search-input" type="text" placeholder="Search people…" oninput="uaaRenderAssign(this.value)"/>
+  </div>
+  <div class="assign-list" id="uaa-assign-list"></div>
+  <div class="assign-unassign" onclick="uaaAssignUnassign()">
+    <div class="assign-user-av" style="background:var(--sur2);border:0.5px solid var(--brd2);">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="8" r="4"/><path d="M6 21v-1a6 6 0 0 1 12 0v1"/><line x1="4" y1="4" x2="20" y2="20"/>
+      </svg>
+    </div>
+    <span>Unassign</span>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>BuySmartShell.init({ page: 'settings', title: 'User Auction Assignment' });</script>
+<script>
+const UAA_SEED = [
+  { id:1,  name:"1st Choice Auto Auction Houston",                 sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:2,  name:"1st Choice Auto Auction 1st Choice Auto Auction", sheet:'Joint', users:['Amin Hussain','Hardik Patadiya'], channelId:'' },
+  { id:3,  name:"Adesa Los Angeles",  sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:4,  name:"Adesa Syracuse",     sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:5,  name:"Adesa PA",           sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:6,  name:"Adesa Mercer",       sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:7,  name:"Adesa Austin",       sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:8,  name:"Adesa Concord",      sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:9,  name:"Adesa Nashville",    sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:10, name:"Adesa Kansas City",  sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:11, name:"Adesa Sarasota",     sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:12, name:"Adesa Brasher's",    sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:13, name:"Adesa Chicago",      sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:14, name:"Adesa Boston",       sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+  { id:15, name:"Adesa Atlanta",      sheet:'Joint', users:['Hardik Patadiya'], channelId:'' },
+];
+const UAA_PEOPLE = [
+  { key:'DP', name:'David Park',      role:'Sales Manager', color:'#4f7cff' },
+  { key:'JD', name:'James Donovan',   role:'Sales Rep',     color:'#26c281' },
+  { key:'MR', name:'Maria Rodriguez', role:'Sales Rep',     color:'#f19828' },
+  { key:'TK', name:'Tom Keller',      role:'BDC Agent',     color:'#8a5cf6' },
+  { key:'SL', name:'Sarah Lambert',   role:'Sales Rep',     color:'#e55555' },
+  { key:'HP', name:'Hardik Patadiya', role:'Sales Rep',     color:'#4f7cff' },
+  { key:'AH', name:'Amin Hussain',    role:'Sales Rep',     color:'#26c281' },
+];
+let uaaAssignTargetId = null;
+let uaaSearchQ = '';
+function uaaEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uaaInitials(name){
+  return String(name||'').trim().split(/\s+/).slice(0,2).map(function(w){ return w[0]||''; }).join('').toUpperCase();
+}
+function uaaAvatarHtml(name){
+  const p = UAA_PEOPLE.find(function(x){ return x.name === name; });
+  const color = p ? p.color : '#4a4f60';
+  const label = p ? p.key : uaaInitials(name);
+  return '<div class="uaa-av" style="background:' + color + ';" data-label="' + uaaEsc(name) + '">' + label + '</div>';
+}
+function uaaAssignCellHtml(users){
+  const list = users || [];
+  const shown = list.slice(0, 3);
+  const rest  = list.length - shown.length;
+  return '<div class="uaa-assign-cell" onclick="uaaOpenAssign(event, __ID__)">' +
+    '<div class="uaa-av-row">' +
+      shown.map(uaaAvatarHtml).join('') +
+      (rest > 0 ? '<div class="uaa-av uaa-av-more" data-label="' + rest + ' more">+' + rest + '</div>' : '') +
+      (list.length === 0 ? '<span class="uaa-av-empty">—</span>' : '') +
+    '</div>' +
+  '</div>';
+}
+function uaaRowHtml(r){
+  return '<tr>' +
+    '<td style="text-align:center;"><input type="checkbox" class="uaa-row-check" data-id="' + r.id + '" onchange="uaaSyncAll()"/></td>' +
+    '<td style="text-align:center;"><a class="us-user-link" href="javascript:void(0)" onclick="uaaOpenAddModal(' + r.id + ')">' + r.id + '</a></td>' +
+    '<td style="text-align:left;padding-left:24px;">' + uaaEsc(r.name) + '</td>' +
+    '<td>' +
+      '<div class="uaa-sheet-cell">' +
+        '<button type="button" class="uaa-sheet-btn" onclick="uaaSheetToggle(event, ' + r.id + ')">' +
+          '<span>' + uaaEsc(r.sheet) + '</span>' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+        '</button>' +
+        '<div class="uaa-sheet-menu" data-id="' + r.id + '" style="display:none;">' +
+          '<div class="uaa-sheet-item" onclick="uaaSheetSet(' + r.id + ',\'Joint\')">Joint</div>' +
+          '<div class="uaa-sheet-item" onclick="uaaSheetSet(' + r.id + ',\'Single\')">Single</div>' +
+        '</div>' +
+      '</div>' +
+    '</td>' +
+    '<td>' + uaaAssignCellHtml(r.users).replace('__ID__', r.id) + '</td>' +
+    '<td>' + uaaEsc(r.channelId || '') + '</td>' +
+  '</tr>';
+}
+function uaaRender(){
+  const q = uaaSearchQ.trim().toLowerCase();
+  const visible = UAA_SEED.filter(function(r){
+    return !q
+        || r.name.toLowerCase().includes(q)
+        || (r.sheet||'').toLowerCase().includes(q)
+        || (r.users||[]).join(',').toLowerCase().includes(q);
+  });
+  document.getElementById('uaa-tbody').innerHTML = visible.map(uaaRowHtml).join('');
+  uaaSyncAll();
+}
+function uaaFilter(q){ uaaSearchQ = q || ''; uaaRender(); }
+function uaaToggleAll(el){
+  document.querySelectorAll('.uaa-row-check').forEach(function(c){ c.checked = el.checked; });
+}
+function uaaSyncAll(){
+  const boxes = document.querySelectorAll('.uaa-row-check');
+  const all = boxes.length > 0 && Array.from(boxes).every(function(b){ return b.checked; });
+  const some = Array.from(boxes).some(function(b){ return b.checked; });
+  const el = document.getElementById('uaa-check-all');
+  if(el){ el.checked = all; el.indeterminate = !all && some; }
+}
+function uaaOpenAddModal(id){ window.showNavToast('Add User Auction Assignment', 'Coming soon.'); }
+function uaaCloseAllMenus(){
+  document.querySelectorAll('.uaa-sheet-menu').forEach(function(m){ m.style.display='none'; });
+}
+function uaaSheetToggle(e, id){
+  e.stopPropagation();
+  const menu = document.querySelector('.uaa-sheet-menu[data-id="' + id + '"]');
+  const wasOpen = menu.style.display === 'block';
+  uaaCloseAllMenus();
+  if(!wasOpen){
+    const btn = e.currentTarget;
+    menu.style.display = 'block';
+    menu.style.top = '-9999px';
+    menu.style.left = '0px';
+    const mr = menu.getBoundingClientRect();
+    const rect = btn.getBoundingClientRect();
+    let top = rect.bottom + 4;
+    if(top + mr.height > window.innerHeight - 8){
+      const aboveTop = rect.top - mr.height - 4;
+      top = (aboveTop >= 8) ? aboveTop : Math.max(8, window.innerHeight - mr.height - 8);
+    }
+    let left = rect.left;
+    if(left + mr.width > window.innerWidth - 8) left = window.innerWidth - mr.width - 8;
+    if(left < 8) left = 8;
+    menu.style.top  = top  + 'px';
+    menu.style.left = left + 'px';
+  }
+}
+function uaaSheetSet(id, value){
+  const r = UAA_SEED.find(function(x){ return x.id === id; });
+  if(r){ r.sheet = value; }
+  uaaCloseAllMenus();
+  uaaRender();
+}
+function uaaRenderAssign(q){
+  const query = (q||'').trim().toLowerCase();
+  const row = UAA_SEED.find(function(x){ return x.id === uaaAssignTargetId; });
+  const assignedNames = new Set(row ? (row.users||[]) : []);
+  const list = UAA_PEOPLE.filter(function(p){
+    return !query || p.name.toLowerCase().includes(query) || (p.role||'').toLowerCase().includes(query);
+  });
+  const el = document.getElementById('uaa-assign-list');
+  if(!list.length){ el.innerHTML = '<div class="assign-list-empty">No people found</div>'; return; }
+  el.innerHTML = list.map(function(p){
+    const on = assignedNames.has(p.name);
+    return '<div class="assign-user" onclick="uaaAssignToggle(\'' + p.key + '\')">' +
+      '<div class="assign-user-av" style="background:' + p.color + ';">' + p.key + '</div>' +
+      '<div style="flex:1;"><div class="assign-user-name">' + uaaEsc(p.name) + '</div><div class="assign-user-role">' + uaaEsc(p.role||'') + '</div></div>' +
+      (on ? '<span style="color:var(--ac);font-size:14px;">&#10003;</span>' : '') +
+    '</div>';
+  }).join('');
+}
+function uaaOpenAssign(e, id){
+  e.stopPropagation();
+  uaaCloseAllMenus();
+  uaaAssignTargetId = id;
+  const popup = document.getElementById('uaa-assign-popup');
+  const input = document.getElementById('uaa-assign-search-input');
+  if(input) input.value = '';
+  uaaRenderAssign('');
+  popup.style.display = 'block';
+  popup.style.top = '-9999px';
+  popup.style.left = '0px';
+  const pr = popup.getBoundingClientRect();
+  const rect = e.currentTarget.getBoundingClientRect();
+  let top = rect.bottom + 4;
+  if(top + pr.height > window.innerHeight - 8){
+    const aboveTop = rect.top - pr.height - 4;
+    top = (aboveTop >= 8) ? aboveTop : Math.max(8, window.innerHeight - pr.height - 8);
+  }
+  let left = rect.left;
+  if(left + pr.width > window.innerWidth - 8) left = window.innerWidth - pr.width - 8;
+  if(left < 8) left = 8;
+  popup.style.top  = top  + 'px';
+  popup.style.left = left + 'px';
+}
+function uaaCloseAssign(){
+  document.getElementById('uaa-assign-popup').style.display = 'none';
+  uaaAssignTargetId = null;
+}
+function uaaAssignToggle(personKey){
+  const row = UAA_SEED.find(function(x){ return x.id === uaaAssignTargetId; });
+  const person = UAA_PEOPLE.find(function(p){ return p.key === personKey; });
+  if(!row || !person) return;
+  row.users = row.users || [];
+  const i = row.users.indexOf(person.name);
+  if(i >= 0) row.users.splice(i, 1); else row.users.push(person.name);
+  uaaRender();
+  uaaRenderAssign(document.getElementById('uaa-assign-search-input').value);
+}
+function uaaAssignUnassign(){
+  const row = UAA_SEED.find(function(x){ return x.id === uaaAssignTargetId; });
+  if(row) row.users = [];
+  uaaCloseAssign();
+  uaaRender();
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest || !e.target.closest('.uaa-sheet-cell')) uaaCloseAllMenus();
+  const ap = document.getElementById('uaa-assign-popup');
+  if(ap && ap.style.display === 'block'){
+    if(e.target.closest && e.target.closest('.uaa-assign-cell')) return;
+    const r = ap.getBoundingClientRect();
+    if(e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) return;
+    uaaCloseAssign();
+  }
+});
+window.addEventListener('scroll', function(e){
+  if(e.target && e.target.nodeType === 1 && e.target.closest && e.target.closest('#uaa-assign-popup')) return;
+  uaaCloseAllMenus();
+  uaaCloseAssign();
+  uaaHideTip();
+}, true);
+
+const uaaTip = document.createElement('div');
+uaaTip.className = 'uaa-tooltip';
+document.body.appendChild(uaaTip);
+function uaaShowTip(target){
+  const label = target.getAttribute('data-label');
+  if(!label) return;
+  uaaTip.textContent = label;
+  uaaTip.classList.add('show');
+  const r = target.getBoundingClientRect();
+  const tr = uaaTip.getBoundingClientRect();
+  let left = r.left + (r.width - tr.width) / 2;
+  let top  = r.top - tr.height - 6;
+  if(left < 6) left = 6;
+  if(left + tr.width > window.innerWidth - 6) left = window.innerWidth - tr.width - 6;
+  if(top < 6) top = r.bottom + 6;
+  uaaTip.style.left = left + 'px';
+  uaaTip.style.top  = top  + 'px';
+}
+function uaaHideTip(){ uaaTip.classList.remove('show'); }
+document.addEventListener('mouseover', function(e){
+  const av = e.target.closest && e.target.closest('.uaa-av[data-label]');
+  if(av) uaaShowTip(av);
+});
+document.addEventListener('mouseout', function(e){
+  const av = e.target.closest && e.target.closest('.uaa-av[data-label]');
+  if(av) uaaHideTip();
+});
+window.addEventListener('resize', uaaHideTip);
+window.addEventListener('resize', function(){ uaaCloseAllMenus(); uaaCloseAssign(); });
+uaaRender();
+</script>
+
+</body>
+</html>

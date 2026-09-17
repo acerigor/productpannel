@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auction — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.au-footer{display:flex;justify-content:flex-end;gap:10px;padding:12px 24px;border-top:0.5px solid var(--brd2);background:var(--bg);flex-shrink:0;}
+@media (max-width:640px){.au-footer{padding:10px 12px;}.set-page-head .tbtn-p span{display:none;}}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <button class="tbtn tbtn-p" onclick="auOpenAdd()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Add Auction</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:64px;text-align:center;">No.</th>
+                <th style="width:80px;text-align:center;">Status</th>
+                <th style="text-align:left;">Auction</th>
+              </tr>
+            </thead>
+            <tbody id="au-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="au-footer">
+    <button type="button" class="btn btn-secondary" onclick="location.href='settings.html'">Cancel</button>
+    <button type="button" class="btn btn-primary" onclick="auSave()">Save</button>
+  </div>
+</div>
+
+<div class="modal-backdrop modal-fullscreen-mobile" id="au-edit-modal" onclick="if(event.target===this)auCloseEdit()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="au-edit-title">Edit Auction</div>
+      <button class="modal-close" onclick="auCloseEdit()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label class="modal-field-label">Auction</label>
+        <div class="modal-field">
+          <input id="au-edit-name" placeholder="Auction name"/>
+        </div>
+      </div>
+      <div>
+        <label class="modal-field-label">Status</label>
+        <span class="us-yn-tog" id="au-edit-tog" onclick="this.classList.toggle('off')">
+          <span class="us-yn-tog-txt"></span>
+          <span class="us-yn-tog-knob"></span>
+        </span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" id="au-edit-delete" onclick="auDelete()" style="display:none;">Delete</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="auCloseEdit()">Cancel</button>
+      <button class="modal-save" onclick="auSaveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'settings', title: 'Auction' });
+
+var auData = [
+  { id:1,  active:true,  name:'Manheim' },
+  { id:2,  active:true,  name:'ADESA' },
+  { id:3,  active:false, name:'IAA' },
+  { id:4,  active:true,  name:'Copart' },
+  { id:5,  active:true,  name:'ACV Auctions' },
+  { id:6,  active:true,  name:'OVE (Openlane)' },
+  { id:7,  active:false, name:'SmartAuction' },
+  { id:8,  active:true,  name:'TradeRev' },
+  { id:9,  active:true,  name:'BacklotCars' },
+  { id:10, active:true,  name:'America\'s Auto Auction' },
+  { id:11, active:false, name:'Dealers Auto Auction' },
+  { id:12, active:true,  name:'ServNet' },
+  { id:13, active:true,  name:'Edge Pipeline' },
+  { id:14, active:false, name:'EBlock' },
+  { id:15, active:true,  name:'CarOffer' }
+];
+var auNextId = 16;
+var auEditingId = null;
+
+function auRender(){
+  var html = '';
+  for(var i = 0; i < auData.length; i++){
+    var r = auData[i];
+    var togClass = 'us-yn-tog' + (r.active ? '' : ' off');
+    html += '<tr onclick="auOpenEdit(' + r.id + ')" style="cursor:pointer;">' +
+      '<td style="text-align:center;">' + (i + 1) + '</td>' +
+      '<td style="text-align:center;"><span class="' + togClass + '" onclick="event.stopPropagation();auToggle(' + r.id + ')"><span class="us-yn-tog-txt"></span><span class="us-yn-tog-knob"></span></span></td>' +
+      '<td>' + auEsc(r.name) + '</td>' +
+    '</tr>';
+  }
+  document.getElementById('au-tbody').innerHTML = html;
+}
+
+function auEsc(s){ var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function auToggle(id){
+  var r = auData.find(function(x){ return x.id === id; });
+  if(r){ r.active = !r.active; auRender(); }
+}
+
+function auOpenEdit(id){
+  var r = auData.find(function(x){ return x.id === id; });
+  if(!r) return;
+  auEditingId = id;
+  document.getElementById('au-edit-title').textContent = 'Edit Auction';
+  document.getElementById('au-edit-name').value = r.name;
+  document.getElementById('au-edit-tog').classList.toggle('off', !r.active);
+  document.getElementById('au-edit-delete').style.display = '';
+  document.getElementById('au-edit-modal').classList.add('open');
+}
+
+function auCloseEdit(){
+  document.getElementById('au-edit-modal').classList.remove('open');
+  auEditingId = null;
+}
+
+function auSaveEdit(){
+  var name = document.getElementById('au-edit-name').value.trim();
+  var active = !document.getElementById('au-edit-tog').classList.contains('off');
+  if(!name){ window.showNavToast('Validation', 'Auction name is required.'); return; }
+  if(auEditingId !== null){
+    var r = auData.find(function(x){ return x.id === auEditingId; });
+    if(r){ r.name = name; r.active = active; }
+  } else {
+    auData.push({ id: auNextId++, active: active, name: name });
+  }
+  auRender();
+  window.showNavToast('Auction', 'Auction saved successfully.');
+  auCloseEdit();
+}
+
+function auDelete(){
+  auData = auData.filter(function(x){ return x.id !== auEditingId; });
+  auRender();
+  window.showNavToast('Auction', 'Auction deleted.');
+  auCloseEdit();
+}
+
+function auOpenAdd(){
+  auEditingId = null;
+  document.getElementById('au-edit-title').textContent = 'Add Auction';
+  document.getElementById('au-edit-name').value = '';
+  document.getElementById('au-edit-tog').classList.remove('off');
+  document.getElementById('au-edit-delete').style.display = 'none';
+  document.getElementById('au-edit-modal').classList.add('open');
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    var m = document.getElementById('au-edit-modal');
+    if(m && m.classList.contains('open')){ auCloseEdit(); }
+  }
+});
+
+function auSave(){
+  window.showNavToast('Auction', 'Auction saved successfully.');
+}
+
+auRender();
+</script>
+
+</body>
+</html>

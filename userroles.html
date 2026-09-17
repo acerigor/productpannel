@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Roles — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.ur-row{cursor:pointer;transition:background .12s;}
+.ur-row:hover td{background:var(--sur2);}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <div class="assign-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input id="ur-search" placeholder="Search roles…" oninput="urFilter(this.value)"/>
+    </div>
+    <button class="tbtn tbtn-p" onclick="urOpenAddModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Add Role</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0 0 24px;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left;padding-left:24px;">Roles</th>
+                <th style="width:220px;text-align:center;">Created date</th>
+              </tr>
+            </thead>
+            <tbody id="ur-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Add Role modal -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="ur-add-modal" onclick="if(event.target===this)urCloseAddModal()">
+  <div class="modal modal--xwide us-add-modal">
+    <div class="modal-header">
+      <button class="back-btn" onclick="urCloseAddModal()" aria-label="Back to Roles">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        Roles
+      </button>
+      <div class="modal-title" id="ur-add-modal-title" style="margin-left:12px;">Add Role</div>
+      <div class="sp"></div>
+      <button class="modal-close" onclick="urCloseAddModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body us-add-body">
+      <aside class="us-add-nav" id="ur-add-nav">
+        <div class="us-add-tab active" data-tab="general" onclick="urSwitchTab(this,'general')">General Information</div>
+        <div class="us-add-tab-group">
+          <div class="us-add-tab us-add-tab-parent" onclick="this.classList.toggle('open')">
+            Settings
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="us-add-sub">
+            <div class="us-add-tab us-add-subtab" data-tab="s-runlist" onclick="urSwitchTab(this,'s-runlist')">Runlist</div>
+            <div class="us-add-tab us-add-subtab" data-tab="s-purchase" onclick="urSwitchTab(this,'s-purchase')">Purchase</div>
+            <div class="us-add-tab us-add-subtab" data-tab="s-widgets" onclick="urSwitchTab(this,'s-widgets')">Dashboard Widgets</div>
+            <div class="us-add-tab us-add-subtab" data-tab="s-perm" onclick="urSwitchTab(this,'s-perm')">Page Permission</div>
+          </div>
+        </div>
+        <div class="us-add-tab" data-tab="runlist-perm" onclick="urSwitchTab(this,'runlist-perm')">Runlist Permission</div>
+        <div class="us-add-tab" data-tab="purchase-perm" onclick="urSwitchTab(this,'purchase-perm')">Purchase Permission</div>
+      </aside>
+      <div class="us-add-content">
+        <!-- General Information pane -->
+        <div class="us-add-pane active" data-pane="general">
+          <div class="us-add-section">
+            <h4 class="us-add-section-title">User Role</h4>
+            <div class="us-add-field">
+              <label>Name</label>
+              <input type="text" id="ur-add-name" placeholder="Enter role name" maxlength="60"/>
+            </div>
+          </div>
+        </div>
+        <!-- Settings > Runlist -->
+        <div class="us-add-pane" data-pane="s-runlist">
+          <div class="us-perm-header">
+            <h3 class="us-perm-title">Runlist</h3>
+            <div class="us-perm-toggle-row"><span>Access Has</span><span class="tog" id="ur-rl-access-has" onclick="this.classList.toggle('off')"></span></div>
+          </div>
+          <div class="us-perm-table-wrap"><table class="us-perm-table"><thead><tr><th class="us-perm-desc-col">Description</th><th colspan="3" class="us-perm-access-col">Access</th></tr></thead><tbody id="ur-rl-tbody"></tbody></table></div>
+        </div>
+        <!-- Settings > Purchase -->
+        <div class="us-add-pane" data-pane="s-purchase">
+          <div class="us-perm-header">
+            <h3 class="us-perm-title">Purchase</h3>
+            <div class="us-perm-toggle-row"><span>Access Has</span><span class="tog" id="ur-pu-access-has" onclick="this.classList.toggle('off')"></span></div>
+          </div>
+          <div class="us-perm-table-wrap"><table class="us-perm-table"><thead><tr><th class="us-perm-desc-col">Description</th><th colspan="3" class="us-perm-access-col">Access</th></tr></thead><tbody id="ur-pu-tbody"></tbody></table></div>
+        </div>
+        <!-- Settings > Dashboard Widgets -->
+        <div class="us-add-pane" data-pane="s-widgets">
+          <div class="us-perm-header">
+            <h3 class="us-perm-title">Dashboard Widgets</h3>
+            <div class="us-perm-toggle-row"><span>Access Has</span><span class="tog" id="ur-dw-access-has" onclick="this.classList.toggle('off')"></span></div>
+          </div>
+          <div class="us-perm-table-wrap"><table class="us-perm-table"><thead><tr><th class="us-perm-desc-col">Description</th><th class="us-perm-access-col" style="width:180px;">Access</th></tr></thead><tbody id="ur-dw-tbody"></tbody></table></div>
+        </div>
+        <!-- Settings > Page Permission -->
+        <div class="us-add-pane" data-pane="s-perm">
+          <div class="us-perm-header">
+            <h3 class="us-perm-title">Page Permission</h3>
+            <div class="us-perm-toggle-row"><span>Access Has</span><span class="tog" id="ur-pg-access-has" onclick="this.classList.toggle('off')"></span></div>
+          </div>
+          <div class="us-perm-table-wrap"><table class="us-perm-table"><thead><tr><th class="us-perm-desc-col">Page Name</th><th class="us-perm-access-col" style="width:180px;">Has Access</th></tr></thead><tbody id="ur-pg-tbody"></tbody></table></div>
+        </div>
+        <!-- Runlist Permission -->
+        <div class="us-add-pane" data-pane="runlist-perm">
+          <div class="us-perm-header">
+            <h3 class="us-perm-title">Runlist Columns</h3>
+            <div class="us-perm-toggle-row"><span>Access Has</span><span class="tog" id="ur-rp-access-has" onclick="this.classList.toggle('off')"></span></div>
+          </div>
+          <div class="us-perm-table-wrap"><table class="us-perm-table"><thead><tr><th class="us-perm-desc-col">Columns</th><th class="us-perm-access-col" style="width:180px;">Access</th></tr></thead><tbody id="ur-rp-tbody"></tbody></table></div>
+        </div>
+        <!-- Purchase Permission -->
+        <div class="us-add-pane" data-pane="purchase-perm">
+          <div class="us-perm-header">
+            <h3 class="us-perm-title">Purchase Columns</h3>
+            <div class="us-perm-toggle-row"><span>Access Has</span><span class="tog" id="ur-pp-access-has" onclick="this.classList.toggle('off')"></span></div>
+          </div>
+          <div class="us-perm-table-wrap"><table class="us-perm-table"><thead><tr><th class="us-perm-desc-col">Columns</th><th class="us-perm-access-col" style="width:180px;">Access</th></tr></thead><tbody id="ur-pp-tbody"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="sp"></div>
+      <button class="modal-save" onclick="urSubmitAddRole()">Submit</button>
+      <button class="modal-cancel" onclick="urCloseAddModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'settings', title: 'User Roles' });
+
+const UR_ROLES = [
+  { id:1, name:'Admin', created:'01/15/2026' },
+  { id:2, name:'Agent', created:'02/20/2026' },
+  { id:3, name:'User',  created:'03/10/2026' },
+];
+
+let urSearchQ = '';
+
+function urEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function urOpenEdit(id){
+  const r = UR_ROLES.find(function(x){ return x.id === id; });
+  if(!r) return;
+  urEditingRoleId = id;
+  document.getElementById('ur-add-modal-title').textContent = 'Edit Role';
+  document.getElementById('ur-add-name').value = r.name || '';
+  urResetPanes();
+  urApplyPermissions(r.permissions);
+  urSwitchTab(document.querySelector('#ur-add-nav .us-add-tab[data-tab="general"]'), 'general');
+  document.getElementById('ur-add-modal').classList.add('open');
+}
+
+function urApplyPermissions(perms){
+  if(!perms) return;
+  const sections = [
+    { key:'runlistSettings',  prefix:'ur-rl', togId:'ur-rl-access-has', kind:'radios', seed: UR_RL_PERMS },
+    { key:'purchaseSettings', prefix:'ur-pu', togId:'ur-pu-access-has', kind:'radios', seed: UR_PU_PERMS },
+    { key:'dashboardWidgets', prefix:'ur-dw', togId:'ur-dw-access-has', kind:'yn',     seed: UR_DW_PERMS },
+    { key:'pagePermission',   prefix:'ur-pg', togId:'ur-pg-access-has', kind:'yn',     seed: UR_PG_PERMS },
+    { key:'runlistColumns',   prefix:'ur-rp', togId:'ur-rp-access-has', kind:'yn',     seed: UR_RP_PERMS },
+    { key:'purchaseColumns',  prefix:'ur-pp', togId:'ur-pp-access-has', kind:'yn',     seed: UR_PP_PERMS },
+  ];
+  sections.forEach(function(s){
+    const section = perms[s.key]; if(!section) return;
+    const tog = document.getElementById(s.togId); if(tog) tog.classList.toggle('off', !section.accessHas);
+    if(s.kind === 'radios'){
+      s.seed.forEach(function(p){
+        const v = (section.items||{})[p.key]; if(!v) return;
+        const el = document.querySelector('input[name="' + s.prefix + '-' + p.key + '"][value="' + v + '"]');
+        if(el) el.checked = true;
+      });
+    } else {
+      s.seed.forEach(function(p){
+        const el = document.querySelector('.us-yn-tog[data-key="' + s.prefix + '-' + p.key + '"]');
+        if(!el) return;
+        const on = ((section.items||{})[p.key] !== undefined) ? section.items[p.key] : (p.on !== false);
+        el.classList.toggle('off', !on);
+        el.querySelector('.us-yn-tog-txt').textContent = on ? 'YES' : 'OFF';
+      });
+    }
+  });
+}
+
+function urFilter(q){ urSearchQ = q || ''; urRender(); }
+
+/* ── Add Role modal seed data ─────────────────────────────────────── */
+const UR_RL_PERMS = [
+  { key:'chat', label:'Chat', default:'edit' },
+  { key:'makeInactive', label:'Make InActive', default:'edit' },
+  { key:'reconCost', label:'Recon Cost', default:'edit' },
+  { key:'finalBid', label:'Final Bid', default:'edit' },
+  { key:'canPurchase', label:'Can Purchase', default:'edit' },
+  { key:'canViewReports', label:'Can View Reports', default:'edit' },
+  { key:'vehiclePartsEpicor', label:'Vehicle Parts Info by Epicor', default:'edit' },
+  { key:'addSheetToFavorites', label:'Add Sheet to favorites', default:'edit' },
+  { key:'renameSheet', label:'Rename Sheet', default:'edit' },
+  { key:'shareSheet', label:'Share Sheet', default:'edit' },
+  { key:'archiveSheet', label:'Archive Sheet', default:'edit' },
+  { key:'import', label:'Import', default:'edit' },
+  { key:'notifyOnAlertUpdate', label:'Notify On Alert Update', default:null },
+];
+const UR_PU_PERMS = [ { key:'chat', label:'Chat', default:'edit' } ];
+const UR_DW_PERMS = [
+  { key:'activeInventory', label:'Active Inventory', on:true},
+  { key:'assetValueChart', label:'Asset Value Chart', on:true},
+  { key:'assetSalesCycle', label:'Asset Sales Cycle', on:true},
+  { key:'salesChart', label:'Sales Chart', on:true},
+  { key:'purchaseRatio', label:'Purchase Ratio', on:true},
+  { key:'purchaseChart', label:'Purchase Chart', on:true},
+  { key:'highestSellingChart', label:'Highest Selling Chart', on:true},
+  { key:'salePerfByLocation', label:'Sale Performance By Location', on:true},
+  { key:'profitChart', label:'Profit Chart', on:true},
+  { key:'totalAsset', label:'Total Asset', on:true},
+  { key:'assetInAuction', label:'Asset In Auction', on:true},
+  { key:'assetsSold', label:'Assets Sold', on:true},
+  { key:'upcomingAuction', label:'Upcoming Auction', on:true},
+  { key:'purchaseSalesAssetChart', label:'Purchase/Sales Asset Chart', on:true},
+];
+const UR_PG_PERMS = [
+  { key:'alertSetting', label:'Alert Setting', on:false },
+  { key:'dashboard', label:'Dashboard', on:true },
+  { key:'purchase', label:'Purchase', on:true },
+  { key:'dataQueue', label:'Data Queue', on:true },
+  { key:'runlist', label:'Runlist', on:true },
+  { key:'setting', label:'Setting', on:true },
+  { key:'purchaseLocation', label:'Purchase Location', on:false },
+  { key:'sheetQueue', label:'Sheet Queue', on:true },
+  { key:'bidQueue', label:'Bid Queue', on:true },
+  { key:'auctionCredentials', label:'Auction Credentials', on:false },
+  { key:'auctionSeller', label:'Auction Seller', on:false },
+  { key:'itemFormula', label:'Damage Values', on:false },
+  { key:'vehicleScore', label:'Vehicle Score', on:false },
+  { key:'adjPricingKeyword', label:'Adjustment Value Rules', on:false },
+  { key:'comparisionMarketAmt', label:'Comparision Market Amount Setting', on:false },
+  { key:'setPagination', label:'Set Pagination', on:true },
+  { key:'flashMessage', label:'Flash Message', on:false },
+  { key:'smsFormat', label:'SMS Format', on:false },
+  { key:'notificationSetting', label:'Notification Setting', on:true },
+  { key:'googleSheets', label:'Google Sheets', on:false },
+];
+const UR_RP_PERMS = [
+  {key:'run',label:'Run'},{key:'vehicleName',label:'Vehicle Name'},{key:'finalBID',label:'Final BID'},{key:'status',label:'Status'},{key:'mmr',label:'MMR'},{key:'auctionFees',label:'Auction Fees'},{key:'bid',label:'BID'},{key:'carfax',label:'Carfax'},{key:'purchaseCheckboxOption',label:'Purchase Checkbox Option'},{key:'reconCost',label:'Recon Cost'},{key:'pctOfMarket',label:'% of Market'},{key:'vrank',label:'VRank'},{key:'priceRank',label:'PriceRank'},{key:'autoCheck',label:'AutoCheck'},{key:'shippingCost',label:'Shipping Cost'},{key:'mds',label:'MDS'},{key:'alertSettings',label:'Alert Settings'},{key:'more',label:'More'},{key:'storeName',label:'StoreName'},{key:'saleDate',label:'Sale Date'},{key:'jdPowerLoan',label:'JDPowerLoan'},{key:'jdPowerRetail',label:'JDPowerRetail'},{key:'kbbFairPurchasePrice',label:'KBBFairPurchasePrice'},{key:'kbbTradeIn',label:'KBBTradeIn'},{key:'kbbPrivateParty',label:'KBBPrivateParty'},{key:'kbbLending',label:'KBBLending'},{key:'kbbTypicalListingPrice',label:'KBBTypicalListingPrice'},{key:'kbbAuction',label:'KBBAuction'},{key:'carfaxRetailValue',label:'CarfaxRetailValue'},{key:'sellerInfo',label:'SellerInfo'},{key:'location',label:'Location'},{key:'jdPowerCleanTradeIn',label:'JDPowerCleanTradeIn'},{key:'jdPowerAvgTradeIn',label:'JDPowerAvgTradeIn'},{key:'jdPowerRoughTradeIn',label:'JDPowerRoughTradeIn'},{key:'exteriorColor',label:'ExteriorColor'},{key:'sellerComments',label:'SellerComments'},{key:'lightStatus',label:'LightStatus'},{key:'engine',label:'Engine'},{key:'trim',label:'Trim'},{key:'lastOwnerOwnershipDays',label:'LastOwnerOwnershipDays'},{key:'keyAvailability',label:'KeyAvailability'},{key:'startCode',label:'StartCode'},{key:'vehicleNotes',label:'VehicleNotes'},{key:'aisleStall',label:'Aisle/Stall'},{key:'actualCashValue',label:'Actual Cash Value'},{key:'estimatedRepairCost',label:'Estimated Repair Cost'},{key:'sellerType',label:'Seller Type'},{key:'titleSaleDocNotes',label:'Title/Sale Doc Notes'},{key:'titleSaleDoc',label:'Title/Sale Doc'},{key:'mileageGap',label:'MileageGap'},{key:'lastAuctionSale',label:'LastAuctionSale'},{key:'cylindersize',label:'Cylindersize'},{key:'openingPrice',label:'OpeningPrice'},{key:'serviceFee',label:'ServiceFee'},{key:'buyNowPrice',label:'BuyNowPrice'},{key:'saStatus',label:'SAStatus'},{key:'myComments',label:'MyComments'},{key:'msrp',label:'MSRP'},{key:'type',label:'Type'},{key:'distance',label:'Distance'},{key:'titleState',label:'TitleState'},{key:'interior',label:'Interior'},{key:'startDateTime',label:'StartDateTime'},
+];
+const UR_PP_PERMS = [
+  {key:'vin',label:'VIN'},{key:'year',label:'Year'},{key:'make',label:'Make'},{key:'model',label:'Model'},{key:'buyer',label:'Buyer'},{key:'vehicleLot',label:'Vehicle Lot'},{key:'trim',label:'Trim'},{key:'finalBid',label:'Final Bid'},{key:'acquiredPrice',label:'Acquired Price'},{key:'acquiredName',label:'Acquired Name'},{key:'exteriorColor',label:'Exterior Color'},{key:'acquiredMileage',label:'Acquired Mileage'},{key:'purchasedDate',label:'Purchased Date'},{key:'pctOfMarket',label:'% of Market'},{key:'vrank',label:'VRank'},{key:'priceRank',label:'PriceRank'},{key:'mmr',label:'MMR'},{key:'mds',label:'MDS'},{key:'carfax',label:'Carfax'},{key:'autoCheck',label:'AutoCheck'},{key:'announcements',label:'Announcements'},{key:'chat',label:'Chat'},{key:'vehicleName',label:'Vehicle Name'},{key:'jdPowerLoan',label:'JDPowerLoan'},{key:'jdPowerRetail',label:'JDPowerRetail'},{key:'jdPowerCleanTradeIn',label:'JDPowerCleanTradeIn'},{key:'jdPowerAvgTradeIn',label:'JDPowerAvgTradeIn'},{key:'jdPowerRoughTradeIn',label:'JDPowerRoughTradeIn'},{key:'kbbFairPurchasePrice',label:'KBBFairPurchasePrice'},{key:'kbbTradeIn',label:'KBBTradeIn'},{key:'kbbPrivateParty',label:'KBBPrivateParty'},{key:'kbbLending',label:'KBBLending'},{key:'kbbTypicalListingPrice',label:'KBBTypicalListingPrice'},{key:'kbbAuction',label:'KBBAuction'},{key:'carfaxRetailValue',label:'CarfaxRetailValue'},{key:'sellerInfo',label:'SellerInfo'},{key:'sellerComments',label:'SellerComments'},{key:'lightStatus',label:'LightStatus'},{key:'lastOwnerOwnershipDays',label:'LastOwnerOwnershipDays'},{key:'mileageGap',label:'MileageGap'},{key:'lastAuctionSale',label:'LastAuctionSale'},
+];
+
+/* ── Row templates ────────────────────────────────────────────────── */
+function urRadioRow(prefix, p, opts, defaultVal){
+  const n = prefix + '-' + p.key;
+  const def = p.default !== undefined ? p.default : (defaultVal || null);
+  return '<tr>' +
+    '<td class="us-perm-desc-cell">' + urEsc(p.label) + '</td>' +
+    opts.map(function(o){
+      const checked = def === o.v ? ' checked' : '';
+      return '<td class="us-perm-opt-cell"><label class="us-perm-opt"><input type="radio" name="' + n + '" value="' + o.v + '"' + checked + '/><span class="us-perm-box"></span>' + o.label + '</label></td>';
+    }).join('') +
+  '</tr>';
+}
+const UR_3OPTS = [{v:'noAccess',label:'No Access'},{v:'view',label:'View'},{v:'edit',label:'Edit'}];
+const UR_2OPTS_VIEW = [{v:'noAccess',label:'No Access'},{v:'view',label:'View'}];
+const UR_2OPTS_ACCESS = [{v:'noAccess',label:'No Access'},{v:'access',label:'Access'}];
+
+function urRlRender(){ const t=document.getElementById('ur-rl-tbody'); if(t) t.innerHTML = UR_RL_PERMS.map(function(p){ return urRadioRow('ur-rl', p, UR_3OPTS); }).join(''); }
+function urPuRender(){ const t=document.getElementById('ur-pu-tbody'); if(t) t.innerHTML = UR_PU_PERMS.map(function(p){ return urRadioRow('ur-pu', p, UR_3OPTS); }).join(''); }
+function urDwRender(){
+  const t=document.getElementById('ur-dw-tbody'); if(!t) return;
+  t.innerHTML = UR_DW_PERMS.map(function(p){
+    const cls = p.on ? 'us-yn-tog' : 'us-yn-tog off';
+    const txt = p.on ? 'YES' : 'OFF';
+    return '<tr>' +
+      '<td class="us-perm-desc-cell">' + urEsc(p.label) + '</td>' +
+      '<td class="us-perm-opt-cell" style="width:180px;">' +
+        '<span class="' + cls + '" data-key="ur-dw-' + p.key + '" onclick="urToggleYn(this)"><span class="us-yn-tog-txt">' + txt + '</span></span>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+function urYnRow(prefix, p){
+  const on = p.on !== false;
+  const cls = on ? 'us-yn-tog' : 'us-yn-tog off';
+  const txt = on ? 'YES' : 'OFF';
+  return '<tr>' +
+    '<td class="us-perm-desc-cell">' + urEsc(p.label) + '</td>' +
+    '<td class="us-perm-opt-cell" style="width:180px;">' +
+      '<span class="' + cls + '" data-key="' + prefix + '-' + p.key + '" onclick="urToggleYn(this)"><span class="us-yn-tog-txt">' + txt + '</span></span>' +
+    '</td>' +
+  '</tr>';
+}
+function urRpRender(){ const t=document.getElementById('ur-rp-tbody'); if(t) t.innerHTML = UR_RP_PERMS.map(function(p){ return urYnRow('ur-rp', p); }).join(''); }
+function urPpRender(){ const t=document.getElementById('ur-pp-tbody'); if(t) t.innerHTML = UR_PP_PERMS.map(function(p){ return urYnRow('ur-pp', p); }).join(''); }
+function urPgRender(){
+  const t=document.getElementById('ur-pg-tbody'); if(!t) return;
+  t.innerHTML = UR_PG_PERMS.map(function(p){
+    const cls = p.on ? 'us-yn-tog' : 'us-yn-tog off';
+    const txt = p.on ? 'YES' : 'OFF';
+    return '<tr>' +
+      '<td class="us-perm-desc-cell">' + urEsc(p.label) + '</td>' +
+      '<td class="us-perm-opt-cell" style="width:180px;">' +
+        '<span class="' + cls + '" data-key="ur-pg-' + p.key + '" onclick="urToggleYn(this)"><span class="us-yn-tog-txt">' + txt + '</span></span>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+function urToggleYn(el){
+  el.classList.toggle('off');
+  el.querySelector('.us-yn-tog-txt').textContent = el.classList.contains('off') ? 'OFF' : 'YES';
+}
+
+/* ── Handlers ─────────────────────────────────────────────────────── */
+let urEditingRoleId = null;
+
+function urResetPanes(){
+  ['ur-rl','ur-pu','ur-dw','ur-pg','ur-rp','ur-pp'].forEach(function(prefix){
+    const t = document.getElementById(prefix + '-access-has');
+    if(t) t.classList.remove('off');
+  });
+  urRlRender(); urPuRender(); urDwRender(); urPgRender(); urRpRender(); urPpRender();
+}
+
+function urOpenAddModal(){
+  urEditingRoleId = null;
+  document.getElementById('ur-add-modal-title').textContent = 'Add Role';
+  document.getElementById('ur-add-name').value = '';
+  urResetPanes();
+  urSwitchTab(document.querySelector('#ur-add-nav .us-add-tab[data-tab="general"]'), 'general');
+  document.getElementById('ur-add-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('ur-add-name').focus(); }, 30);
+}
+function urCloseAddModal(){ document.getElementById('ur-add-modal').classList.remove('open'); }
+function urSwitchTab(el, key){
+  document.querySelectorAll('#ur-add-nav .us-add-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.tab === key); });
+  document.querySelectorAll('#ur-add-modal .us-add-pane').forEach(function(p){ p.classList.toggle('active', p.dataset.pane === key); });
+}
+
+function urCollectPermissions(){
+  function readRadios(prefix, perms){
+    const out = {};
+    perms.forEach(function(p){
+      const el = document.querySelector('input[name="' + prefix + '-' + p.key + '"]:checked');
+      out[p.key] = el ? el.value : null;
+    });
+    return out;
+  }
+  function readYnTogs(prefix, perms){
+    const out = {};
+    perms.forEach(function(p){
+      const el = document.querySelector('.us-yn-tog[data-key="' + prefix + '-' + p.key + '"]');
+      out[p.key] = el ? !el.classList.contains('off') : p.on;
+    });
+    return out;
+  }
+  function accessHas(id){ return !document.getElementById(id).classList.contains('off'); }
+  return {
+    runlistSettings:   { accessHas: accessHas('ur-rl-access-has'), items: readRadios('ur-rl', UR_RL_PERMS) },
+    purchaseSettings:  { accessHas: accessHas('ur-pu-access-has'), items: readRadios('ur-pu', UR_PU_PERMS) },
+    dashboardWidgets:  { accessHas: accessHas('ur-dw-access-has'), items: readYnTogs('ur-dw', UR_DW_PERMS) },
+    pagePermission:    { accessHas: accessHas('ur-pg-access-has'), items: readYnTogs('ur-pg', UR_PG_PERMS) },
+    runlistColumns:    { accessHas: accessHas('ur-rp-access-has'), items: readYnTogs('ur-rp', UR_RP_PERMS) },
+    purchaseColumns:   { accessHas: accessHas('ur-pp-access-has'), items: readYnTogs('ur-pp', UR_PP_PERMS) },
+  };
+}
+
+function urSubmitAddRole(){
+  const name = document.getElementById('ur-add-name').value.trim();
+  if(!name){ window.showNavToast('Name required', 'Enter a role name.'); document.getElementById('ur-add-name').focus(); return; }
+  const perms = urCollectPermissions();
+  if(urEditingRoleId != null){
+    const r = UR_ROLES.find(function(x){ return x.id === urEditingRoleId; });
+    if(r){ r.name = name; r.permissions = perms; }
+    urRender();
+    urCloseAddModal();
+    window.showNavToast('Role updated', name + ' saved.');
+  } else {
+    const nextId = UR_ROLES.reduce(function(m,r){ return Math.max(m, r.id || 0); }, 0) + 1;
+    const today = new Date();
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const dd = String(today.getDate()).padStart(2,'0');
+    const yy = today.getFullYear();
+    UR_ROLES.push({ id: nextId, name: name, created: mm + '/' + dd + '/' + yy, permissions: perms });
+    urRender();
+    urCloseAddModal();
+    window.showNavToast('Role created', name + ' added to the list.');
+  }
+}
+
+function urRender(){
+  const q = urSearchQ.trim().toLowerCase();
+  const visible = UR_ROLES.filter(function(r){ return !q || r.name.toLowerCase().includes(q); });
+  document.getElementById('ur-tbody').innerHTML = visible.length
+    ? visible.map(function(r){
+        return '<tr class="ur-row" onclick="urOpenEdit(' + r.id + ')">' +
+          '<td style="text-align:left;padding-left:24px;"><a class="us-user-link" href="javascript:void(0)">' + urEsc(r.name) + '</a></td>' +
+          '<td style="text-align:center;">' + urEsc(r.created) + '</td>' +
+        '</tr>';
+      }).join('')
+    : '<tr><td colspan="2" style="text-align:center;padding:32px;color:var(--mu);font-style:italic;">No roles match &ldquo;' + urEsc(urSearchQ) + '&rdquo;.</td></tr>';
+}
+
+urRender();
+</script>
+
+</body>
+</html>

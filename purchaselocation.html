@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purchase Location — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.pl-list{padding:0;}
+@media (max-width:640px){
+  #pl-add-label{display:none;}
+  .set-scroll{padding:12px;}
+  .pl-card{flex-direction:column;align-items:flex-start;gap:8px;padding:14px 16px;}
+  .pl-card-meta{flex-wrap:wrap;}
+}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <div class="assign-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input id="pl-search" placeholder="Search locations…" oninput="plFilter(this.value)"/>
+    </div>
+    <div class="sp"></div>
+    <button class="tbtn tbtn-p" onclick="plOpenAddModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span id="pl-add-label">Add Location</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="pl-list" id="pl-list"></div>
+    </section>
+  </div>
+</div>
+
+<!-- Add / Edit Location modal -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="pl-modal" onclick="if(event.target===this)plCloseModal()">
+  <div class="modal modal--wide">
+    <div class="modal-header">
+      <div class="modal-title" id="pl-modal-title">Add Location</div>
+      <button class="modal-close" onclick="plCloseModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <input id="pl-name" type="text" placeholder="Name (e.g. Copart – Los Angeles)" maxlength="80"/>
+      </div>
+      <div class="modal-field">
+        <input id="pl-zipcode" type="text" placeholder="Zipcode" maxlength="10" inputmode="numeric"/>
+      </div>
+      <div class="modal-field">
+        <input id="pl-lotid" type="text" placeholder="Lot ID" maxlength="40"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" id="pl-delete-btn" onclick="plDelete()" style="display:none;">Delete</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="plCloseModal()">Cancel</button>
+      <button class="modal-save" onclick="plSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'purchase location', title: 'Purchase Location' });
+
+/* ── Purchase Location list + Add/Edit modal ─────────────────────── */
+const PL_STORAGE_KEY = 'buysmart:pl:locations';
+
+const PL_SEED_LOCATIONS = [
+  { id: 1, name: 'Manheim – Dallas',                 zipcode: '75042', lotId: 'MDAL-01' },
+  { id: 2, name: 'ADESA – Boston',                   zipcode: '01864', lotId: 'ADBO-14' },
+  { id: 3, name: 'Copart – Los Angeles',             zipcode: '90210', lotId: 'CLAX-07' },
+  { id: 4, name: 'USA Direct Auto – Houston',        zipcode: '77076', lotId: 'UDA-HOU-03' },
+  { id: 5, name: 'Insurance Auto Auctions – Miami',  zipcode: '33172', lotId: 'IAA-MIA-22' },
+];
+
+let PL_LOCATIONS = [];
+let PL_COUNTER = 0;
+let plEditingId = null;
+let plSearchQ = '';
+
+function plEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function plLoad(){
+  try{
+    const raw = localStorage.getItem(PL_STORAGE_KEY);
+    if(raw){
+      const data = JSON.parse(raw);
+      if(data && Array.isArray(data.locations)){
+        PL_LOCATIONS = data.locations;
+        PL_COUNTER   = data.counter || PL_LOCATIONS.reduce(function(m,l){ return Math.max(m, l.id); }, 0);
+        return;
+      }
+    }
+  }catch(e){}
+  PL_LOCATIONS = PL_SEED_LOCATIONS.map(function(l){ return JSON.parse(JSON.stringify(l)); });
+  PL_COUNTER   = PL_LOCATIONS.reduce(function(m,l){ return Math.max(m, l.id); }, 0);
+  plSaveStorage();
+}
+function plSaveStorage(){
+  try{ localStorage.setItem(PL_STORAGE_KEY, JSON.stringify({locations:PL_LOCATIONS, counter:PL_COUNTER})); }catch(e){}
+}
+
+function plRenderList(){
+  const wrap = document.getElementById('pl-list');
+  const q = plSearchQ.trim().toLowerCase();
+  const visible = PL_LOCATIONS.filter(function(l){
+    if(!q) return true;
+    return (l.name || '').toLowerCase().includes(q) ||
+           (l.zipcode || '').toLowerCase().includes(q) ||
+           (l.lotId || '').toLowerCase().includes(q);
+  });
+  if(!visible.length){
+    wrap.innerHTML = '<div class="pl-empty">' + (PL_LOCATIONS.length ? 'No locations match “' + plEsc(plSearchQ) + '”.' : 'No locations yet. Click Add Location to add one.') + '</div>';
+    return;
+  }
+  wrap.innerHTML = visible.map(function(l){
+    const badges = [];
+    if(l.zipcode) badges.push('<span class="pl-card-badge">Zipcode ' + plEsc(l.zipcode) + '</span>');
+    if(l.lotId)   badges.push('<span class="pl-card-badge">Lot ' + plEsc(l.lotId) + '</span>');
+    return '<div class="pl-card" onclick="plOpenEdit(' + l.id + ')">' +
+      '<div class="pl-card-name">' + plEsc(l.name) + '</div>' +
+      '<div class="pl-card-meta">' + badges.join('') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function plFilter(q){ plSearchQ = q || ''; plRenderList(); }
+
+function plOpenAddModal(){
+  plEditingId = null;
+  document.getElementById('pl-modal-title').textContent = 'Add Location';
+  document.getElementById('pl-delete-btn').style.display = 'none';
+  document.getElementById('pl-name').value = '';
+  document.getElementById('pl-zipcode').value = '';
+  document.getElementById('pl-lotid').value = '';
+  document.getElementById('pl-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('pl-name').focus(); }, 30);
+}
+
+function plOpenEdit(id){
+  const l = PL_LOCATIONS.find(function(x){ return x.id === id; });
+  if(!l) return;
+  plEditingId = id;
+  document.getElementById('pl-modal-title').textContent = 'Edit Location';
+  document.getElementById('pl-delete-btn').style.display = '';
+  document.getElementById('pl-name').value = l.name || '';
+  document.getElementById('pl-zipcode').value = l.zipcode || '';
+  document.getElementById('pl-lotid').value = l.lotId || '';
+  document.getElementById('pl-modal').classList.add('open');
+}
+
+function plDelete(){
+  if(plEditingId == null) return;
+  const l = PL_LOCATIONS.find(function(x){ return x.id === plEditingId; });
+  if(!l) return;
+  if(!window.confirm('Delete "' + l.name + '"? This cannot be undone.')) return;
+  const idx = PL_LOCATIONS.indexOf(l);
+  PL_LOCATIONS.splice(idx, 1);
+  plSaveStorage();
+  plRenderList();
+  plCloseModal();
+  window.showNavToast('Location deleted', '"' + l.name + '" removed.');
+}
+
+function plCloseModal(){
+  document.getElementById('pl-modal').classList.remove('open');
+  plEditingId = null;
+}
+
+function plSave(){
+  const data = {
+    name: document.getElementById('pl-name').value.trim(),
+    zipcode: document.getElementById('pl-zipcode').value.trim(),
+    lotId: document.getElementById('pl-lotid').value.trim(),
+  };
+  if(!data.name){
+    window.showNavToast('Name required', 'Give this location a name before saving.');
+    document.getElementById('pl-name').focus();
+    return;
+  }
+  if(plEditingId != null){
+    const l = PL_LOCATIONS.find(function(x){ return x.id === plEditingId; });
+    if(l) Object.assign(l, data);
+  } else {
+    PL_COUNTER += 1;
+    PL_LOCATIONS.push(Object.assign({id: PL_COUNTER}, data));
+  }
+  plSaveStorage();
+  plRenderList();
+  plCloseModal();
+  window.showNavToast('Location saved', '"' + data.name + '" is active.');
+}
+
+plLoad();
+plRenderList();
+</script>
+
+</body>
+</html>

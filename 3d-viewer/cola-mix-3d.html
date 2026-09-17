@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bites by Sweden — Cola Mix 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Archivo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#faf7f5;
+    font-family:'Archivo', system-ui, sans-serif;
+    overflow:hidden;
+  }
+  #stage { width:100vw; height:100vh; position:relative; cursor:grab; }
+  #stage.dragging { cursor:grabbing; }
+  canvas { display:block; }
+
+  #loading {
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; letter-spacing:.14em; text-transform:uppercase;
+    color:#c8a0ac; background:#faf7f5; z-index:20;
+    transition:opacity .5s;
+  }
+  #loading.hidden { opacity:0; pointer-events:none; }
+
+  #ui {
+    position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; z-index:10;
+    background:rgba(255,255,255,.82);
+    backdrop-filter:blur(12px);
+    padding:6px; border-radius:100px;
+    box-shadow:0 4px 24px rgba(180,60,90,.13);
+  }
+  #ui button {
+    padding:9px 18px; border:none; border-radius:100px;
+    background:transparent; color:#8a5c68;
+    font-family:inherit; font-size:12px; font-weight:600;
+    letter-spacing:.06em; text-transform:uppercase;
+    cursor:pointer; transition:all .18s; white-space:nowrap;
+  }
+  #ui button:hover { background:rgba(232,60,90,.09); color:#e0384f; }
+  #ui button.on { background:#e0384f; color:#fff; }
+
+  #hint {
+    position:absolute; top:32px; left:50%; transform:translateX(-50%);
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:#c8a0ac; z-index:10; transition:opacity .6s;
+  }
+  #hint.hidden { opacity:0; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="loading">Preparing model</div>
+  <div id="hint">Drag to rotate · Scroll to zoom</div>
+  <div id="ui">
+    <button id="b-spin" class="on">Turntable</button>
+    <button id="b-flex" class="on">Flex</button>
+    <button id="b-pour">Pour</button>
+    <button id="b-reset">Reset</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+/* ══════════════════════════════════════════════════════════════
+   MEASURED FROM REFERENCE VIEWS
+   Front/back give artwork + width:height.
+   Left/right side views give the depth silhouette — the only
+   place that information exists. Values below are read off them.
+   ══════════════════════════════════════════════════════════════ */
+const BAG = {
+  width:        1.62,   // front view
+  bodyHeight:   1.94,   // seal-to-seal, excluding fins
+  depthRatio:   0.225,  // MEASURED: side profile vs front width
+  finHeight:    0.115,  // pointed tab beyond body, top & bottom
+  finTipInset:  0.055,  // how far the tab narrows to its point
+  // Lens-profile exponents, fitted to the side-view silhouette.
+  // p high + q low  => fuller mid-section, sharper end points.
+  heightP: 2.55, heightQ: 0.60,
+  widthP:  2.00, widthQ:  0.58,
+};
+BAG.maxDepth = BAG.width * BAG.depthRatio * 0.5; // per face
+
+const INK = {
+  pink:      '#E3405F',
+  pinkDeep:  '#C92C4B',
+  pinkDark:  '#A81F3C',
+  maroon:    '#7C1230',
+  cream:     '#F6EFDF',
+  caramel:   '#C98A2E',
+  cola:      '#6B3A15',
+  colaDark:  '#40200A',
+};
+
+/* ─────────────────────────  PROFILE FUNCTIONS  ───────────────────────── */
+// Superellipse falloff. Reduces to an ellipse at p=2,q=0.5; raising p and
+// lowering q fattens the middle while keeping the ends pointed — which is
+// what the side photographs actually show.
+function falloff(u, p, q) {
+  const a = Math.min(1, Math.abs(u));
+  return Math.pow(Math.max(0, 1 - Math.pow(a, p)), q);
+}
+const heightProfile = t => falloff(2 * t - 1, BAG.heightP, BAG.heightQ);
+const widthProfile  = s => falloff(s,         BAG.widthP,  BAG.widthQ);
+
+// Slight inward taper toward the seals, read off the front view.
+function widthTaper(t) {
+  const edge = 0.09;
+  if (t < edge)     return 0.90 + 0.10 * (t / edge);
+  if (t > 1 - edge) return 0.90 + 0.10 * ((1 - t) / edge);
+  return 1;
+}
+
+/* ─────────────────────────  TEXTURE HELPERS  ───────────────────────── */
+function roundRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y,     x + w, y + h, r);
+  c.arcTo(x + w, y + h, x,     y + h, r);
+  c.arcTo(x,     y + h, x,     y,     r);
+  c.arcTo(x,     y,     x + w, y,     r);
+  c.closePath();
+}
+
+function wrap(c, text, x, y, maxW, lh) {
+  const words = text.split(' ');
+  let line = '', cy = y;
+  for (const w of words) {
+    const test = line + w + ' ';
+    if (c.measureText(test).width > maxW && line) {
+      c.fillText(line.trim(), x, cy);
+      line = w + ' ';
+      cy += lh;
+    } else line = test;
+  }
+  if (line.trim()) c.fillText(line.trim(), x, cy);
+  return cy;
+}
+
+// Sugar/sanding-sugar speckle — every candy on this bag is sugar-coated,
+// and without it they read as plastic.
+function sugar(c, x, y, w, h, n, alpha) {
+  for (let i = 0; i < n; i++) {
+    const a = alpha * (0.35 + Math.random() * 0.65);
+    c.fillStyle = `rgba(255,255,255,${a})`;
+    const s = 0.8 + Math.random() * 1.9;
+    c.fillRect(x + Math.random() * w, y + Math.random() * h, s, s);
+  }
+}
+
+// Horizontal ribbing of the crimped seal band.
+function crimpBand(c, y, h, W) {
+  const g = c.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0,   INK.pinkDeep);
+  g.addColorStop(0.5, INK.pink);
+  g.addColorStop(1,   INK.pinkDeep);
+  c.fillStyle = g;
+  c.fillRect(0, y, W, h);
+  for (let i = 0; i * 9 < h; i++) {
+    c.fillStyle = i % 2 ? 'rgba(0,0,0,.10)' : 'rgba(255,255,255,.09)';
+    c.fillRect(0, y + i * 9, W, 4.5);
+  }
+}
+
+/* ─────────────────────────  CANDY ARTWORK  ───────────────────────── */
+function colaBottle(c, cx, cy, scale, rot) {
+  c.save();
+  c.translate(cx, cy); c.rotate(rot); c.scale(scale, scale);
+  const g = c.createLinearGradient(-30, -95, 30, 95);
+  g.addColorStop(0,    '#F2E4C8');
+  g.addColorStop(0.34, '#D9A55C');
+  g.addColorStop(0.62, '#8A4A1C');
+  g.addColorStop(1,    INK.colaDark);
+  c.fillStyle = g;
+  c.beginPath();
+  c.moveTo(-11, -95); c.lineTo(11, -95);
+  c.lineTo(13, -68);
+  c.quadraticCurveTo(30, -52, 31, -28);
+  c.lineTo(33, 68);
+  c.quadraticCurveTo(33, 92, 12, 92);
+  c.lineTo(-12, 92);
+  c.quadraticCurveTo(-33, 92, -33, 68);
+  c.lineTo(-31, -28);
+  c.quadraticCurveTo(-30, -52, -13, -68);
+  c.closePath();
+  c.fill();
+  c.save(); c.clip(); sugar(c, -34, -96, 68, 190, 190, 0.72); c.restore();
+  c.strokeStyle = 'rgba(255,255,255,.30)'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(-20, -40); c.lineTo(-22, 60); c.stroke();
+  c.restore();
+}
+
+function skull(c, cx, cy, scale, rot) {
+  c.save();
+  c.translate(cx, cy); c.rotate(rot); c.scale(scale, scale);
+  const g = c.createRadialGradient(-18, -30, 8, 0, 0, 80);
+  g.addColorStop(0, '#FFFDF6');
+  g.addColorStop(1, '#E3D6B4');
+  c.fillStyle = g;
+  c.beginPath();
+  c.moveTo(-52, -14);
+  c.quadraticCurveTo(-54, -66, 0, -68);
+  c.quadraticCurveTo(54, -66, 52, -14);
+  c.quadraticCurveTo(50, 12, 30, 20);
+  c.lineTo(28, 50);
+  c.quadraticCurveTo(28, 62, 14, 62);
+  c.lineTo(-14, 62);
+  c.quadraticCurveTo(-28, 62, -28, 50);
+  c.lineTo(-30, 20);
+  c.quadraticCurveTo(-50, 12, -52, -14);
+  c.closePath();
+  c.fill();
+  // Sockets and nasal cavity are pressed into the mould — shade, not paint.
+  c.fillStyle = 'rgba(150,120,70,.52)';
+  c.beginPath(); c.ellipse(-21, -22, 14, 16, -0.12, 0, 7); c.fill();
+  c.beginPath(); c.ellipse( 21, -22, 14, 16,  0.12, 0, 7); c.fill();
+  c.beginPath();
+  c.moveTo(0, 2); c.lineTo(8, 20); c.lineTo(-8, 20);
+  c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(150,120,70,.40)'; c.lineWidth = 2.5;
+  for (let i = -2; i <= 2; i++) {
+    c.beginPath(); c.moveTo(i * 11, 34); c.lineTo(i * 11, 56); c.stroke();
+  }
+  c.save(); c.clip(); sugar(c, -56, -70, 112, 134, 240, 0.85); c.restore();
+  c.restore();
+}
+
+function ring(c, cx, cy, scale, hue) {
+  c.save();
+  c.translate(cx, cy); c.scale(scale, scale);
+  c.strokeStyle = hue; c.lineWidth = 17;
+  c.beginPath(); c.arc(0, 0, 27, 0, 7); c.stroke();
+  c.save();
+  c.beginPath(); c.arc(0, 0, 36, 0, 7); c.arc(0, 0, 18, 0, 7, true);
+  c.clip(); sugar(c, -38, -38, 76, 76, 130, 0.80);
+  c.restore();
+  c.restore();
+}
+
+function twist(c, cx, cy, scale, rot) {
+  c.save();
+  c.translate(cx, cy); c.rotate(rot); c.scale(scale, scale);
+  c.strokeStyle = '#5E3210'; c.lineWidth = 13; c.lineCap = 'round';
+  c.beginPath();
+  for (let i = 0; i <= 26; i++) {
+    const t = i / 26;
+    const x = -34 + t * 68;
+    const y = Math.sin(t * Math.PI * 3.1) * 13;
+    i ? c.lineTo(x, y) : c.moveTo(x, y);
+  }
+  c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.20)'; c.lineWidth = 4;
+  c.stroke();
+  c.restore();
+}
+
+/* ─────────────────────────  FRONT PANEL  ───────────────────────── */
+function frontTexture() {
+  const S = 1024, cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  const c = cv.getContext('2d');
+
+  const g = c.createLinearGradient(0, 0, S * 0.3, S);
+  g.addColorStop(0,    '#EA4A68');
+  g.addColorStop(0.45, INK.pink);
+  g.addColorStop(1,    INK.pinkDeep);
+  c.fillStyle = g;
+  c.fillRect(0, 0, S, S);
+
+  crimpBand(c, 0, 62, S);
+  crimpBand(c, S - 62, 62, S);
+
+  c.textAlign = 'left';
+
+  /* Swedish flag + SWEDISH CANDY */
+  c.fillStyle = '#0C5CA8'; c.fillRect(74, 108, 58, 37);
+  c.fillStyle = '#FFCC00';
+  c.fillRect(92, 108, 11, 37);
+  c.fillRect(74, 121, 58, 10);
+  c.fillStyle = '#fff';
+  c.font = '800 17px Archivo, sans-serif';
+  c.letterSpacing = '1px';
+  c.fillText('SWEDISH', 146, 122);
+  c.fillText('CANDY',   146, 142);
+  c.letterSpacing = '0px';
+
+  /* NO-claims, three cells split by hairlines */
+  const claims = [['NO', 'RED-40'], ['NO TRANS', 'FATS'], ['NO', 'HFCS']];
+  let cx0 = 612;
+  claims.forEach((lines, i) => {
+    const w = i === 1 ? 116 : 96;
+    if (i) {
+      c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(cx0 - 9, 106); c.lineTo(cx0 - 9, 152); c.stroke();
+    }
+    c.fillStyle = '#fff'; c.textAlign = 'center';
+    c.font = '800 20px Archivo, sans-serif';
+    c.fillText(lines[0], cx0 + w / 2, 124);
+    c.font = '800 24px Archivo, sans-serif';
+    c.fillText(lines[1], cx0 + w / 2, 148);
+    cx0 += w + 18;
+  });
+
+  /* Wordmark */
+  c.textAlign = 'center'; c.fillStyle = '#fff';
+  c.shadowColor = 'rgba(120,15,45,.30)';
+  c.shadowBlur = 16; c.shadowOffsetY = 5;
+  c.font = '150px Pacifico, "Brush Script MT", cursive';
+  c.fillText('Bites', 470, 372);
+  c.font = '128px Pacifico, "Brush Script MT", cursive';
+  c.fillText('Sweden', 480, 494);
+  c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetY = 0;
+
+  c.font = '800 30px Archivo, sans-serif';
+  c.letterSpacing = '3px';
+  c.fillText('· BY ·', 476, 424);
+  c.letterSpacing = '0px';
+
+  // Swash under "Sweden"
+  c.strokeStyle = '#fff'; c.lineWidth = 8; c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(320, 522);
+  c.quadraticCurveTo(478, 552, 640, 516);
+  c.stroke();
+
+  /* MUMS endorsement badge */
+  c.save();
+  c.translate(838, 356);
+  c.beginPath(); c.arc(0, 0, 62, 0, 7);
+  c.fillStyle = INK.maroon; c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.30)'; c.lineWidth = 2; c.stroke();
+  c.fillStyle = '#fff'; c.textAlign = 'center';
+  c.font = '600 10px Archivo, sans-serif';
+  c.fillText('FROM THE MAKERS OF', 0, -24);
+  c.font = '38px Pacifico, cursive';
+  c.fillText('MUMS', 0, 14);
+  c.font = '600 9px Archivo, sans-serif';
+  c.fillText('The Swedish Candy Co.', 0, 34);
+  c.restore();
+
+  /* COLA MIX pill */
+  const pw = 258, ph = 52, px = 476 - pw / 2, py = 548;
+  c.fillStyle = 'rgba(120,15,45,.42)';
+  roundRect(c, px, py, pw, ph, ph / 2); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = 1.5; c.stroke();
+  c.fillStyle = '#fff';
+  c.font = '700 27px Archivo, sans-serif';
+  c.letterSpacing = '4px';
+  c.fillText('COLA MIX', 476 + 2, py + 35);
+  c.letterSpacing = '0px';
+
+  /* Product window — mixed candy behind a white arc cut-out */
+  c.save();
+  c.beginPath();
+  c.moveTo(56, 700);
+  c.quadraticCurveTo(512, 596, 968, 700);
+  c.lineTo(968, 930); c.lineTo(56, 930);
+  c.closePath();
+  c.clip();
+  const wg = c.createLinearGradient(0, 620, 0, 930);
+  wg.addColorStop(0,   '#7A4415');
+  wg.addColorStop(0.5, '#5A2E0C');
+  wg.addColorStop(1,   '#331904');
+  c.fillStyle = wg; c.fillRect(56, 600, 912, 340);
+  // Loose candy behind the window
+  const rnd = mulberry(7);
+  for (let i = 0; i < 46; i++) {
+    const x = 70 + rnd() * 880, y = 660 + rnd() * 260;
+    const s = 0.30 + rnd() * 0.30, k = rnd();
+    if      (k < 0.30) colaBottle(c, x, y, s * 0.9, rnd() * 6);
+    else if (k < 0.52) skull(c, x, y, s * 0.85, rnd() * 6);
+    else if (k < 0.78) ring(c, x, y, s, ['#C0392B', '#D9822B', '#8E4B10'][(rnd() * 3) | 0]);
+    else               twist(c, x, y, s, rnd() * 6);
+  }
+  c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(56, 600, 912, 340);
+  c.restore();
+
+  // White arc lip above the window
+  c.strokeStyle = '#fff'; c.lineWidth = 9;
+  c.beginPath();
+  c.moveTo(56, 700);
+  c.quadraticCurveTo(512, 596, 968, 700);
+  c.stroke();
+
+  /* Hero candies, sitting on the arc */
+  colaBottle(c, 316, 690, 0.98, -0.16);
+  colaBottle(c, 448, 686, 0.92,  0.10);
+  skull(c, 596, 690, 1.06, -0.06);
+
+  /* Bottom copy */
+  c.textAlign = 'left'; c.fillStyle = '#fff';
+  c.font = '800 27px Archivo, sans-serif';
+  c.fillText('LESS EVIL.',        84, 896);
+  c.fillText('NO COMPROMISES',    84, 926);
+  c.textAlign = 'right';
+  c.font = '700 19px Archivo, sans-serif';
+  c.fillText('NET WT 3.5OZ 100G', 946, 926);
+
+  sideRail(c, S, 'left');
+  return finish(cv);
+}
+
+/* ─────────────────────────  BACK PANEL  ───────────────────────── */
+function backTexture() {
+  const S = 1024, cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  const c = cv.getContext('2d');
+
+  const g = c.createLinearGradient(0, 0, S * 0.3, S);
+  g.addColorStop(0,    '#EA4A68');
+  g.addColorStop(0.45, INK.pink);
+  g.addColorStop(1,    INK.pinkDeep);
+  c.fillStyle = g; c.fillRect(0, 0, S, S);
+  crimpBand(c, 0, 62, S);
+  crimpBand(c, S - 62, 62, S);
+
+  /* Headline */
+  c.textAlign = 'center'; c.fillStyle = '#fff';
+  c.font = '800 40px Archivo, sans-serif';
+  c.fillText('LESS EVIL.',       288, 196);
+  c.fillText('NO COMPROMISES.',  288, 240);
+
+  /* Tumbling candy cluster */
+  const rnd = mulberry(21);
+  const cluster = [
+    [212, 372, 0.60], [300, 330, 0.50], [156, 436, 0.55],
+    [352, 424, 0.46], [252, 470, 0.58], [378, 356, 0.44],
+    [176, 330, 0.40], [300, 500, 0.42],
+  ];
+  cluster.forEach(([x, y, s], i) => {
+    const k = i % 4;
+    if      (k === 0) colaBottle(c, x, y, s * 0.75, rnd() * 6);
+    else if (k === 1) skull(c, x, y, s * 0.80, rnd() * 6);
+    else if (k === 2) ring(c, x, y, s, ['#D9822B', '#C0392B'][i % 2]);
+    else              twist(c, x, y, s, rnd() * 6);
+  });
+  sugar(c, 130, 300, 300, 230, 90, 0.55);
+
+  /* Nutrition Facts — FDA panel proportions */
+  const nx = 556, ny = 150, nw = 392, nh = 500;
+  c.fillStyle = '#fff';
+  roundRect(c, nx, ny, nw, nh, 5); c.fill();
+
+  const L = nx + 16, R = nx + nw - 16;
+  let y = ny + 40;
+  c.fillStyle = '#000'; c.textAlign = 'left';
+  c.font = '800 31px Archivo, sans-serif';
+  c.fillText('Nutrition Facts', L, y);
+
+  y += 22;
+  c.font = '400 13px Archivo, sans-serif';
+  c.fillText('4 servings per container', L, y);
+  y += 18;
+  c.font = '700 14px Archivo, sans-serif';
+  c.fillText('Serving size', L, y);
+  c.textAlign = 'right';
+  c.fillText('About 5 pieces (23g)', R, y);
+
+  const rule = (w, gap) => {
+    y += gap; c.fillStyle = '#000';
+    c.fillRect(L, y, R - L, w); y += w;
+  };
+  rule(9, 8);
+
+  y += 18;
+  c.textAlign = 'left'; c.font = '700 13px Archivo, sans-serif';
+  c.fillText('Amount per serving', L, y);
+  y += 34;
+  c.font = '800 34px Archivo, sans-serif';
+  c.fillText('Calories', L, y);
+  c.textAlign = 'right';
+  c.font = '800 38px Archivo, sans-serif';
+  c.fillText('80', R, y);
+  rule(5, 8);
+
+  y += 16;
+  c.textAlign = 'right'; c.font = '700 12px Archivo, sans-serif';
+  c.fillText('% Daily Value*', R, y);
+
+  const rows = [
+    ['Total Fat 0g',                   '0%',  0, 1],
+    ['Saturated Fat 0g',               '0%',  1, 0],
+    ['Trans Fat 0g',                   '',    1, 0],
+    ['Cholesterol 0mg',                '0%',  0, 1],
+    ['Sodium 30mg',                    '1%',  0, 1],
+    ['Total Carbohydrate 19g',         '7%',  0, 1],
+    ['Dietary Fiber 0g',               '0%',  1, 0],
+    ['Total Sugars 14g',               '',    1, 0],
+    ['Includes 14g Added Sugars',      '28%', 2, 0],
+    ['Protein 1g',                     '',    0, 1],
+  ];
+  rows.forEach(([label, val, indent, bold]) => {
+    y += 20;
+    c.fillStyle = '#000'; c.textAlign = 'left';
+    c.font = (bold ? '700 ' : '400 ') + '13px Archivo, sans-serif';
+    c.fillText(label, L + indent * 13, y);
+    if (val) {
+      c.textAlign = 'right';
+      c.font = '700 13px Archivo, sans-serif';
+      c.fillText(val, R, y);
+    }
+    c.fillStyle = '#000';
+    c.fillRect(L, y + 5, R - L, 0.8);
+  });
+
+  rule(6, 12);
+  const micro = [
+    ['Vitamin D 0mcg', '0%', 'Calcium 5mg',    '0%'],
+    ['Iron 0mg',       '0%', 'Potassium 0mg',  '0%'],
+  ];
+  micro.forEach(([a, av, b, bv]) => {
+    y += 18;
+    c.fillStyle = '#000'; c.font = '400 11px Archivo, sans-serif';
+    c.textAlign = 'left';  c.fillText(a, L, y);
+    c.textAlign = 'right'; c.fillText(av, L + 150, y);
+    c.textAlign = 'left';  c.fillText(b, L + 190, y);
+    c.textAlign = 'right'; c.fillText(bv, R, y);
+    c.fillStyle = '#000'; c.fillRect(L, y + 4, R - L, 0.6);
+  });
+
+  y += 16;
+  c.textAlign = 'left'; c.font = '400 9px Archivo, sans-serif'; c.fillStyle = '#000';
+  wrap(c, '* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.', L, y, nw - 32, 11);
+
+  /* Ingredients */
+  c.fillStyle = '#fff'; c.textAlign = 'left';
+  c.font = '700 11px Archivo, sans-serif';
+  c.fillText('Ingredients:', nx, 690);
+  c.font = '400 11px Archivo, sans-serif';
+  wrap(c, 'Sugar, Glucose Syrup, Glucose-Fructose Syrup, Starch, Water, Gelatin, Acid (Citric Acid, Malic Acid), Caramelized Sugar Syrup, Concentrates (Apple, Carrot, Blackcurrant, Elderberry, Lemon, Mango, Passionfruit, Radish, Safflower, Spirulina), Flavourings, Glazing Agents (Carnauba Wax, Beeswax), Colour (Vegetable Carbon).', nx + 68, 690, nw - 70, 14);
+
+  /* Lördagsgodis story card */
+  c.fillStyle = 'rgba(255,255,255,.94)';
+  roundRect(c, 74, 556, 420, 148, 7); c.fill();
+  c.fillStyle = INK.pinkDark; c.textAlign = 'left';
+  c.font = '800 16px Archivo, sans-serif';
+  c.fillText('LÖRDAGSGODIS —',            96, 588);
+  c.fillText("SWEDEN'S SWEET TRADITION",  96, 610);
+  c.fillStyle = '#4A3038';
+  c.font = '400 12px Archivo, sans-serif';
+  wrap(c, 'In Sweden, Saturdays mean candy. Every weekend, families gather to pick their favourite sweets — a beloved ritual called Lördagsgodis. Now you can share that same joy, one bite at a time.', 96, 634, 376, 16);
+
+  /* NO-claims row */
+  const nb = [['NO', 'RED-40'], ['NO TRANS', 'FATS'], ['NO', 'HFCS']];
+  let bx = 78;
+  nb.forEach((lines, i) => {
+    const w = i === 1 ? 132 : 108;
+    if (i) {
+      c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(bx - 10, 728); c.lineTo(bx - 10, 784); c.stroke();
+    }
+    c.fillStyle = '#fff'; c.textAlign = 'center';
+    c.font = '800 23px Archivo, sans-serif';
+    c.fillText(lines[0], bx + w / 2, 750);
+    c.font = '800 27px Archivo, sans-serif';
+    c.fillText(lines[1], bx + w / 2, 778);
+    bx += w + 20;
+  });
+
+  /* Social */
+  const glyphs = [
+    p => { p.font = '800 21px Archivo, sans-serif'; p.fillText('f', 0, 8); },
+    p => { p.lineWidth = 2.4; p.strokeStyle = INK.pink;
+           roundRect(p, -9, -9, 18, 18, 5.5); p.stroke();
+           p.beginPath(); p.arc(0, 0, 4.6, 0, 7); p.stroke();
+           p.beginPath(); p.arc(5.6, -5.6, 1.3, 0, 7); p.fillStyle = INK.pink; p.fill(); },
+    p => { p.font = '700 15px Archivo, sans-serif'; p.fillText('♪', 0, 6); },
+  ];
+  glyphs.forEach((draw, i) => {
+    const x = 108 + i * 54;
+    c.beginPath(); c.arc(x, 828, 21, 0, 7);
+    c.fillStyle = '#fff'; c.fill();
+    c.save(); c.translate(x, 828);
+    c.fillStyle = INK.pink; c.textAlign = 'center';
+    draw(c); c.restore();
+  });
+  c.fillStyle = '#fff'; c.textAlign = 'left';
+  c.font = '800 16px Archivo, sans-serif';
+  c.fillText('FOLLOW US',        250, 822);
+  c.fillText('@BITESBYSWEDEN',   250, 842);
+  c.textAlign = 'center';
+  c.font = '400 13px Archivo, sans-serif';
+  c.fillText('Mixes may vary', 288, 890);
+
+  /* Manufacturer block */
+  c.textAlign = 'left'; c.fillStyle = '#fff';
+  c.font = '400 11px Archivo, sans-serif';
+  ['Manufactured for:', 'Bites by Sweden, Inc.', '1601 N. Rosemary Ave.',
+   'Suite 801', 'West Palm Beach,', 'FL 33401']
+    .forEach((line, i) => c.fillText(line, 556, 800 + i * 15));
+
+  /* Barcode */
+  c.fillStyle = '#fff';
+  roundRect(c, 776, 806, 172, 88, 4); c.fill();
+  c.fillStyle = '#000';
+  const brnd = mulberry(3);
+  let bxx = 788;
+  while (bxx < 934) {
+    const w = 1 + Math.floor(brnd() * 3);
+    c.fillRect(bxx, 816, w, 54);
+    bxx += w + 1 + Math.floor(brnd() * 3);
+  }
+  c.font = '400 11px Archivo, monospace'; c.textAlign = 'center';
+  c.fillText('8 50076 76375 9', 862, 886);
+
+  sideRail(c, S, 'right');
+  return finish(cv);
+}
+
+/* ── Side-seam printing. Only visible because the side views showed it. ── */
+function sideRail(c, S, which) {
+  c.save();
+  if (which === 'left') {
+    c.translate(30, S * 0.62); c.rotate(-Math.PI / 2);
+    c.fillStyle = 'rgba(255,255,255,.92)'; c.textAlign = 'left';
+    c.font = '700 15px Archivo, monospace';
+    c.letterSpacing = '1px';
+    c.fillText('BEST BY: 2026.12.31', 0, 0);
+    c.fillText('LOT: L40823', 0, 19);
+  } else {
+    c.translate(S - 26, S * 0.70); c.rotate(-Math.PI / 2);
+    c.fillStyle = 'rgba(255,255,255,.92)'; c.textAlign = 'left';
+    c.font = '700 13px Archivo, sans-serif';
+    c.letterSpacing = '1px';
+    c.fillText('MANUFACTURED FOR BITES BY SWEDEN, INC.', 0, 0);
+    c.fillText('PRODUCT OF SWEDEN', 0, 18);
+    // QR block
+    c.restore(); c.save();
+    c.translate(S - 74, S * 0.40);
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 46, 46);
+    c.fillStyle = '#000';
+    const q = mulberry(11);
+    for (let i = 0; i < 11; i++)
+      for (let j = 0; j < 11; j++)
+        if (q() > 0.48) c.fillRect(3 + i * 3.6, 3 + j * 3.6, 3.6, 3.6);
+    // finder patterns
+    [[3, 3], [31, 3], [3, 31]].forEach(([fx, fy]) => {
+      c.fillStyle = '#000'; c.fillRect(fx, fy, 12, 12);
+      c.fillStyle = '#fff'; c.fillRect(fx + 2.4, fy + 2.4, 7.2, 7.2);
+      c.fillStyle = '#000'; c.fillRect(fx + 4.4, fy + 4.4, 3.2, 3.2);
+    });
+  }
+  c.restore();
+}
+
+function finish(cv) {
+  const t = new THREE.CanvasTexture(cv);
+  t.encoding = THREE.sRGBEncoding;
+  t.anisotropy = 8;
+  return t;
+}
+
+// Deterministic RNG — the skill's rule: procedural noise must be seeded,
+// or the artwork changes on every reload.
+function mulberry(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ═══════════════════════════  SCENE  ═══════════════════════════ */
+const stage    = document.getElementById('stage');
+const loadingEl= document.getElementById('loading');
+const hintEl   = document.getElementById('hint');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xfaf7f5);
+
+const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, 0.1, 100);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+stage.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xe8d8d2, 0.55));
+
+const key = new THREE.DirectionalLight(0xffffff, 1.05);
+key.position.set(3.4, 5.0, 4.2);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.near = 1; key.shadow.camera.far = 18;
+key.shadow.camera.left = -3; key.shadow.camera.right = 3;
+key.shadow.camera.top = 3;   key.shadow.camera.bottom = -3;
+key.shadow.bias = -0.0008;
+key.shadow.radius = 3;
+scene.add(key);
+
+const fill = new THREE.DirectionalLight(0xfff2f4, 0.34);
+fill.position.set(-4.2, 1.6, 2.4); scene.add(fill);
+
+const rim = new THREE.DirectionalLight(0xffe4ec, 0.62);
+rim.position.set(-1.4, 2.4, -4.6); scene.add(rim);
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(24, 24),
+  new THREE.ShadowMaterial({ opacity: 0.17 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -(BAG.bodyHeight / 2 + BAG.finHeight + 0.02);
+ground.receiveShadow = true;
+scene.add(ground);
+
+const bag = new THREE.Group();
+scene.add(bag);
+
+/* ── Face geometry. sign=+1 front, -1 back. ── */
+function buildFace(sign) {
+  const NX = 72, NY = 88;
+  const geo = new THREE.PlaneGeometry(BAG.width, BAG.bodyHeight, NX, NY);
+  const pos = geo.attributes.position;
+
+  for (let i = 0; i < pos.count; i++) {
+    const x0 = pos.getX(i), y0 = pos.getY(i);
+    const t  = (y0 + BAG.bodyHeight / 2) / BAG.bodyHeight;   // 0 bottom → 1 top
+    const s  = x0 / (BAG.width / 2);                          // -1 … 1
+
+    const taper = widthTaper(t);
+    pos.setX(i, x0 * taper);
+    pos.setZ(i, sign * BAG.maxDepth * widthProfile(s) * heightProfile(t));
+  }
+  geo.computeVertexNormals();
+
+  // Keep the rest pose so the flex animation displaces from a fixed base
+  // rather than accumulating drift frame over frame.
+  geo.userData.rest = pos.array.slice(0);
+  return geo;
+}
+
+const frontGeo = buildFace( 1);
+const backGeo  = buildFace(-1);
+
+// r128 note: `sheen` here is a Color, not a scalar, and `sheenColor` does not
+// exist — the laminate highlight comes from clearcoat alone.
+const filmMat = tex => new THREE.MeshPhysicalMaterial({
+  map: tex,
+  roughness: 0.34,
+  metalness: 0.05,
+  clearcoat: 0.62,
+  clearcoatRoughness: 0.30,
+  side: THREE.DoubleSide,
+});
+
+const frontMesh = new THREE.Mesh(frontGeo, filmMat(null));
+const backMesh  = new THREE.Mesh(backGeo,  filmMat(null));
+backMesh.rotation.y = Math.PI;
+[frontMesh, backMesh].forEach(m => { m.castShadow = true; m.receiveShadow = true; bag.add(m); });
+
+// Canvas draws the wordmark with whatever font is resolved at call time, so
+// the panels must not be rasterised until Pacifico/Archivo have actually
+// arrived — otherwise the logo silently bakes in a fallback face.
+Promise.all([
+  document.fonts.load('150px Pacifico'),
+  document.fonts.load('800 24px Archivo'),
+  document.fonts.load('400 13px Archivo'),
+]).then(() => document.fonts.ready).then(() => {
+  frontMesh.material.map = frontTexture();
+  backMesh.material.map  = backTexture();
+  frontMesh.material.needsUpdate = true;
+  backMesh.material.needsUpdate  = true;
+  loadingEl.classList.add('hidden');
+}).catch(() => {
+  frontMesh.material.map = frontTexture();
+  backMesh.material.map  = backTexture();
+  frontMesh.material.needsUpdate = true;
+  backMesh.material.needsUpdate  = true;
+  loadingEl.classList.add('hidden');
+});
+
+/* ── Fin seals. The pointed tab the side views revealed. ── */
+const finMat = new THREE.MeshPhysicalMaterial({
+  color: INK.pinkDeep,
+  roughness: 0.42, metalness: 0.04,
+  clearcoat: 0.5, clearcoatRoughness: 0.35,
+  side: THREE.DoubleSide,
+});
+
+function buildFin(dir) {                     // dir=+1 top, -1 bottom
+  const halfW = BAG.width / 2 * widthTaper(dir > 0 ? 1 : 0);
+  const yBase = dir * BAG.bodyHeight / 2;
+  const yTip  = yBase + dir * BAG.finHeight;
+  const inset = BAG.width * BAG.finTipInset;
+
+  const shape = new THREE.Shape();
+  shape.moveTo(-halfW, yBase);
+  shape.lineTo( halfW, yBase);
+  shape.lineTo( halfW - inset, yTip);
+  shape.lineTo(-halfW + inset, yTip);
+  shape.closePath();
+
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.016, bevelEnabled: true,
+    bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 2,
+  });
+  geo.translate(0, 0, -0.008);
+  const m = new THREE.Mesh(geo, finMat);
+  m.castShadow = true;
+  return m;
+}
+bag.add(buildFin(1), buildFin(-1));
+
+/* ── Centre point of the fin, the little nib on the real bag ── */
+function finNib(dir) {
+  const g = new THREE.ConeGeometry(0.022, 0.075, 6);
+  const m = new THREE.Mesh(g, finMat);
+  m.position.y = dir * (BAG.bodyHeight / 2 + BAG.finHeight + 0.030);
+  m.rotation.z = dir > 0 ? 0 : Math.PI;
+  m.castShadow = true;
+  return m;
+}
+bag.add(finNib(1), finNib(-1));
+
+/* ═════════════════════  POUR: loose candy  ═════════════════════ */
+// Gummies read as translucent, but real transmission needs a scene render
+// target per material and costs more than it buys at this size — the sugared
+// surface is opaque anyway. Emissive lift stands in for subsurface glow.
+const gummy = (hex, glow) => new THREE.MeshPhysicalMaterial({
+  color: hex,
+  roughness: 0.62,
+  metalness: 0.0,
+  clearcoat: 0.35,
+  clearcoatRoughness: 0.45,
+  emissive: new THREE.Color(hex),
+  emissiveIntensity: glow,
+});
+const candyMats = {
+  cola:  gummy(0x7A4014, 0.10),
+  cream: gummy(0xF2E7CC, 0.05),
+  amber: gummy(0xD98A2B, 0.12),
+  red:   gummy(0xB83A2A, 0.12),
+};
+
+// Lathe profile for the cola-bottle piece — radius sampled down its height.
+function bottleGeo() {
+  const pts = [];
+  const prof = [
+    [0.00, 0.00], [0.30, 0.02], [0.34, 0.14], [0.33, 0.30],
+    [0.32, 0.46], [0.30, 0.56], [0.19, 0.68], [0.16, 0.80],
+    [0.17, 0.92], [0.00, 0.98],
+  ];
+  prof.forEach(([r, h]) => pts.push(new THREE.Vector2(r * 0.16, (h - 0.5) * 0.34)));
+  return new THREE.LatheGeometry(pts, 18);
+}
+
+function skullGeo() {
+  const g = new THREE.SphereGeometry(0.085, 18, 14);
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    // Flatten front-to-back and draw out a jaw below the cranium.
+    p.setZ(i, z * 0.74);
+    if (y < -0.01) {
+      p.setX(i, x * (1 + y * 1.5));
+      p.setY(i, y * 1.30 - 0.012);
+    }
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+const GEOS = {
+  bottle: bottleGeo(),
+  skull:  skullGeo(),
+  ring:   new THREE.TorusGeometry(0.072, 0.030, 10, 20),
+  twist:  new THREE.TorusKnotGeometry(0.050, 0.019, 42, 7, 2, 3),
+};
+
+const PIECES = [];
+const POUR_N = 34;
+const pourRnd = mulberry(99);
+const floorY = ground.position.y + 0.05;
+
+for (let i = 0; i < POUR_N; i++) {
+  const k = pourRnd();
+  let geo, mat;
+  if      (k < 0.30) { geo = GEOS.bottle; mat = candyMats.cola; }
+  else if (k < 0.52) { geo = GEOS.skull;  mat = candyMats.cream; }
+  else if (k < 0.80) { geo = GEOS.ring;   mat = pourRnd() > 0.5 ? candyMats.amber : candyMats.red; }
+  else               { geo = GEOS.twist;  mat = candyMats.cola; }
+
+  const m = new THREE.Mesh(geo, mat);
+  m.castShadow = true;
+  m.visible = false;
+  m.userData = {
+    vel: new THREE.Vector3(),
+    spin: new THREE.Vector3(),
+    delay: pourRnd() * 1.5,
+    settled: false,
+  };
+  PIECES.push(m);
+  scene.add(m);
+}
+
+function resetPieces() {
+  PIECES.forEach(p => {
+    p.visible = false;
+    p.userData.settled = false;
+    p.userData.vel.set(0, 0, 0);
+  });
+}
+
+function launchPiece(p) {
+  const r = pourRnd;
+  // Emitted from the bag's mouth, in the bag's current orientation.
+  const local = new THREE.Vector3((r() - 0.5) * 0.5, BAG.bodyHeight / 2 - 0.05, (r() - 0.5) * 0.2);
+  p.position.copy(local.applyMatrix4(bag.matrixWorld));
+  p.rotation.set(r() * 6, r() * 6, r() * 6);
+  p.userData.vel.set((r() - 0.5) * 0.9, 0.5 + r() * 0.5, (r() - 0.5) * 0.5)
+    .applyQuaternion(bag.quaternion);
+  p.userData.spin.set((r() - 0.5) * 9, (r() - 0.5) * 9, (r() - 0.5) * 9);
+  p.visible = true;
+}
+
+/* ═══════════════════════  INTERACTION  ═══════════════════════ */
+const S = {
+  spin: true, flex: true, pour: false,
+  yaw: 0, pitch: 0,
+  yawV: 0, pitchV: 0,
+  dist: 5.4, distTarget: 5.4,
+  dragging: false, last: { x: 0, y: 0 },
+  pourT: 0,
+};
+
+function press(x, y) {
+  S.dragging = true; S.last = { x, y };
+  stage.classList.add('dragging');
+  hintEl.classList.add('hidden');
+}
+function move(x, y) {
+  if (!S.dragging) return;
+  S.yawV   += (x - S.last.x) * 0.00042;
+  S.pitchV += (y - S.last.y) * 0.00028;
+  S.last = { x, y };
+}
+function release() { S.dragging = false; stage.classList.remove('dragging'); }
+
+stage.addEventListener('mousedown', e => press(e.clientX, e.clientY));
+addEventListener('mousemove',  e => move(e.clientX, e.clientY));
+addEventListener('mouseup',    release);
+
+stage.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) press(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: true });
+stage.addEventListener('touchmove', e => {
+  if (e.touches.length === 1) {
+    move(e.touches[0].clientX, e.touches[0].clientY);
+    e.preventDefault();
+  }
+}, { passive: false });
+addEventListener('touchend', release);
+
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  S.distTarget = Math.max(3.0, Math.min(9.0, S.distTarget + e.deltaY * 0.0034));
+}, { passive: false });
+
+const btn = {
+  spin:  document.getElementById('b-spin'),
+  flex:  document.getElementById('b-flex'),
+  pour:  document.getElementById('b-pour'),
+  reset: document.getElementById('b-reset'),
+};
+btn.spin.onclick = () => { S.spin = !S.spin; btn.spin.classList.toggle('on', S.spin); };
+btn.flex.onclick = () => { S.flex = !S.flex; btn.flex.classList.toggle('on', S.flex); };
+btn.pour.onclick = () => {
+  S.pour = !S.pour;
+  btn.pour.classList.toggle('on', S.pour);
+  S.pourT = 0;
+  if (!S.pour) resetPieces();
+};
+btn.reset.onclick = () => {
+  S.yaw = S.pitch = S.yawV = S.pitchV = 0;
+  S.distTarget = 5.4;
+  S.pour = false; S.pourT = 0;
+  btn.pour.classList.remove('on');
+  resetPieces();
+};
+
+/* ═══════════════════════  ANIMATION  ═══════════════════════ */
+const clock = new THREE.Clock();
+
+// Soft-body flex: displace each vertex along its own outward normal so the
+// panel breathes rather than shearing sideways. Amplitude is scaled by the
+// rest depth, so the pinched seams stay pinched.
+function flexFace(mesh, sign, time) {
+  const geo = mesh.geometry;
+  const pos = geo.attributes.position;
+  const rest = geo.userData.rest;
+
+  for (let i = 0; i < pos.count; i++) {
+    const j = i * 3;
+    const x = rest[j], y = rest[j + 1], z = rest[j + 2];
+    const t = (y + BAG.bodyHeight / 2) / BAG.bodyHeight;
+    const s = x / (BAG.width / 2);
+
+    // Two travelling waves at incommensurate rates so it never visibly loops.
+    const w =
+      Math.sin(time * 1.35 + t * 3.1 + s * 1.5) * 0.55 +
+      Math.sin(time * 0.87 - t * 4.4 + s * 2.6) * 0.45;
+
+    const amp = Math.abs(z) / (BAG.maxDepth || 1);   // 0 at seams, 1 at belly
+    pos.setZ(i, z + sign * w * amp * 0.020);
+    pos.setX(i, x + w * amp * 0.005 * s);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+}
+
+function tick() {
+  requestAnimationFrame(tick);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t  = clock.elapsedTime;
+
+  /* Rotation: inertia from drag, plus the turntable */
+  S.yaw   += S.yawV;
+  S.pitch += S.pitchV;
+  S.yawV   *= 0.92;
+  S.pitchV *= 0.90;
+  if (!S.dragging && S.spin) S.yaw += dt * 0.30;
+  S.pitch = Math.max(-0.55, Math.min(0.55, S.pitch));
+
+  bag.rotation.y = S.yaw;
+  bag.rotation.x = S.pitch;
+
+  /* Hover — a slow rise-and-fall with a slight lateral roll */
+  const hoverY = Math.sin(t * 0.85) * 0.032;
+  const roll   = Math.sin(t * 0.62) * 0.022;
+
+  /* Pour: tilt the bag mouth-down and emit from the opening */
+  let pourTilt = 0;
+  if (S.pour) {
+    S.pourT += dt;
+    pourTilt = Math.min(1, S.pourT / 0.9) * 1.05;
+    PIECES.forEach(p => {
+      if (!p.visible && !p.userData.settled && S.pourT > p.userData.delay) launchPiece(p);
+    });
+  }
+
+  bag.position.y = hoverY;
+  bag.rotation.z = roll + pourTilt * 0.35;
+  bag.rotation.x = S.pitch - pourTilt * 0.30;
+
+  if (S.flex) {
+    flexFace(frontMesh,  1, t);
+    flexFace(backMesh,  -1, t);
+  }
+
+  /* Candy integration — plain Euler with a damped floor bounce.
+     A physics engine would be a dependency for very little gain here. */
+  PIECES.forEach(p => {
+    if (!p.visible || p.userData.settled) return;
+    const u = p.userData;
+    u.vel.y -= 4.2 * dt;
+    p.position.addScaledVector(u.vel, dt);
+    p.rotation.x += u.spin.x * dt;
+    p.rotation.y += u.spin.y * dt;
+    p.rotation.z += u.spin.z * dt;
+
+    if (p.position.y <= floorY) {
+      p.position.y = floorY;
+      u.vel.y *= -0.36;
+      u.vel.x *= 0.72; u.vel.z *= 0.72;
+      u.spin.multiplyScalar(0.55);
+      if (Math.abs(u.vel.y) < 0.22) {
+        u.settled = true;
+        u.vel.set(0, 0, 0);
+      }
+    }
+  });
+
+  /* Camera */
+  S.dist += (S.distTarget - S.dist) * 0.08;
+  camera.position.set(0, 0.22, S.dist);
+  camera.lookAt(0, 0, 0);
+
+  renderer.render(scene, camera);
+}
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+setTimeout(() => hintEl.classList.add('hidden'), 5200);
+tick();
+
+})();
+</script>
+</body>
+</html>

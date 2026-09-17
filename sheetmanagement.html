@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sheet Management — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} .set-page-head .tbtn-p span{display:none;} }
+.sm-section-title{display:flex;align-items:center;gap:14px;color:var(--tx);font-size:13px;font-weight:600;margin:0 0 4px;letter-spacing:.2px;}
+.sm-section-title::before,.sm-section-title::after{content:"";flex:1;height:0.5px;background:var(--brd2);}
+.sm-section-title:not(:first-child){margin-top:10px;}
+.sm-section-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;}
+@media (max-width:640px){.sm-section-fields{grid-template-columns:1fr;}}
+.sm-dd{position:relative;}
+.sm-dd-trigger{display:flex;align-items:center;width:100%;height:40px;padding:0 12px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;cursor:pointer;transition:border-color .15s;user-select:none;}
+.sm-dd-trigger:hover{border-color:var(--ac);}
+.sm-dd-trigger.open{border-color:var(--ac);}
+.sm-dd-trigger span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sm-dd-trigger .sm-dd-placeholder{color:var(--mu);}
+.sm-dd-trigger svg{flex-shrink:0;width:14px;height:14px;color:var(--mu);transition:transform .15s;}
+.sm-dd-trigger.open svg{transform:rotate(180deg);}
+.sm-dd-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;padding:4px;max-height:220px;overflow-y:auto;z-index:10;display:none;box-shadow:0 8px 24px rgba(0,0,0,.45);}
+.sm-dd-list.open{display:block;}
+.sm-dd-item{padding:8px 12px;border-radius:6px;font-size:13px;color:var(--tx);cursor:pointer;transition:background .1s;font-family:var(--font);}
+.sm-dd-item:hover{background:rgba(255,255,255,.06);}
+.sm-dd-item.active{background:var(--ac);color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <button class="tbtn tbtn-p" onclick="smOpenAdd()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Add Sheet</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:64px;text-align:center;">No.</th>
+                <th style="text-align:left;">Auction Name</th>
+                <th style="text-align:left;">Sheet Name</th>
+                <th style="text-align:left;">Filter</th>
+                <th style="text-align:left;">Title</th>
+              </tr>
+            </thead>
+            <tbody id="sm-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-backdrop modal-fullscreen-mobile" id="sm-edit-modal" onclick="if(event.target===this)smCloseEdit()">
+  <div class="modal" style="width:600px;max-width:95vw;">
+    <div class="modal-header">
+      <div class="modal-title" id="sm-edit-title">Edit Sheet</div>
+      <button class="modal-close" onclick="smCloseEdit()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div class="sm-section-title">Auction &amp; Sheet Info</div>
+      <div class="sm-section-fields">
+        <div>
+          <label class="modal-field-label">Auction Name</label>
+          <div class="sm-dd" id="sm-dd">
+            <div class="sm-dd-trigger" onclick="smDdToggle()">
+              <span id="sm-dd-label" class="sm-dd-placeholder">Select auction</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="sm-dd-list" id="sm-dd-list"></div>
+          </div>
+          <input type="hidden" id="sm-edit-auction-val"/>
+        </div>
+        <div>
+          <label class="modal-field-label">Sheet Name</label>
+          <div class="modal-field">
+            <input id="sm-edit-sheet" placeholder="Sheet name"/>
+          </div>
+        </div>
+        <div>
+          <label class="modal-field-label">Proxy Bid Sheet Name</label>
+          <div class="modal-field">
+            <input id="sm-edit-proxy" placeholder="Proxy bid sheet name"/>
+          </div>
+        </div>
+        <div>
+          <label class="modal-field-label">Title</label>
+          <div class="modal-field">
+            <input id="sm-edit-titlef" placeholder="Title"/>
+          </div>
+        </div>
+      </div>
+      <div class="sm-section-title">Search &amp; Filter</div>
+      <div class="sm-section-fields">
+        <div>
+          <label class="modal-field-label">Filter</label>
+          <div class="modal-field">
+            <input id="sm-edit-filter" placeholder="Filter"/>
+          </div>
+        </div>
+      </div>
+      <div class="sm-section-title">Location Details</div>
+      <div class="sm-section-fields">
+        <div>
+          <label class="modal-field-label">Zipcode</label>
+          <div class="modal-field">
+            <input id="sm-edit-zip" placeholder="Zipcode" inputmode="numeric"/>
+          </div>
+        </div>
+        <div>
+          <label class="modal-field-label">Address</label>
+          <div class="modal-field">
+            <input id="sm-edit-address" placeholder="Address"/>
+          </div>
+        </div>
+      </div>
+      <div class="sm-section-title">Contact Info</div>
+      <div class="sm-section-fields">
+        <div>
+          <label class="modal-field-label">Mobile</label>
+          <div class="modal-field">
+            <input id="sm-edit-mobile" placeholder="Mobile number" inputmode="tel"/>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" id="sm-edit-delete" onclick="smDelete()" style="display:none;">Delete</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="smCloseEdit()">Cancel</button>
+      <button class="modal-save" onclick="smSaveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'settings', title: 'Sheet Management' });
+
+var smAuctions = ['Manheim','ADESA','Copart','ACV Auctions','OVE (Openlane)','TradeRev','BacklotCars','America\'s Auto Auction','ServNet','Edge Pipeline','CarOffer'];
+
+var smData = [
+  { id:1,  auction:'Manheim',              sheet:'Manheim Runlist',       proxy:'Manheim Proxy',      filter:'Active',     title:'Manheim Weekly Sale',     zip:'17545', address:'1190 Lancaster Rd, Manheim, PA',        mobile:'717-665-3571' },
+  { id:2,  auction:'ADESA',                sheet:'ADESA Inventory',       proxy:'ADESA Proxy Bids',   filter:'All',        title:'ADESA Auction Feed',      zip:'46268', address:'13085 Hamilton Crossing, Carmel, IN',    mobile:'800-923-3725' },
+  { id:3,  auction:'Copart',               sheet:'Copart Export',         proxy:'',                   filter:'Clean Title',title:'Copart Clean Vehicles',   zip:'75038', address:'14185 Dallas Pkwy, Dallas, TX',          mobile:'972-868-4200' },
+  { id:4,  auction:'ACV Auctions',         sheet:'ACV Daily',             proxy:'ACV Proxy',          filter:'Active',     title:'ACV Daily Runlist',       zip:'14202', address:'640 Ellicott St, Buffalo, NY',            mobile:'800-553-4070' },
+  { id:5,  auction:'OVE (Openlane)',        sheet:'OVE Feed',              proxy:'',                   filter:'Dealer Only',title:'OVE Dealer Listings',     zip:'46032', address:'11299 N Illinois St, Carmel, IN',        mobile:'888-683-1587' },
+  { id:6,  auction:'TradeRev',             sheet:'TradeRev Sheet',        proxy:'TradeRev Proxy',     filter:'All',        title:'TradeRev Full List',      zip:'M5V2T6',address:'661 University Ave, Toronto, ON',        mobile:'855-872-3378' },
+  { id:7,  auction:'BacklotCars',          sheet:'Backlot Export',        proxy:'',                   filter:'Active',     title:'BacklotCars Feed',        zip:'64153', address:'8800 NW 112th St, Kansas City, MO',      mobile:'816-298-2266' },
+  { id:8,  auction:'America\'s Auto Auction',sheet:'AAA Runlist',          proxy:'AAA Proxy',          filter:'Salvage',    title:'AAA Salvage Units',       zip:'46241', address:'5701 W Minnesota St, Indianapolis, IN',  mobile:'317-247-1624' },
+  { id:9,  auction:'ServNet',              sheet:'ServNet Data',          proxy:'',                   filter:'All',        title:'ServNet Inventory',       zip:'48098', address:'234 E Main St, Troy, MI',                 mobile:'248-457-5555' },
+  { id:10, auction:'Edge Pipeline',        sheet:'Edge Export',           proxy:'Edge Proxy',         filter:'Active',     title:'Edge Pipeline Feed',      zip:'75024', address:'5717 Legacy Dr, Plano, TX',              mobile:'866-243-8696' },
+  { id:11, auction:'CarOffer',             sheet:'CarOffer Daily',        proxy:'',                   filter:'Instant',    title:'CarOffer Instant Offers', zip:'75024', address:'4100 Midway Rd, Addison, TX',            mobile:'972-934-3800' },
+  { id:12, auction:'Manheim',              sheet:'Manheim Simulcast',     proxy:'Manheim Sim Proxy',  filter:'Simulcast',  title:'Manheim Simulcast Feed',  zip:'17545', address:'1190 Lancaster Rd, Manheim, PA',        mobile:'717-665-3571' },
+  { id:13, auction:'ADESA',                sheet:'ADESA DealerBlock',     proxy:'',                   filter:'DealerBlock',title:'ADESA DealerBlock Sales', zip:'46268', address:'13085 Hamilton Crossing, Carmel, IN',    mobile:'800-923-3725' },
+  { id:14, auction:'Copart',               sheet:'Copart Salvage',        proxy:'Copart Salvage Proxy',filter:'Salvage',   title:'Copart Salvage Export',   zip:'75038', address:'14185 Dallas Pkwy, Dallas, TX',          mobile:'972-868-4200' },
+  { id:15, auction:'ACV Auctions',         sheet:'ACV Weekly',            proxy:'ACV Weekly Proxy',   filter:'Weekly',     title:'ACV Weekly Summary',      zip:'14202', address:'640 Ellicott St, Buffalo, NY',            mobile:'800-553-4070' }
+];
+var smNextId = 16;
+var smEditingId = null;
+
+function smEsc(s){ var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function smRender(){
+  var html = '';
+  for(var i = 0; i < smData.length; i++){
+    var r = smData[i];
+    html += '<tr onclick="smOpenEdit(' + r.id + ')" style="cursor:pointer;">' +
+      '<td style="text-align:center;">' + (i + 1) + '</td>' +
+      '<td>' + smEsc(r.auction) + '</td>' +
+      '<td>' + smEsc(r.sheet) + '</td>' +
+      '<td>' + smEsc(r.filter) + '</td>' +
+      '<td>' + smEsc(r.title) + '</td>' +
+    '</tr>';
+  }
+  document.getElementById('sm-tbody').innerHTML = html;
+}
+
+function smDdToggle(){
+  var trigger = document.querySelector('.sm-dd-trigger');
+  var list = document.getElementById('sm-dd-list');
+  var isOpen = list.classList.contains('open');
+  if(isOpen){ smDdClose(); return; }
+  trigger.classList.add('open');
+  list.classList.add('open');
+}
+
+function smDdClose(){
+  document.querySelector('.sm-dd-trigger').classList.remove('open');
+  document.getElementById('sm-dd-list').classList.remove('open');
+}
+
+function smDdSelect(name){
+  document.getElementById('sm-edit-auction-val').value = name;
+  var label = document.getElementById('sm-dd-label');
+  label.textContent = name;
+  label.classList.remove('sm-dd-placeholder');
+  smDdRender(name);
+  smDdClose();
+}
+
+function smDdRender(selected){
+  var html = '';
+  for(var i = 0; i < smAuctions.length; i++){
+    var cls = 'sm-dd-item' + (smAuctions[i] === selected ? ' active' : '');
+    html += '<div class="' + cls + '" onclick="smDdSelect(\'' + smEsc(smAuctions[i]).replace(/'/g,'\\\'') + '\')">' + smEsc(smAuctions[i]) + '</div>';
+  }
+  document.getElementById('sm-dd-list').innerHTML = html;
+}
+
+function smPopulateAuctions(selected){
+  document.getElementById('sm-edit-auction-val').value = selected || '';
+  var label = document.getElementById('sm-dd-label');
+  if(selected){
+    label.textContent = selected;
+    label.classList.remove('sm-dd-placeholder');
+  } else {
+    label.textContent = 'Select auction';
+    label.classList.add('sm-dd-placeholder');
+  }
+  smDdRender(selected || '');
+  smDdClose();
+}
+
+function smOpenEdit(id){
+  var r = smData.find(function(x){ return x.id === id; });
+  if(!r) return;
+  smEditingId = id;
+  document.getElementById('sm-edit-title').textContent = 'Edit Sheet';
+  smPopulateAuctions(r.auction);
+  document.getElementById('sm-edit-sheet').value = r.sheet;
+  document.getElementById('sm-edit-proxy').value = r.proxy;
+  document.getElementById('sm-edit-titlef').value = r.title;
+  document.getElementById('sm-edit-filter').value = r.filter;
+  document.getElementById('sm-edit-zip').value = r.zip;
+  document.getElementById('sm-edit-address').value = r.address;
+  document.getElementById('sm-edit-mobile').value = r.mobile;
+  document.getElementById('sm-edit-delete').style.display = '';
+  document.getElementById('sm-edit-modal').classList.add('open');
+}
+
+function smCloseEdit(){
+  document.getElementById('sm-edit-modal').classList.remove('open');
+  smEditingId = null;
+}
+
+function smSaveEdit(){
+  var auction = document.getElementById('sm-edit-auction-val').value;
+  var sheet   = document.getElementById('sm-edit-sheet').value.trim();
+  var proxy   = document.getElementById('sm-edit-proxy').value.trim();
+  var title   = document.getElementById('sm-edit-titlef').value.trim();
+  var filter  = document.getElementById('sm-edit-filter').value.trim();
+  var zip     = document.getElementById('sm-edit-zip').value.trim();
+  var address = document.getElementById('sm-edit-address').value.trim();
+  var mobile  = document.getElementById('sm-edit-mobile').value.trim();
+  if(!auction || !sheet){ window.showNavToast('Validation', 'Auction name and sheet name are required.'); return; }
+  if(smEditingId !== null){
+    var r = smData.find(function(x){ return x.id === smEditingId; });
+    if(r){ r.auction = auction; r.sheet = sheet; r.proxy = proxy; r.title = title; r.filter = filter; r.zip = zip; r.address = address; r.mobile = mobile; }
+  } else {
+    smData.push({ id: smNextId++, auction: auction, sheet: sheet, proxy: proxy, filter: filter, title: title, zip: zip, address: address, mobile: mobile });
+  }
+  smRender();
+  window.showNavToast('Sheet Management', 'Sheet saved successfully.');
+  smCloseEdit();
+}
+
+function smDelete(){
+  smData = smData.filter(function(x){ return x.id !== smEditingId; });
+  smRender();
+  window.showNavToast('Sheet Management', 'Sheet deleted.');
+  smCloseEdit();
+}
+
+function smOpenAdd(){
+  smEditingId = null;
+  document.getElementById('sm-edit-title').textContent = 'Add Sheet';
+  smPopulateAuctions('');
+  document.getElementById('sm-edit-sheet').value = '';
+  document.getElementById('sm-edit-proxy').value = '';
+  document.getElementById('sm-edit-titlef').value = '';
+  document.getElementById('sm-edit-filter').value = '';
+  document.getElementById('sm-edit-zip').value = '';
+  document.getElementById('sm-edit-address').value = '';
+  document.getElementById('sm-edit-mobile').value = '';
+  document.getElementById('sm-edit-delete').style.display = 'none';
+  document.getElementById('sm-edit-modal').classList.add('open');
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    var list = document.getElementById('sm-dd-list');
+    if(list && list.classList.contains('open')){ smDdClose(); return; }
+    var m = document.getElementById('sm-edit-modal');
+    if(m && m.classList.contains('open')){ smCloseEdit(); }
+  }
+});
+
+document.addEventListener('click', function(e){
+  var dd = document.getElementById('sm-dd');
+  if(dd && !dd.contains(e.target)){ smDdClose(); }
+});
+
+smRender();
+</script>
+
+</body>
+</html>

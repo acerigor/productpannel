@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tooltips — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <button class="tbtn tbtn-p" onclick="ttOpenAdd()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Add Tooltip</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:64px;text-align:center;">No.</th>
+                <th style="width:80px;text-align:center;">Status</th>
+                <th style="width:200px;text-align:left;">Field</th>
+                <th style="text-align:left;">Tooltip Description</th>
+              </tr>
+            </thead>
+            <tbody id="tt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-backdrop modal-fullscreen-mobile" id="tt-edit-modal" onclick="if(event.target===this)ttCloseEdit()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="tt-edit-title">Edit Tooltip</div>
+      <button class="modal-close" onclick="ttCloseEdit()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label class="modal-field-label">Field</label>
+        <div class="modal-field">
+          <input id="tt-edit-field" placeholder="Field name"/>
+        </div>
+      </div>
+      <div>
+        <label class="modal-field-label">Tooltip Description</label>
+        <div class="modal-field modal-field--textarea">
+          <textarea id="tt-edit-desc" placeholder="Tooltip description"></textarea>
+        </div>
+      </div>
+      <div>
+        <label class="modal-field-label">Status</label>
+        <span class="us-yn-tog" id="tt-edit-tog" onclick="this.classList.toggle('off')">
+          <span class="us-yn-tog-txt"></span>
+          <span class="us-yn-tog-knob"></span>
+        </span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" id="tt-edit-delete" onclick="ttDelete()" style="display:none;">Delete</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="ttCloseEdit()">Cancel</button>
+      <button class="modal-save" onclick="ttSaveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'settings', title: 'Tooltips' });
+
+var ttData = [
+  { id:1, active:true,  field:'VIN',           desc:'Vehicle Identification Number' },
+  { id:2, active:true,  field:'Year',          desc:'Model year of the vehicle' },
+  { id:3, active:false, field:'Make',          desc:'Vehicle manufacturer' },
+  { id:4, active:true,  field:'Model',         desc:'Vehicle model name' },
+  { id:5, active:true,  field:'Mileage',       desc:'Current odometer reading' }
+];
+var ttNextId = 6;
+var ttEditingId = null;
+
+function ttRender(){
+  var html = '';
+  for(var i = 0; i < ttData.length; i++){
+    var r = ttData[i];
+    var togClass = 'us-yn-tog' + (r.active ? '' : ' off');
+    html += '<tr onclick="ttOpenEdit(' + r.id + ')" style="cursor:pointer;">' +
+      '<td style="text-align:center;">' + (i + 1) + '</td>' +
+      '<td style="text-align:center;"><span class="' + togClass + '" onclick="event.stopPropagation();ttToggle(' + r.id + ')"><span class="us-yn-tog-txt"></span><span class="us-yn-tog-knob"></span></span></td>' +
+      '<td>' + ttEsc(r.field) + '</td>' +
+      '<td>' + ttEsc(r.desc) + '</td>' +
+    '</tr>';
+  }
+  document.getElementById('tt-tbody').innerHTML = html;
+}
+
+function ttEsc(s){ var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function ttToggle(id){
+  var r = ttData.find(function(x){ return x.id === id; });
+  if(r){ r.active = !r.active; ttRender(); }
+}
+
+function ttOpenEdit(id){
+  var r = ttData.find(function(x){ return x.id === id; });
+  if(!r) return;
+  ttEditingId = id;
+  document.getElementById('tt-edit-title').textContent = 'Edit Tooltip';
+  document.getElementById('tt-edit-field').value = r.field;
+  document.getElementById('tt-edit-desc').value = r.desc;
+  document.getElementById('tt-edit-tog').classList.toggle('off', !r.active);
+  document.getElementById('tt-edit-delete').style.display = '';
+  document.getElementById('tt-edit-modal').classList.add('open');
+}
+
+function ttCloseEdit(){
+  document.getElementById('tt-edit-modal').classList.remove('open');
+  ttEditingId = null;
+}
+
+function ttSaveEdit(){
+  var field = document.getElementById('tt-edit-field').value.trim();
+  var desc = document.getElementById('tt-edit-desc').value.trim();
+  var active = !document.getElementById('tt-edit-tog').classList.contains('off');
+  if(!field){ window.showNavToast('Validation', 'Field name is required.'); return; }
+  if(ttEditingId !== null){
+    var r = ttData.find(function(x){ return x.id === ttEditingId; });
+    if(r){ r.field = field; r.desc = desc; r.active = active; }
+  } else {
+    ttData.push({ id: ttNextId++, active: active, field: field, desc: desc });
+  }
+  ttRender();
+  window.showNavToast('Tooltips', 'Tooltip saved successfully.');
+  ttCloseEdit();
+}
+
+function ttDelete(){
+  ttData = ttData.filter(function(x){ return x.id !== ttEditingId; });
+  ttRender();
+  window.showNavToast('Tooltips', 'Tooltip deleted.');
+  ttCloseEdit();
+}
+
+function ttOpenAdd(){
+  ttEditingId = null;
+  document.getElementById('tt-edit-title').textContent = 'Add Tooltip';
+  document.getElementById('tt-edit-field').value = '';
+  document.getElementById('tt-edit-desc').value = '';
+  document.getElementById('tt-edit-tog').classList.remove('off');
+  document.getElementById('tt-edit-delete').style.display = 'none';
+  document.getElementById('tt-edit-modal').classList.add('open');
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    var m = document.getElementById('tt-edit-modal');
+    if(m && m.classList.contains('open')){ ttCloseEdit(); }
+  }
+});
+
+ttRender();
+</script>
+
+</body>
+</html>

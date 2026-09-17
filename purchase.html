@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purchase — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<link rel="stylesheet" href="shared/date-picker.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.set-scroll{padding:24px;}
+@media (max-width:640px){
+  .set-scroll{padding:0;}
+  .table-wrap,.table-scroll{border-radius:0;}
+  .table-wrap thead th:first-child,
+  .table-wrap thead th:last-child,
+  .table-wrap tbody tr:last-child td:first-child,
+  .table-wrap tbody tr:last-child td:last-child{border-radius:0;}
+}
+.pc-dp-close{display:none;}
+@media (max-width:640px){
+  #cc-date-pop{position:fixed!important;top:0!important;left:0!important;right:0;bottom:0;width:auto!important;max-width:none;height:100dvh;max-height:none;border-radius:0;overflow-y:auto;padding:16px 16px 24px;}
+  .pc-dp-close{display:inline-flex;position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:8px;background:transparent;border:0.5px solid var(--brd2);color:var(--mu);cursor:pointer;align-items:center;justify-content:center;font-size:16px;z-index:2;transition:color .12s,border-color .12s,background .12s;}
+  .pc-dp-close:hover{color:var(--rd);border-color:var(--rd);}
+  #cc-date-pop .cc-dp-head{padding-right:52px;}
+}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="tbtn" id="pc-cal-btn" data-tooltip="Date" aria-label="Date">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="pc-cal-label">Today</span>
+    </button>
+    <div class="sp"></div>
+    <button class="tbtn table-btn" data-tooltip="Layout settings" aria-label="Layout settings" onclick="pcOpenLayoutSettings()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
+    </button>
+  </div>
+
+  <!-- Layout Settings modal -->
+  <div class="modal-backdrop modal-fullscreen-mobile" id="pc-ls-modal" onclick="if(event.target===this)pcCloseLayoutSettings()">
+    <div class="modal modal--xwide ls-modal">
+      <div class="modal-header">
+        <div class="modal-title">Layout Settings</div>
+        <button class="modal-close" onclick="pcCloseLayoutSettings()">&#x2715;</button>
+      </div>
+      <div class="modal-body ls-body">
+        <div class="ls-left">
+          <div class="ls-list-head">Columns</div>
+          <div class="ls-col-list" id="pc-ls-col-list"></div>
+        </div>
+        <div class="ls-right">
+          <div class="ls-right-card">
+            <div class="ls-tpl-label">Template</div>
+            <div class="ls-tpl-picker">
+              <button class="ls-tpl-btn" onclick="pcLsToggleTplMenu(event)">
+                <span id="pc-ls-tpl-current">Default</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="ls-tpl-menu" id="pc-ls-tpl-menu" style="display:none;"></div>
+            </div>
+            <div class="ls-chip-strip-wrap"><div class="ls-chip-strip" id="pc-ls-chip-strip"></div></div>
+            <div class="ls-tpl-explainer">Drag columns using the grip to reorder. Toggle the green check to show or hide a column. Save to persist your arrangement, or create a new template.</div>
+            <div class="ls-newtpl" id="pc-ls-newtpl">
+              <div class="ls-newtpl-title">Save as new template</div>
+              <input type="text" class="ls-newtpl-input" id="pc-ls-newtpl-input" placeholder="Template name" maxlength="40" oninput="pcLsNewTplValidate()" onkeydown="if(event.key==='Enter'&&!document.getElementById('pc-ls-newtpl-save').disabled){pcLsNewTplSave();}else if(event.key==='Escape'){event.stopPropagation();pcLsNewTplClose();}"/>
+              <div class="ls-newtpl-error" id="pc-ls-newtpl-error">Name already exists</div>
+              <div class="ls-newtpl-foot">
+                <button class="ls-newtpl-cancel" onclick="pcLsNewTplClose()">Cancel</button>
+                <button class="ls-newtpl-save" id="pc-ls-newtpl-save" onclick="pcLsNewTplSave()" disabled>Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer ls-foot">
+        <button class="ls-delete" onclick="pcLsDeleteTemplate()">Delete</button>
+        <div style="flex:1"></div>
+        <button class="modal-cancel" onclick="pcCloseLayoutSettings()">Cancel</button>
+        <div class="ls-saveas-wrap" id="pc-ls-saveas-wrap">
+          <button class="modal-save ls-saveas-btn" onclick="pcLsToggleSaveAsMenu(event)">
+            Save as
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="ls-saveas-menu" id="pc-ls-saveas-menu" style="display:none;">
+            <button class="ls-saveas-item" onclick="pcLsSaveCurrent();pcCloseLsSaveAsMenu();">Save</button>
+            <button class="ls-saveas-item" onclick="pcCloseLsSaveAsMenu();pcLsNewTplOpen();">New Template</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0;">
+        <div class="table-scroll">
+          <table>
+            <thead id="pc-thead"></thead>
+            <tbody id="pc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/date-picker.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'purchase', title: 'Purchase' });
+
+let pcCurrentDate = '';
+
+document.getElementById('pc-cal-btn').addEventListener('click', function(){
+  CCDatePicker.open({
+    anchor: this,
+    value: pcCurrentDate,
+    onChange: function(v){
+      pcCurrentDate = v;
+      document.getElementById('pc-cal-label').textContent = v;
+    }
+  });
+  if(window.matchMedia('(max-width:640px)').matches){
+    var pop = document.getElementById('cc-date-pop');
+    if(pop && !pop.querySelector('.pc-dp-close')){
+      var x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'pc-dp-close';
+      x.setAttribute('aria-label','Close');
+      x.textContent = '✕';
+      x.addEventListener('click', function(e){ e.stopPropagation(); CCDatePicker.close(); });
+      pop.appendChild(x);
+    }
+  }
+});
+
+/* ── Layout Settings (mirror of Runlist) ─────────────────────────────── */
+const PC_GRIP_SVG = '<svg viewBox="0 0 8 14" fill="currentColor" aria-hidden="true"><circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/><circle cx="2" cy="7" r="1.2"/><circle cx="6" cy="7" r="1.2"/><circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/></svg>';
+const PC_CHECK_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+let pcLayoutTemplates = [{id:1, name:'Default', cols:null}];
+let pcLayoutActiveId = 1;
+let pcLayoutCounter = 1;
+let pcLsDraggedRow = null;
+
+function pcLayoutStorageKey(){ return 'buysmart:pc:layout'; }
+
+function pcSaveLayoutsToStorage(){
+  try {
+    localStorage.setItem(pcLayoutStorageKey(), JSON.stringify({templates: pcLayoutTemplates, activeId: pcLayoutActiveId, counter: pcLayoutCounter}));
+  } catch(e){}
+}
+
+function pcLoadLayoutsFromStorage(){
+  try {
+    const raw = localStorage.getItem(pcLayoutStorageKey());
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    if(data && Array.isArray(data.templates) && data.templates.length){
+      pcLayoutTemplates = data.templates;
+      pcLayoutActiveId = data.activeId || pcLayoutTemplates[0].id;
+      pcLayoutCounter = data.counter || Math.max.apply(null, pcLayoutTemplates.map(function(t){ return t.id; }));
+    }
+  } catch(e){}
+}
+
+function pcVisibleColumnKeys(){
+  const list = document.getElementById('pc-ls-col-list');
+  if(!list || !list.children.length){
+    return PC_DEFAULT_ORDER.slice();
+  }
+  return Array.from(list.querySelectorAll('.ls-col-row')).filter(function(row){
+    return row.querySelector('.ls-check').classList.contains('on');
+  }).map(function(row){ return row.dataset.col; });
+}
+
+function pcSeedLsList(){
+  const list = document.getElementById('pc-ls-col-list');
+  list.innerHTML = PC_DEFAULT_ORDER.map(function(k){
+    const def = PC_COLS[k];
+    return '<div class="ls-col-row" data-col="' + k + '" ondragstart="pcLsDragStart(event)" ondragover="pcLsDragOver(event)" ondragleave="pcLsDragLeave(event)" ondrop="pcLsDrop(event)" ondragend="pcLsDragEnd(event)">' +
+      '<span class="ls-grip" onmousedown="pcLsGripDown(event)" onmouseup="pcLsGripUp(event)">' + PC_GRIP_SVG + '</span>' +
+      '<span class="ls-col-name">' + def.label + '</span>' +
+      '<span class="ls-check on" onclick="pcToggleLsColumn(\'' + k + '\')">' + PC_CHECK_SVG + '</span>' +
+    '</div>';
+  }).join('');
+  pcLsRenderChipStrip();
+}
+
+function pcLsRenderChipStrip(){
+  const strip = document.getElementById('pc-ls-chip-strip');
+  if(!strip) return;
+  const keys = pcVisibleColumnKeys();
+  if(!keys.length){
+    strip.innerHTML = '<div class="ls-chip-empty">No columns visible — toggle one on to see it here.</div>';
+    return;
+  }
+  strip.innerHTML = keys.map(function(k){
+    const def = PC_COLS[k];
+    return '<div class="ls-chip">' + pcEsc(def.label) + '</div>';
+  }).join('');
+}
+
+function pcLsReadCurrentColumns(){
+  const rows = document.querySelectorAll('#pc-ls-col-list .ls-col-row');
+  const out = [];
+  rows.forEach(function(row){
+    const check = row.querySelector('.ls-check');
+    out.push({col: row.dataset.col, on: check && check.classList.contains('on')});
+  });
+  return out;
+}
+
+function pcLsApplyColumns(cols){
+  const list = document.getElementById('pc-ls-col-list');
+  if(!list) return;
+  const byKey = {};
+  Array.from(list.children).forEach(function(row){ byKey[row.dataset.col] = row; });
+  cols.forEach(function(c){
+    const row = byKey[c.col];
+    if(!row) return;
+    list.appendChild(row);
+    const check = row.querySelector('.ls-check');
+    if(c.on) check.classList.add('on'); else check.classList.remove('on');
+    delete byKey[c.col];
+  });
+  Object.keys(byKey).forEach(function(k){
+    list.appendChild(byKey[k]);
+    byKey[k].querySelector('.ls-check').classList.add('on');
+  });
+  pcLsRenderChipStrip();
+}
+
+function pcLsRenderTplMenu(){
+  const menu = document.getElementById('pc-ls-tpl-menu');
+  menu.innerHTML = pcLayoutTemplates.map(function(t){
+    const selected = t.id === pcLayoutActiveId ? ' selected' : '';
+    return '<div class="ls-tpl-item' + selected + '" onclick="pcLsSelectTemplate(' + t.id + ')">' +
+      '<span>' + pcEsc(t.name) + '</span>' +
+      '<span class="ls-tpl-item-check">&#10003;</span>' +
+    '</div>';
+  }).join('');
+  const cur = pcLayoutTemplates.find(function(t){ return t.id === pcLayoutActiveId; });
+  document.getElementById('pc-ls-tpl-current').textContent = cur ? cur.name : 'Default';
+}
+
+function pcLsToggleTplMenu(e){
+  if(e) e.stopPropagation();
+  const menu = document.getElementById('pc-ls-tpl-menu');
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
+function pcLsSelectTemplate(id){
+  pcLayoutActiveId = id;
+  const tpl = pcLayoutTemplates.find(function(t){ return t.id === id; });
+  if(tpl && tpl.cols) pcLsApplyColumns(tpl.cols);
+  document.getElementById('pc-ls-tpl-menu').style.display = 'none';
+  pcLsRenderTplMenu();
+  pcSaveLayoutsToStorage();
+  pcRender();
+}
+
+function pcOpenLayoutSettings(){
+  const modal = document.getElementById('pc-ls-modal');
+  if(!document.querySelector('#pc-ls-col-list .ls-col-row')){
+    pcSeedLsList();
+    const active = pcLayoutTemplates.find(function(t){ return t.id === pcLayoutActiveId; });
+    if(active && active.cols) pcLsApplyColumns(active.cols);
+    pcRender();
+  }
+  pcLsRenderTplMenu();
+  modal.classList.add('open');
+}
+
+function pcCloseLayoutSettings(){
+  document.getElementById('pc-ls-modal').classList.remove('open');
+  const menu = document.getElementById('pc-ls-tpl-menu');
+  if(menu) menu.style.display = 'none';
+  pcCloseLsSaveAsMenu();
+  pcLsNewTplClose();
+}
+
+function pcLsToggleSaveAsMenu(e){
+  if(e) e.stopPropagation();
+  const wrap = document.getElementById('pc-ls-saveas-wrap');
+  const menu = document.getElementById('pc-ls-saveas-menu');
+  const isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
+  wrap.classList.toggle('open', !isOpen);
+}
+function pcCloseLsSaveAsMenu(){
+  const wrap = document.getElementById('pc-ls-saveas-wrap');
+  const menu = document.getElementById('pc-ls-saveas-menu');
+  if(menu) menu.style.display = 'none';
+  if(wrap) wrap.classList.remove('open');
+}
+
+function pcToggleLsColumn(key){
+  const row = document.querySelector('#pc-ls-col-list .ls-col-row[data-col="' + key + '"]');
+  if(!row) return;
+  row.querySelector('.ls-check').classList.toggle('on');
+  pcRender();
+  pcLsRenderChipStrip();
+}
+
+function pcLsGripDown(e){
+  const row = e.currentTarget.closest('.ls-col-row');
+  if(row) row.draggable = true;
+}
+function pcLsGripUp(e){
+  const row = e.currentTarget.closest('.ls-col-row');
+  if(row) row.draggable = false;
+}
+function pcLsDragStart(e){
+  pcLsDraggedRow = e.currentTarget;
+  pcLsDraggedRow.classList.add('dragging');
+  try { e.dataTransfer.effectAllowed = 'move'; } catch(err){}
+}
+function pcLsDragOver(e){
+  if(!pcLsDraggedRow) return;
+  e.preventDefault();
+  const row = e.currentTarget;
+  if(row === pcLsDraggedRow) return;
+  const rect = row.getBoundingClientRect();
+  const before = (e.clientY - rect.top) < rect.height / 2;
+  row.classList.toggle('drop-before', before);
+  row.classList.toggle('drop-after', !before);
+}
+function pcLsDragLeave(e){
+  e.currentTarget.classList.remove('drop-before','drop-after');
+}
+function pcLsClearDropIndicators(){
+  document.querySelectorAll('#pc-ls-col-list .ls-col-row').forEach(function(r){
+    r.classList.remove('drop-before','drop-after');
+  });
+}
+function pcLsDrop(e){
+  if(!pcLsDraggedRow) return;
+  e.preventDefault();
+  const target = e.currentTarget;
+  if(target === pcLsDraggedRow){ pcLsClearDropIndicators(); return; }
+  const before = target.classList.contains('drop-before');
+  const list = document.getElementById('pc-ls-col-list');
+  if(before) list.insertBefore(pcLsDraggedRow, target);
+  else       list.insertBefore(pcLsDraggedRow, target.nextSibling);
+  pcLsClearDropIndicators();
+  pcRender();
+  pcLsRenderChipStrip();
+}
+function pcLsDragEnd(){
+  if(pcLsDraggedRow) pcLsDraggedRow.classList.remove('dragging');
+  pcLsDraggedRow = null;
+  pcLsClearDropIndicators();
+  document.querySelectorAll('#pc-ls-col-list .ls-col-row').forEach(function(r){ r.draggable = false; });
+}
+
+function pcLsSaveCurrent(){
+  const active = pcLayoutTemplates.find(function(t){ return t.id === pcLayoutActiveId; });
+  if(active){
+    active.cols = pcLsReadCurrentColumns();
+    pcSaveLayoutsToStorage();
+    window.showNavToast('Layout saved', active.name + ' template updated.');
+  }
+}
+
+function pcLsNewTplOpen(){
+  const dlg = document.getElementById('pc-ls-newtpl');
+  const input = document.getElementById('pc-ls-newtpl-input');
+  input.value = '';
+  input.classList.remove('error');
+  document.getElementById('pc-ls-newtpl-error').classList.remove('show');
+  document.getElementById('pc-ls-newtpl-save').disabled = true;
+  dlg.classList.add('open');
+  setTimeout(function(){ input.focus(); }, 30);
+}
+function pcLsNewTplClose(){
+  document.getElementById('pc-ls-newtpl').classList.remove('open');
+}
+function pcLsNewTplValidate(){
+  const input = document.getElementById('pc-ls-newtpl-input');
+  const err = document.getElementById('pc-ls-newtpl-error');
+  const save = document.getElementById('pc-ls-newtpl-save');
+  const name = input.value.trim();
+  const dup = !!name && pcLayoutTemplates.some(function(t){ return t.name.toLowerCase() === name.toLowerCase(); });
+  input.classList.toggle('error', dup);
+  err.classList.toggle('show', dup);
+  save.disabled = !name || dup;
+}
+function pcLsNewTplSave(){
+  const name = document.getElementById('pc-ls-newtpl-input').value.trim();
+  if(!name) return;
+  if(pcLayoutTemplates.some(function(t){ return t.name.toLowerCase() === name.toLowerCase(); })) return;
+  pcLayoutCounter += 1;
+  const tpl = { id: pcLayoutCounter, name: name, cols: pcLsReadCurrentColumns() };
+  pcLayoutTemplates.push(tpl);
+  pcLayoutActiveId = tpl.id;
+  pcSaveLayoutsToStorage();
+  pcLsRenderTplMenu();
+  pcLsNewTplClose();
+  window.showNavToast('Template created', name + ' is now active.');
+}
+
+function pcLsDeleteTemplate(){
+  if(pcLayoutTemplates.length <= 1){
+    window.showNavToast('Cannot delete', 'At least one template must remain.');
+    return;
+  }
+  const active = pcLayoutTemplates.find(function(t){ return t.id === pcLayoutActiveId; });
+  if(!active) return;
+  if(!window.confirm('Delete template "' + active.name + '"? This cannot be undone.')) return;
+  const idx = pcLayoutTemplates.indexOf(active);
+  pcLayoutTemplates.splice(idx, 1);
+  const nextActive = pcLayoutTemplates[0];
+  pcLayoutActiveId = nextActive.id;
+  if(nextActive.cols) pcLsApplyColumns(nextActive.cols);
+  pcSaveLayoutsToStorage();
+  pcLsRenderTplMenu();
+  pcRender();
+  window.showNavToast('Template deleted', '"' + active.name + '" removed. Active: ' + nextActive.name + '.');
+}
+
+/* ── Purchase data table (Batch 1: 9 columns) ─────────────────────────── */
+function pcEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function pcFmtNum(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function pcLightStatusCell(){
+  return '<div class="light-status">' +
+           '<span class="ls-dot" data-k="R">R</span>' +
+           '<span class="ls-dot" data-k="Y">Y</span>' +
+           '<span class="ls-dot" data-k="G">G</span>' +
+           '<span class="ls-dot" data-k="B">B</span>' +
+         '</div>';
+}
+
+function pcCellVehicleName(r){
+  const specs = [r.year, r.make, r.model, r.trim, r.mileage]
+    .map(function(v){ return '<span class="bdg bdg-outline-amber">' + pcEsc(v) + '</span>'; }).join('');
+  return '<td data-col="vehicleName">' +
+    '<div class="pc-veh-cell">' +
+      '<div class="pc-veh-row">' +
+        '<span class="bdg bdg-outline-blue">' + pcEsc(r.vin) + '</span>' +
+        specs +
+      '</div>' +
+      '<span class="bdg bdg-outline-amber">' + pcEsc(r.status) + '</span>' +
+    '</div>' +
+  '</td>';
+}
+
+const PC_COLS = {
+  no:            { label:'No',             sortKey:'no',            width:70,  cell:function(r){ return '<td data-col="no">' + r.no + '</td>'; } },
+  vehicleName:   { label:'Vehicle Name',   sortKey:'vehicleName',   width:560, cell:pcCellVehicleName },
+  vehicleLot:    { label:'Vehicle Lot',    sortKey:'vehicleLot',    width:150, cell:function(r){ return '<td data-col="vehicleLot">' + pcEsc(r.vehicleLot) + '</td>'; } },
+  acquiredPrice: { label:'Acquired Price', sortKey:'acquiredPrice', width:140, cell:function(r){ return '<td data-col="acquiredPrice">' + pcFmtNum(r.acquiredPrice) + '</td>'; } },
+  finalBid:      { label:'Final Bid',      sortKey:'finalBid',      width:120, cell:function(r){ return '<td data-col="finalBid">' + pcFmtNum(r.finalBid) + '</td>'; } },
+  buyer:         { label:'Buyer',          sortKey:'buyer',         width:130, cell:function(r){ return '<td data-col="buyer">' + pcEsc(r.buyer) + '</td>'; } },
+  purchasedDate: { label:'Purchased Date', sortKey:'purchasedDate', width:140, cell:function(r){ return '<td data-col="purchasedDate">' + pcEsc(r.purchasedDate) + '</td>'; } },
+  mmr:           { label:'MMR',            sortKey:'mmr',           width:100, cell:function(r){ return '<td data-col="mmr">' + r.mmr + '</td>'; } },
+  pctMarket:     { label:'% of Market',    sortKey:'pctMarket',     width:110, cell:function(r){ return '<td data-col="pctMarket">' + r.pctMarket + '</td>'; } },
+  vrank:         { label:'VRank',          sortKey:'vrank',         width:110, cell:function(r){ return '<td data-col="vrank">' + pcFmtNum(r.vrank) + '</td>'; } },
+  priceRank:     { label:'PriceRank',      sortKey:'priceRank',     width:120, cell:function(r){ return '<td data-col="priceRank">' + pcFmtNum(r.priceRank) + '</td>'; } },
+  mds:           { label:'MDS',            sortKey:'mds',           width:80,  cell:function(r){ return '<td data-col="mds">' + r.mds + '</td>'; } },
+  carfax:        { label:'Carfax',         sortKey:'carfax',        width:340, cell:function(r){ return '<td data-col="carfax" class="carfax-cell">' + pcEsc(r.carfax) + '</td>'; } },
+  announcements: { label:'Announcements',  sortKey:'announcements', width:180, cell:function(r){ return '<td data-col="announcements">' + pcEsc(r.announcements || '') + '</td>'; } },
+  acquiredName:  { label:'Acquired Name',  sortKey:'acquiredName',  width:170, cell:function(r){ return '<td data-col="acquiredName">' + pcEsc(r.acquiredName || '') + '</td>'; } },
+  exteriorColor: { label:'Exterior Color', sortKey:'exteriorColor', width:170, cell:function(r){ return '<td data-col="exteriorColor" style="white-space:normal;">' + pcEsc(r.exteriorColor) + '</td>'; } },
+  vinNumber:     { label:'VIN Number',     sortKey:'vin',           width:190, cell:function(r){ return '<td data-col="vinNumber"><span class="bdg bdg-outline-blue">' + pcEsc(r.vin) + '</span></td>'; } },
+  year:          { label:'YEAR',           sortKey:'year',          width:100, cell:function(r){ return '<td data-col="year"><span class="bdg bdg-outline-amber">' + pcEsc(r.year) + '</span></td>'; } },
+  make:          { label:'Make',           sortKey:'make',          width:160, cell:function(r){ return '<td data-col="make"><span class="bdg bdg-outline-amber">' + pcEsc(r.make) + '</span></td>'; } },
+  model:             { label:'Model',             sortKey:'model',             width:150, cell:function(r){ return '<td data-col="model"><span class="bdg bdg-outline-amber">' + pcEsc(r.model) + '</span></td>'; } },
+  trim:              { label:'Trim',              sortKey:'trim',              width:150, cell:function(r){ return '<td data-col="trim"><span class="bdg bdg-outline-amber">' + pcEsc(r.trim) + '</span></td>'; } },
+  odometer:          { label:'Odometer',          sortKey:'mileage',           width:120, cell:function(r){ return '<td data-col="odometer"><span class="bdg bdg-outline-amber">' + pcFmtNum(r.mileage) + '</span></td>'; } },
+  lightStatus:       { label:'LightStatus',       sortKey:null,                width:120, cell:function(r){ return '<td data-col="lightStatus">' + pcLightStatusCell() + '</td>'; } },
+  carfaxRetailValue: { label:'CarfaxRetailValue', sortKey:'carfaxRetailValue', width:170, cell:function(r){ return '<td data-col="carfaxRetailValue">' + pcFmtNum(r.carfaxRetailValue) + '</td>'; } },
+  sellerInfo:        { label:'SellerInfo',        sortKey:'sellerInfo',        width:150, cell:function(r){ return '<td data-col="sellerInfo">' + pcEsc(r.sellerInfo || '') + '</td>'; } },
+};
+const PC_DEFAULT_ORDER = Object.keys(PC_COLS);
+
+const PURCHASE_DATA = [
+  { no:1, vin:'2G1FJ1EJ0E9152560', year:2014, make:'CHEVROLET',     model:'CAMARO',      trim:'SS',              mileage:89889, status:'Inventory Added', vehicleLot:'USA Direct Auto', acquiredPrice:14935, finalBid:17000, buyer:'Jane Peras', purchasedDate:'05/13/2026', mmr:17200, pctMarket:94,
+    vrank:18930, priceRank:12078, mds:23, carfax:'11 Service History Records, At Least 1 Open Recall, 4 Previous Owners, Personal Vehicle, Last Owned in Texas', announcements:'', acquiredName:'', exteriorColor:'Silver Ice Metallic', carfaxRetailValue:18180, sellerInfo:'' },
+  { no:2, vin:'1C6RR7NM9HS877191', year:2017, make:'RAM',           model:'1500',        trim:'Laramie',         mileage:56627, status:'Inventory Added', vehicleLot:'USA Direct Auto', acquiredPrice:20085, finalBid:20500, buyer:'Jane Peras', purchasedDate:'05/13/2026', mmr:21000, pctMarket:92,
+    vrank:23619, priceRank:13078, mds:30, carfax:'9 Service History Records, 3 Previous Owners, Personal Vehicle, Last Owned in Texas, 21 Detailed Records Available', announcements:'', acquiredName:'', exteriorColor:'Blue Streak Pearl Coat', carfaxRetailValue:28360, sellerInfo:'' },
+  { no:3, vin:'58ADZ1B19RU181905', year:2024, make:'LEXUS',         model:'ES',          trim:'350 Base',        mileage:14051, status:'Inventory Added', vehicleLot:'USA Direct Auto', acquiredPrice:35670, finalBid:35000, buyer:'Jane Peras', purchasedDate:'05/12/2026', mmr:39400, pctMarket:90,
+    vrank:38445, priceRank:33900, mds:45, carfax:'CARFAX 1-Owner Vehicle, Personal Lease Vehicle, Last Owned in Texas, 5 Detailed Records Available', announcements:'', acquiredName:'', exteriorColor:'Sunlit Green', carfaxRetailValue:43120, sellerInfo:'' },
+  { no:4, vin:'19XFC2F62KE045735', year:2019, make:'HONDA',         model:'Civic',       trim:'LX',              mileage:47494, status:'Inventory Added', vehicleLot:'USA Direct Auto', acquiredPrice:14785, finalBid:14700, buyer:'Jane Peras', purchasedDate:'05/12/2026', mmr:16300, pctMarket:94,
+    vrank:16396, priceRank:11654, mds:24, carfax:'15 Service History Records, 2 Previous Owners, Personal Vehicle, Last Owned in Texas, 37 Detailed Records Available', announcements:'', acquiredName:'', exteriorColor:'Molten Lava Pearl', carfaxRetailValue:17890, sellerInfo:'' },
+  { no:5, vin:'4T1C11AK3NU678897', year:2022, make:'TOYOTA',        model:'Camry',       trim:'LE',              mileage:16405, status:'Inventory Added', vehicleLot:'USA Direct Auto', acquiredPrice:19585, finalBid:19500, buyer:'Jane Peras', purchasedDate:'05/12/2026', mmr:22300, pctMarket:90,
+    vrank:20026, priceRank:14869, mds:43, carfax:'5 Service History Records, 2 Previous Owners, Personal Vehicle, Last Owned in Florida, 18 Detailed Records Available', announcements:'', acquiredName:'', exteriorColor:'Blueprint', carfaxRetailValue:22660, sellerInfo:'' },
+  { no:6, vin:'KNMAT2MT2GP629577', year:2016, make:'NISSAN',        model:'Rogue',       trim:'S',               mileage:65470, status:'Inventory Added', vehicleLot:'USA Direct Auto', acquiredPrice:7950,  finalBid:8000,  buyer:'Jane Peras', purchasedDate:'05/12/2026', mmr:7725,  pctMarket:94,
+    vrank:9614,  priceRank:2677,  mds:24, carfax:'8 Service History Records, CARFAX 1-Owner Vehicle, Personal Vehicle, Last Owned in Louisiana, 19 Detailed Records Available', announcements:'', acquiredName:'', exteriorColor:'Gun Metallic', carfaxRetailValue:12220, sellerInfo:'' },
+  { no:7, vin:'1GYS3JKJ2KR401389', year:2019, make:'CADILLAC',      model:'Escalade ESV',trim:'Premium Luxury',  mileage:46627, status:'Inventory Added', vehicleLot:'USA Direct Auto', acquiredPrice:29890, finalBid:30000, buyer:'Jane Peras', purchasedDate:'05/12/2026', mmr:31900, pctMarket:94,
+    vrank:34653, priceRank:21093, mds:21, carfax:'9 Service History Records, CARFAX 1-Owner Vehicle, Personal Vehicle, Last Owned in Florida, 23 Detailed Records Available', announcements:'', acquiredName:'', exteriorColor:'Bronze Dune Metallic', carfaxRetailValue:36480, sellerInfo:'' },
+  { no:8, vin:'W1K5J4GB5LN090082', year:2020, make:'MERCEDES-BENZ', model:'CLA-Class',   trim:'CLA250 Base',     mileage:49956, status:'Inventory Added', vehicleLot:'USA Direct Auto', acquiredPrice:17155, finalBid:18000, buyer:'Jane Peras', purchasedDate:'05/12/2026', mmr:18650, pctMarket:92,
+    vrank:20568, priceRank:16128, mds:34, carfax:'14 Service History Records, At Least 1 Open Recall, 2 Previous Owners, Personal Vehicle, Last Owned in Florida', announcements:'', acquiredName:'', exteriorColor:'Mojave Silver Metallic', carfaxRetailValue:21640, sellerInfo:'' },
+];
+
+let pcSortCol = null, pcSortDir = null;
+
+function pcBuildThead(){
+  const html = '<tr>' + pcVisibleColumnKeys().map(function(k){
+    const def = PC_COLS[k];
+    if(!def.sortKey){
+      return '<th data-col="' + k + '" style="width:' + def.width + 'px;"><div class="thi">' + def.label + '</div></th>';
+    }
+    return '<th data-col="' + k + '" style="width:' + def.width + 'px;" data-sort="' + def.sortKey + '" onclick="pcSort(\'' + k + '\')"><div class="thi">' + def.label + '<span class="sort-arrow"></span></div></th>';
+  }).join('') + '</tr>';
+  document.getElementById('pc-thead').innerHTML = html;
+  if(pcSortCol){
+    const th = document.querySelector('#pc-thead th[data-col="' + pcSortCol + '"]');
+    if(th) th.classList.add(pcSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  }
+}
+
+function pcSortKey(row, col){
+  if(col === 'vehicleName') return row.make + ' ' + row.model;
+  const def = PC_COLS[col];
+  const key = (def && def.sortKey) ? def.sortKey : col;
+  return row[key];
+}
+
+function pcSort(col){
+  if(pcSortCol === col){
+    if(pcSortDir === 'asc') pcSortDir = 'desc';
+    else if(pcSortDir === 'desc'){ pcSortDir = null; pcSortCol = null; }
+    else pcSortDir = 'asc';
+  } else { pcSortCol = col; pcSortDir = 'asc'; }
+  if(pcSortCol){
+    const dir = pcSortDir === 'asc' ? 1 : -1;
+    PURCHASE_DATA.sort(function(a, b){
+      const va = pcSortKey(a, pcSortCol), vb = pcSortKey(b, pcSortCol);
+      if(va < vb) return -1 * dir;
+      if(va > vb) return  1 * dir;
+      return 0;
+    });
+  } else {
+    PURCHASE_DATA.sort(function(a, b){ return a.no - b.no; });
+  }
+  pcRender();
+}
+
+function pcRender(){
+  pcBuildThead();
+  document.getElementById('pc-tbody').innerHTML = PURCHASE_DATA.map(function(r){
+    return '<tr>' + pcVisibleColumnKeys().map(function(k){ return PC_COLS[k].cell(r); }).join('') + '</tr>';
+  }).join('');
+}
+
+pcLoadLayoutsFromStorage();
+pcSeedLsList();
+const _pcBootActiveTpl = pcLayoutTemplates.find(function(t){ return t.id === pcLayoutActiveId; });
+if(_pcBootActiveTpl && _pcBootActiveTpl.cols) pcLsApplyColumns(_pcBootActiveTpl.cols);
+pcRender();
+</script>
+
+</body>
+</html>

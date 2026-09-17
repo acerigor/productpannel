@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auction Assignment — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.aa-dd{position:relative;}
+.aa-dd-trigger{display:flex;align-items:center;width:100%;min-height:40px;padding:6px 12px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;cursor:pointer;transition:border-color .15s;user-select:none;flex-wrap:wrap;gap:4px;}
+.aa-dd-trigger:hover{border-color:var(--ac);}
+.aa-dd-trigger.open{border-color:var(--ac);}
+.aa-dd-trigger .aa-dd-placeholder{color:var(--mu);flex:1;}
+.aa-dd-trigger .aa-dd-chevron{flex-shrink:0;width:14px;height:14px;color:var(--mu);transition:transform .15s;margin-left:auto;}
+.aa-dd-trigger.open .aa-dd-chevron{transform:rotate(180deg);}
+.aa-dd-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 8px;background:var(--ac);color:#fff;border-radius:4px;font-size:12px;font-weight:500;white-space:nowrap;}
+.aa-dd-chip-x{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:none;background:transparent;color:rgba(255,255,255,.7);cursor:pointer;padding:0;border-radius:3px;font-size:11px;transition:background .1s;}
+.aa-dd-chip-x:hover{background:rgba(255,255,255,.2);color:#fff;}
+.aa-dd-list{position:absolute;bottom:calc(100% + 4px);left:0;right:0;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;padding:4px;max-height:220px;overflow-y:auto;z-index:10;display:none;box-shadow:0 8px 24px rgba(0,0,0,.45);}
+.aa-dd-list.open{display:block;}
+.aa-dd-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;font-size:13px;color:var(--tx);cursor:pointer;transition:background .1s;font-family:var(--font);}
+.aa-dd-item:hover{background:rgba(255,255,255,.06);}
+.aa-dd-check{width:16px;height:16px;border:1.5px solid var(--brd2);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .1s,border-color .1s;}
+.aa-dd-item.selected .aa-dd-check{background:var(--ac);border-color:var(--ac);}
+.aa-dd-item.selected .aa-dd-check::after{content:'';display:block;width:4px;height:7px;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);margin-top:-1px;}
+.aa-table-chip{display:inline-block;padding:3px 10px;background:var(--ac);color:#fff;border-radius:4px;font-size:11.5px;font-weight:500;white-space:nowrap;}
+.aa-table-chip-more{background:var(--ac2);color:#fff;cursor:default;}
+.aa-more-tip{display:none;position:fixed;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;padding:8px 12px;white-space:nowrap;font-size:11.5px;color:var(--tx);box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:120;line-height:1.6;pointer-events:none;}
+.aa-auc-dd{position:relative;}
+.aa-auc-trigger{display:flex;align-items:center;width:100%;height:40px;padding:0 12px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;cursor:pointer;transition:border-color .15s;user-select:none;}
+.aa-auc-trigger:hover{border-color:var(--ac);}
+.aa-auc-trigger.open{border-color:var(--ac);}
+.aa-auc-trigger span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.aa-auc-trigger .aa-auc-placeholder{color:var(--mu);}
+.aa-auc-trigger svg{flex-shrink:0;width:14px;height:14px;color:var(--mu);transition:transform .15s;}
+.aa-auc-trigger.open svg{transform:rotate(180deg);}
+.aa-auc-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;padding:4px;max-height:220px;overflow-y:auto;z-index:10;display:none;box-shadow:0 8px 24px rgba(0,0,0,.45);}
+.aa-auc-list.open{display:block;}
+.aa-auc-item{padding:8px 12px;border-radius:6px;font-size:13px;color:var(--tx);cursor:pointer;transition:background .1s;font-family:var(--font);}
+.aa-auc-item:hover{background:rgba(255,255,255,.06);}
+.aa-auc-item.active{background:var(--ac);color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <button class="tbtn tbtn-p" onclick="aaOpenAdd()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Add Assignment</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:64px;text-align:center;">No.</th>
+                <th style="text-align:left;">Auction Name</th>
+                <th style="text-align:left;">Assigned Admin</th>
+                <th style="text-align:left;">Assigned Sheets</th>
+              </tr>
+            </thead>
+            <tbody id="aa-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-backdrop modal-fullscreen-mobile" id="aa-edit-modal" onclick="if(event.target===this)aaCloseEdit()">
+  <div class="modal" style="width:700px;max-width:95vw;">
+    <div class="modal-header">
+      <div class="modal-title" id="aa-edit-title">Edit Assignment</div>
+      <button class="modal-close" onclick="aaCloseEdit()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;overflow:visible;">
+      <div>
+        <label class="modal-field-label">Auction Name</label>
+        <div class="aa-auc-dd" id="aa-auc-dd">
+          <div class="aa-auc-trigger" onclick="aaAucToggle()">
+            <span id="aa-auc-label" class="aa-auc-placeholder">Select auction</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="aa-auc-list" id="aa-auc-list"></div>
+        </div>
+        <input type="hidden" id="aa-edit-auction"/>
+      </div>
+      <div>
+        <label class="modal-field-label">Assigned Admin</label>
+        <div class="modal-field">
+          <input id="aa-edit-admin" placeholder="Admin name"/>
+        </div>
+      </div>
+      <div>
+        <label class="modal-field-label">Assigned Sheets</label>
+        <div class="aa-dd" id="aa-dd">
+          <div class="aa-dd-trigger" onclick="aaDdToggle()">
+            <span id="aa-dd-label" class="aa-dd-placeholder">Select sheets</span>
+            <svg class="aa-dd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="aa-dd-list" id="aa-dd-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" id="aa-edit-delete" onclick="aaDelete()" style="display:none;">Delete</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="aaCloseEdit()">Cancel</button>
+      <button class="modal-save" onclick="aaSaveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'settings', title: 'Auction Assignment' });
+
+var aaAuctionList = [
+  'Manheim','ADESA','IAA','Copart','ACV Auctions',
+  'OVE (Openlane)','SmartAuction','TradeRev','BacklotCars',
+  'America\'s Auto Auction','Dealers Auto Auction','ServNet',
+  'Edge Pipeline','EBlock','CarOffer'
+];
+
+var aaSheetList = [
+  'Manheim Runlist','Manheim Simulcast','Manheim Proxy',
+  'ADESA Inventory','ADESA DealerBlock','ADESA Proxy Bids',
+  'Copart Export','Copart Salvage','Copart Salvage Proxy',
+  'ACV Daily','ACV Weekly','ACV Proxy','ACV Weekly Proxy',
+  'OVE Feed','TradeRev Sheet','Backlot Export',
+  'AAA Runlist','ServNet Data','Edge Export','CarOffer Daily'
+];
+var aaSelectedSheets = [];
+
+var aaData = [
+  { id:1,  auction:'Manheim',                admin:'John Rivera',      sheets:'Manheim Runlist, Manheim Simulcast' },
+  { id:2,  auction:'ADESA',                  admin:'Sarah Chen',       sheets:'ADESA Inventory, ADESA DealerBlock' },
+  { id:3,  auction:'Copart',                 admin:'Mike Torres',      sheets:'Copart Export, Copart Salvage' },
+  { id:4,  auction:'ACV Auctions',           admin:'Lisa Nguyen',      sheets:'ACV Daily, ACV Weekly' },
+  { id:5,  auction:'OVE (Openlane)',          admin:'John Rivera',      sheets:'OVE Feed' },
+  { id:6,  auction:'TradeRev',               admin:'David Park',       sheets:'TradeRev Sheet' },
+  { id:7,  auction:'BacklotCars',            admin:'Sarah Chen',       sheets:'Backlot Export' },
+  { id:8,  auction:'America\'s Auto Auction', admin:'Mike Torres',      sheets:'AAA Runlist' },
+  { id:9,  auction:'ServNet',                admin:'Lisa Nguyen',      sheets:'ServNet Data' },
+  { id:10, auction:'Edge Pipeline',          admin:'David Park',       sheets:'Edge Export' },
+  { id:11, auction:'CarOffer',               admin:'John Rivera',      sheets:'CarOffer Daily' },
+  { id:12, auction:'Manheim',                admin:'Sarah Chen',       sheets:'Manheim Proxy' },
+  { id:13, auction:'Copart',                 admin:'Lisa Nguyen',      sheets:'Copart Salvage Proxy' },
+  { id:14, auction:'ADESA',                  admin:'David Park',       sheets:'ADESA Proxy Bids' },
+  { id:15, auction:'ACV Auctions',           admin:'Mike Torres',      sheets:'ACV Proxy, ACV Weekly Proxy' }
+];
+var aaNextId = 16;
+var aaEditingId = null;
+
+function aaEsc(s){ var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function aaRender(){
+  var html = '';
+  for(var i = 0; i < aaData.length; i++){
+    var r = aaData[i];
+    html += '<tr onclick="aaOpenEdit(' + r.id + ')" style="cursor:pointer;">' +
+      '<td style="text-align:center;">' + (i + 1) + '</td>' +
+      '<td>' + aaEsc(r.auction) + '</td>' +
+      '<td>' + aaEsc(r.admin) + '</td>' +
+      '<td style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">' + (function(){ var arr = r.sheets ? r.sheets.split(', ').filter(Boolean) : []; var show = arr.slice(0,5).map(function(s){ return '<span class="aa-table-chip">' + aaEsc(s) + '</span>'; }).join(''); if(arr.length > 5){ var rest = arr.slice(5).map(function(s){ return aaEsc(s); }).join('<br/>'); show += '<span class="aa-table-chip aa-table-chip-more">+' + (arr.length - 5) + ' more<span class="aa-more-tip">' + rest + '</span></span>'; } return show; })() + '</td>' +
+    '</tr>';
+  }
+  document.getElementById('aa-tbody').innerHTML = html;
+  document.querySelectorAll('.aa-table-chip-more').forEach(function(el){
+    el.addEventListener('mouseenter', function(e){
+      var tip = el.querySelector('.aa-more-tip');
+      if(!tip) return;
+      var rect = el.getBoundingClientRect();
+      tip.style.display = 'block';
+      tip.style.left = rect.left + rect.width / 2 - tip.offsetWidth / 2 + 'px';
+      tip.style.top = rect.top - tip.offsetHeight - 6 + 'px';
+    });
+    el.addEventListener('mouseleave', function(){
+      var tip = el.querySelector('.aa-more-tip');
+      if(tip) tip.style.display = 'none';
+    });
+  });
+}
+
+function aaDdToggle(){
+  var list = document.getElementById('aa-dd-list');
+  if(list.classList.contains('open')){ aaDdClose(); } else {
+    document.querySelector('.aa-dd-trigger').classList.add('open');
+    list.classList.add('open');
+  }
+}
+
+function aaDdClose(){
+  document.querySelector('.aa-dd-trigger').classList.remove('open');
+  document.getElementById('aa-dd-list').classList.remove('open');
+}
+
+function aaDdToggleItem(name){
+  var idx = aaSelectedSheets.indexOf(name);
+  if(idx === -1){ aaSelectedSheets.push(name); } else { aaSelectedSheets.splice(idx, 1); }
+  aaDdRender();
+}
+
+function aaDdRemoveChip(name){
+  var idx = aaSelectedSheets.indexOf(name);
+  if(idx !== -1) aaSelectedSheets.splice(idx, 1);
+  aaDdRender();
+}
+
+function aaDdRender(){
+  var listHtml = '';
+  for(var i = 0; i < aaSheetList.length; i++){
+    var s = aaSheetList[i];
+    var sel = aaSelectedSheets.indexOf(s) !== -1;
+    var cls = 'aa-dd-item' + (sel ? ' selected' : '');
+    listHtml += '<div class="' + cls + '" onclick="event.stopPropagation();aaDdToggleItem(\'' + aaEsc(s).replace(/'/g,'\\\'') + '\')"><span class="aa-dd-check"></span>' + aaEsc(s) + '</div>';
+  }
+  document.getElementById('aa-dd-list').innerHTML = listHtml;
+
+  var trigger = document.querySelector('.aa-dd-trigger');
+  var wasOpen = trigger.classList.contains('open');
+  var chipHtml = '';
+  if(aaSelectedSheets.length === 0){
+    chipHtml = '<span class="aa-dd-placeholder">Select sheets</span>';
+  } else {
+    for(var j = 0; j < aaSelectedSheets.length; j++){
+      var n = aaSelectedSheets[j];
+      chipHtml += '<span class="aa-dd-chip">' + aaEsc(n) + '<button class="aa-dd-chip-x" onclick="event.stopPropagation();aaDdRemoveChip(\'' + aaEsc(n).replace(/'/g,'\\\'') + '\')">&times;</button></span>';
+    }
+  }
+  chipHtml += '<svg class="aa-dd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  trigger.innerHTML = chipHtml;
+  if(wasOpen) trigger.classList.add('open');
+}
+
+function aaAucToggle(){
+  var list = document.getElementById('aa-auc-list');
+  if(list.classList.contains('open')){ aaAucClose(); } else {
+    document.querySelector('.aa-auc-trigger').classList.add('open');
+    list.classList.add('open');
+  }
+}
+
+function aaAucClose(){
+  document.querySelector('.aa-auc-trigger').classList.remove('open');
+  document.getElementById('aa-auc-list').classList.remove('open');
+}
+
+function aaAucSelect(name){
+  document.getElementById('aa-edit-auction').value = name;
+  var label = document.getElementById('aa-auc-label');
+  label.textContent = name;
+  label.classList.remove('aa-auc-placeholder');
+  aaAucRender(name);
+  aaAucClose();
+}
+
+function aaAucRender(selected){
+  var html = '';
+  for(var i = 0; i < aaAuctionList.length; i++){
+    var a = aaAuctionList[i];
+    var cls = 'aa-auc-item' + (a === selected ? ' active' : '');
+    html += '<div class="' + cls + '" onclick="aaAucSelect(\'' + aaEsc(a).replace(/'/g,'\\\'') + '\')">' + aaEsc(a) + '</div>';
+  }
+  document.getElementById('aa-auc-list').innerHTML = html;
+}
+
+function aaPopulateAuction(selected){
+  document.getElementById('aa-edit-auction').value = selected || '';
+  var label = document.getElementById('aa-auc-label');
+  if(selected){
+    label.textContent = selected;
+    label.classList.remove('aa-auc-placeholder');
+  } else {
+    label.textContent = 'Select auction';
+    label.classList.add('aa-auc-placeholder');
+  }
+  aaAucRender(selected || '');
+  aaAucClose();
+}
+
+function aaOpenEdit(id){
+  var r = aaData.find(function(x){ return x.id === id; });
+  if(!r) return;
+  aaEditingId = id;
+  document.getElementById('aa-edit-title').textContent = 'Edit Assignment';
+  aaPopulateAuction(r.auction);
+  document.getElementById('aa-edit-admin').value = r.admin;
+  aaSelectedSheets = r.sheets ? r.sheets.split(', ').filter(Boolean) : [];
+  aaDdRender();
+  aaDdClose();
+  document.getElementById('aa-edit-delete').style.display = '';
+  document.getElementById('aa-edit-modal').classList.add('open');
+}
+
+function aaCloseEdit(){
+  document.getElementById('aa-edit-modal').classList.remove('open');
+  aaEditingId = null;
+}
+
+function aaSaveEdit(){
+  var auction = document.getElementById('aa-edit-auction').value.trim();
+  var admin   = document.getElementById('aa-edit-admin').value.trim();
+  var sheets  = aaSelectedSheets.join(', ');
+  if(!auction || !admin){ window.showNavToast('Validation', 'Auction name and admin are required.'); return; }
+  if(aaEditingId !== null){
+    var r = aaData.find(function(x){ return x.id === aaEditingId; });
+    if(r){ r.auction = auction; r.admin = admin; r.sheets = sheets; }
+  } else {
+    aaData.push({ id: aaNextId++, auction: auction, admin: admin, sheets: sheets });
+  }
+  aaRender();
+  window.showNavToast('Auction Assignment', 'Assignment saved successfully.');
+  aaCloseEdit();
+}
+
+function aaDelete(){
+  aaData = aaData.filter(function(x){ return x.id !== aaEditingId; });
+  aaRender();
+  window.showNavToast('Auction Assignment', 'Assignment deleted.');
+  aaCloseEdit();
+}
+
+function aaOpenAdd(){
+  aaEditingId = null;
+  document.getElementById('aa-edit-title').textContent = 'Add Assignment';
+  aaPopulateAuction('');
+  document.getElementById('aa-edit-admin').value = '';
+  aaSelectedSheets = [];
+  aaDdRender();
+  aaDdClose();
+  document.getElementById('aa-edit-delete').style.display = 'none';
+  document.getElementById('aa-edit-modal').classList.add('open');
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    var aucList = document.getElementById('aa-auc-list');
+    if(aucList && aucList.classList.contains('open')){ aaAucClose(); return; }
+    var list = document.getElementById('aa-dd-list');
+    if(list && list.classList.contains('open')){ aaDdClose(); return; }
+    var m = document.getElementById('aa-edit-modal');
+    if(m && m.classList.contains('open')){ aaCloseEdit(); }
+  }
+});
+
+document.addEventListener('click', function(e){
+  var aucDd = document.getElementById('aa-auc-dd');
+  if(aucDd && !aucDd.contains(e.target)){ aaAucClose(); }
+  var dd = document.getElementById('aa-dd');
+  if(dd && !dd.contains(e.target)){ aaDdClose(); }
+});
+
+aaRender();
+</script>
+
+</body>
+</html>

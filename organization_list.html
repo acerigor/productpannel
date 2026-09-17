@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Organizations — CorePanel</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.org-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:24px;flex:1;overflow-y:auto;align-content:start;}
+@media (max-width:640px){.org-grid{padding:16px;grid-template-columns:1fr;}}
+.org-card{background:var(--sur);border:0.5px solid var(--brd2);border-radius:12px;padding:20px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .15s;}
+.org-card:hover{border-color:var(--ac);}
+.org-card-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.org-card-name{font-size:14px;font-weight:600;color:var(--tx);font-family:var(--font);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.org-card-type{font-size:11.5px;color:var(--mu);font-family:var(--font);}
+.org-card-arrow{color:var(--mu);flex-shrink:0;}
+.org-add-wrap{padding:0 24px 24px;}
+@media (max-width:640px){.org-add-wrap{padding:0 16px 16px;}}
+.coming-soon{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 20px;text-align:center;}
+.coming-soon svg{width:56px;height:56px;color:var(--mu);opacity:.45;}
+.coming-soon h2{font-size:20px;font-weight:600;color:var(--tx);font-family:var(--font);margin:0;}
+.coming-soon p{font-size:13.5px;color:var(--mu);font-family:var(--font);margin:0;max-width:340px;line-height:1.5;}
+.modal-field select{width:100%;height:100%;background:none;border:none;color:var(--tx);font-family:var(--font);font-size:13px;outline:none;cursor:pointer;}
+.modal-field select option{background:var(--sur2);color:var(--tx);}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <button class="tbtn tbtn-p" onclick="aoOpen()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Add Organization</span>
+    </button>
+  </div>
+
+  <div class="org-grid" id="org-grid"></div>
+</div>
+
+<div class="modal-backdrop modal-fullscreen-mobile" id="ao-modal" onclick="if(event.target===this)aoClose()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Organization</div>
+      <button class="modal-close" onclick="aoClose()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label class="modal-field-label">Organization Name</label>
+        <div class="modal-field"><input id="ao-name" placeholder="e.g. Acme Motors"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label">Type</label>
+        <div class="modal-field"><input id="ao-type" placeholder="e.g. Automotive Dealership"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label">Phone</label>
+        <div class="modal-field"><input id="ao-phone" placeholder="(555) 000-0000" type="tel"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label">Email</label>
+        <div class="modal-field"><input id="ao-email" placeholder="info@example.com" type="email"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label">Address</label>
+        <div class="modal-field"><input id="ao-address" placeholder="Street, City, State, ZIP"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="aoClose()">Cancel</button>
+      <button class="modal-save" onclick="aoSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>BuySmartShell.init({ page: 'products', title: 'Organizations' });</script>
+<script>
+var ORGS = [
+  { id:1, name:'Acme Motors', type:'Automotive Dealership' },
+  { id:2, name:'Big Sky Auto', type:'Independent Dealer' },
+  { id:3, name:'USA Direct Auto', type:'Wholesale Dealer' },
+  { id:4, name:'Sunset Auto Group', type:'Multi-Location Dealer' },
+  { id:5, name:'Liberty Car Sales', type:'Independent Dealer' },
+  { id:6, name:'Apex Automotive', type:'Franchise Dealer' },
+  { id:7, name:'Tri-State Motors', type:'Wholesale Dealer' },
+  { id:8, name:'Pacific Coast Auto', type:'Automotive Dealership' },
+  { id:9, name:'Lone Star Dealers', type:'Independent Dealer' },
+  { id:10, name:'Great Lakes Auto', type:'Franchise Dealer' },
+  { id:11, name:'Mountain View Motors', type:'Automotive Dealership' },
+  { id:12, name:'Eastside Auto Exchange', type:'Wholesale Dealer' },
+  { id:13, name:'Premier Fleet Sales', type:'Fleet Dealer' }
+];
+
+function orgInitials(name){
+  return name.split(/\s+/).map(function(w){ return w[0]; }).join('').substring(0,2);
+}
+
+function orgRenderGrid(){
+  var grid = document.getElementById('org-grid');
+  grid.innerHTML = ORGS.map(function(o){
+    return '<div class="org-card" onclick="location.href=\'organization.html?id=' + o.id + '\'">' +
+      '<div class="org-card-info"><div class="org-card-name">' + o.name + '</div><div class="org-card-type">' + o.type + '</div></div>' +
+      '<svg class="org-card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+    '</div>';
+  }).join('');
+}
+orgRenderGrid();
+
+function aoOpen(){
+  document.getElementById('ao-name').value = '';
+  document.getElementById('ao-type').value = '';
+  document.getElementById('ao-phone').value = '';
+  document.getElementById('ao-email').value = '';
+  document.getElementById('ao-address').value = '';
+  document.getElementById('ao-modal').classList.add('open');
+}
+function aoClose(){
+  document.getElementById('ao-modal').classList.remove('open');
+}
+function aoSave(){
+  var name = document.getElementById('ao-name').value.trim();
+  var type = document.getElementById('ao-type').value;
+  var phone = document.getElementById('ao-phone').value.trim();
+  var email = document.getElementById('ao-email').value.trim();
+  var address = document.getElementById('ao-address').value.trim();
+  if(!name){ document.getElementById('ao-name').focus(); return; }
+  var maxId = ORGS.reduce(function(m,o){ return Math.max(m,o.id); }, 0);
+  ORGS.push({ id: maxId+1, name: name, type: type });
+  orgRenderGrid();
+  window.showNavToast('Organization Added', name + ' has been added.');
+  aoClose();
+}
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') aoClose(); });
+</script>
+
+</body>
+</html>

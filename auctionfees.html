@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auction Fees — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.af-body{display:flex;flex:1;min-height:0;height:100%;gap:0;}
+.af-nav{width:240px;flex-shrink:0;border-right:0.5px solid var(--brd2);background:var(--sur);overflow-y:auto;padding:12px 8px;}
+.af-tab{display:block;padding:9px 14px;margin:2px 0;border-radius:8px;color:var(--mu);font-size:13px;font-weight:500;cursor:pointer;transition:background .12s,color .12s;user-select:none;line-height:1.35;border:none;background:none;width:100%;text-align:left;font-family:var(--font);}
+.af-tab:hover{background:rgba(255,255,255,.05);color:var(--tx);}
+.af-tab.active{background:var(--ac);color:#fff;}
+.af-tab.active:hover{background:var(--ac);}
+.af-display{flex:1;min-width:0;overflow-y:auto;padding:24px;}
+.af-pane-head{display:flex;align-items:center;margin-bottom:16px;}
+.af-pane-title{color:var(--tx);font-size:16px;font-weight:600;}
+.af-nav-trigger{display:none;background:var(--sur2);border:none;border-radius:8px;padding:0;width:36px;height:36px;align-items:center;justify-content:center;color:var(--tx);cursor:pointer;transition:background .12s;}
+.af-nav-trigger:hover{background:var(--sur);}
+.af-nav-trigger svg{width:18px;height:18px;}
+.af-nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;opacity:0;pointer-events:none;transition:opacity .22s ease;}
+.af-nav-backdrop.open{opacity:1;pointer-events:auto;}
+@media (max-width:960px) and (min-width:641px){
+  .af-nav{width:200px;padding:12px 6px;}
+  .af-tab{padding:8px 10px;font-size:12.5px;}
+}
+@media (max-width:640px){
+  .af-nav-trigger{display:inline-flex;}
+  .af-body{flex-direction:column;}
+  .af-nav{position:fixed;top:0;left:0;bottom:0;width:280px;max-width:85vw;height:100vh;z-index:100;transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 12px 32px rgba(0,0,0,.45);}
+  .af-nav.open{transform:translateX(0);}
+  .af-display{padding:16px;overflow-y:visible;}
+  .af-pane-head .tbtn-p span{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <button class="af-nav-trigger" onclick="afNavOpen()" aria-label="Open sections menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    </button>
+  </div>
+  <div class="af-body">
+    <div class="af-nav-backdrop" id="af-nav-backdrop" onclick="afNavClose()"></div>
+    <aside class="af-nav" id="af-nav"></aside>
+    <div class="af-display" id="af-display"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop modal-fullscreen-mobile" id="af-edit-modal" onclick="if(event.target===this)afCloseEdit()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="af-edit-title">Edit Fee</div>
+      <button class="modal-close" onclick="afCloseEdit()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label class="modal-field-label">Price From</label>
+        <div class="modal-field">
+          <input id="af-edit-from" type="number" placeholder="0" min="0" step="1" inputmode="numeric"/>
+        </div>
+      </div>
+      <div>
+        <label class="modal-field-label">Price To</label>
+        <div class="modal-field">
+          <input id="af-edit-to" type="number" placeholder="0" min="0" step="1" inputmode="numeric"/>
+        </div>
+      </div>
+      <div>
+        <label class="modal-field-label">Fees</label>
+        <div class="modal-field">
+          <input id="af-edit-fees" type="number" placeholder="0" min="0" step="1" inputmode="numeric"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" id="af-edit-delete" onclick="afDeleteFee()" style="display:none;">Delete</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="afCloseEdit()">Cancel</button>
+      <button class="modal-save" onclick="afSaveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'settings', title: 'Auction Fees' });
+
+var afAuctions = [
+  { id:1,  active:true,  name:'Manheim' },
+  { id:2,  active:true,  name:'ADESA' },
+  { id:3,  active:false, name:'IAA' },
+  { id:4,  active:true,  name:'Copart' },
+  { id:5,  active:true,  name:'ACV Auctions' },
+  { id:6,  active:true,  name:'OVE (Openlane)' },
+  { id:7,  active:false, name:'SmartAuction' },
+  { id:8,  active:true,  name:'TradeRev' },
+  { id:9,  active:true,  name:'BacklotCars' },
+  { id:10, active:true,  name:'America\'s Auto Auction' },
+  { id:11, active:false, name:'Dealers Auto Auction' },
+  { id:12, active:true,  name:'ServNet' },
+  { id:13, active:true,  name:'Edge Pipeline' },
+  { id:14, active:false, name:'EBlock' },
+  { id:15, active:true,  name:'CarOffer' }
+];
+
+var afFees = {
+  1:  [{ id:1, from:0, to:999, fees:125 },{ id:2, from:1000, to:4999, fees:225 },{ id:3, from:5000, to:9999, fees:350 },{ id:4, from:10000, to:24999, fees:450 }],
+  2:  [{ id:1, from:0, to:1499, fees:150 },{ id:2, from:1500, to:4999, fees:250 },{ id:3, from:5000, to:14999, fees:375 }],
+  4:  [{ id:1, from:0, to:999, fees:100 },{ id:2, from:1000, to:7499, fees:275 },{ id:3, from:7500, to:19999, fees:400 }],
+  5:  [{ id:1, from:0, to:2499, fees:175 },{ id:2, from:2500, to:9999, fees:300 }],
+  6:  [{ id:1, from:0, to:4999, fees:200 },{ id:2, from:5000, to:14999, fees:350 }],
+  8:  [{ id:1, from:0, to:1999, fees:130 },{ id:2, from:2000, to:7999, fees:260 }],
+  9:  [{ id:1, from:0, to:2999, fees:160 },{ id:2, from:3000, to:9999, fees:310 }],
+  10: [{ id:1, from:0, to:4999, fees:190 },{ id:2, from:5000, to:19999, fees:380 }],
+  12: [{ id:1, from:0, to:1999, fees:140 },{ id:2, from:2000, to:6999, fees:280 }],
+  13: [{ id:1, from:0, to:3499, fees:165 },{ id:2, from:3500, to:11999, fees:330 }],
+  15: [{ id:1, from:0, to:2499, fees:155 },{ id:2, from:2500, to:8999, fees:295 }]
+};
+var afNextFeeId = 10;
+
+var afSelectedId = null;
+var afEditingAuctionId = null;
+var afEditingFeeId = null;
+
+function afEsc(s){ var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function afActiveAuctions(){ return afAuctions.filter(function(a){ return a.active; }); }
+
+function afGetFees(auctionId){ return afFees[auctionId] || []; }
+
+function afRenderNav(){
+  var list = afActiveAuctions();
+  var html = '';
+  for(var i = 0; i < list.length; i++){
+    var a = list[i];
+    var cls = 'af-tab' + (a.id === afSelectedId ? ' active' : '');
+    html += '<button class="' + cls + '" onclick="afSelect(' + a.id + ')">' + afEsc(a.name) + '</button>';
+  }
+  document.getElementById('af-nav').innerHTML = html;
+}
+
+function afRenderDisplay(){
+  var a = afAuctions.find(function(x){ return x.id === afSelectedId; });
+  if(!a){ document.getElementById('af-display').innerHTML = ''; return; }
+  var fees = afGetFees(afSelectedId);
+  var html = '<div class="af-pane-head"><div class="af-pane-title">' + afEsc(a.name) + '</div><div class="sp"></div>' +
+    '<button class="tbtn tbtn-p" onclick="afOpenAdd()">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+      '<span>Add Fee</span></button></div>';
+  html += '<div class="table-wrap" style="margin:0;"><div class="table-scroll"><table><thead><tr>' +
+    '<th style="width:64px;text-align:center;">No.</th>' +
+    '<th style="text-align:right;">Price From</th>' +
+    '<th style="text-align:right;">Price To</th>' +
+    '<th style="text-align:right;">Fees</th>' +
+    '</tr></thead><tbody>';
+  for(var i = 0; i < fees.length; i++){
+    var f = fees[i];
+    html += '<tr onclick="afOpenEdit(' + f.id + ')" style="cursor:pointer;">' +
+      '<td style="text-align:center;">' + (i + 1) + '</td>' +
+      '<td style="text-align:right;">$' + afFmt(f.from) + '</td>' +
+      '<td style="text-align:right;">$' + afFmt(f.to) + '</td>' +
+      '<td style="text-align:right;">$' + afFmt(f.fees) + '</td></tr>';
+  }
+  if(!fees.length){
+    html += '<tr><td colspan="4" style="text-align:center;color:var(--mu);padding:24px 0;">No fees configured</td></tr>';
+  }
+  html += '</tbody></table></div></div>';
+  document.getElementById('af-display').innerHTML = html;
+}
+
+function afFmt(n){ return n.toLocaleString(); }
+
+function afSelect(id){
+  afSelectedId = id;
+  afRenderNav();
+  afRenderDisplay();
+  afNavClose();
+}
+
+function afOpenEdit(feeId){
+  var fees = afGetFees(afSelectedId);
+  var f = fees.find(function(x){ return x.id === feeId; });
+  if(!f) return;
+  afEditingAuctionId = afSelectedId;
+  afEditingFeeId = feeId;
+  document.getElementById('af-edit-title').textContent = 'Edit Fee';
+  document.getElementById('af-edit-from').value = f.from;
+  document.getElementById('af-edit-to').value = f.to;
+  document.getElementById('af-edit-fees').value = f.fees;
+  document.getElementById('af-edit-delete').style.display = '';
+  document.getElementById('af-edit-modal').classList.add('open');
+}
+
+function afOpenAdd(){
+  afEditingAuctionId = afSelectedId;
+  afEditingFeeId = null;
+  document.getElementById('af-edit-title').textContent = 'Add Fee';
+  document.getElementById('af-edit-from').value = '';
+  document.getElementById('af-edit-to').value = '';
+  document.getElementById('af-edit-fees').value = '';
+  document.getElementById('af-edit-delete').style.display = 'none';
+  document.getElementById('af-edit-modal').classList.add('open');
+}
+
+function afCloseEdit(){
+  document.getElementById('af-edit-modal').classList.remove('open');
+  afEditingFeeId = null;
+  afEditingAuctionId = null;
+}
+
+function afSaveEdit(){
+  var from = parseInt(document.getElementById('af-edit-from').value, 10);
+  var to   = parseInt(document.getElementById('af-edit-to').value, 10);
+  var fees = parseInt(document.getElementById('af-edit-fees').value, 10);
+  if(isNaN(from) || isNaN(to) || isNaN(fees)){
+    window.showNavToast('Validation', 'All fields are required.'); return;
+  }
+  if(!afFees[afEditingAuctionId]) afFees[afEditingAuctionId] = [];
+  if(afEditingFeeId !== null){
+    var f = afFees[afEditingAuctionId].find(function(x){ return x.id === afEditingFeeId; });
+    if(f){ f.from = from; f.to = to; f.fees = fees; }
+  } else {
+    afFees[afEditingAuctionId].push({ id: afNextFeeId++, from: from, to: to, fees: fees });
+  }
+  afRenderDisplay();
+  window.showNavToast('Auction Fees', 'Fee saved successfully.');
+  afCloseEdit();
+}
+
+function afDeleteFee(){
+  if(afFees[afEditingAuctionId]){
+    afFees[afEditingAuctionId] = afFees[afEditingAuctionId].filter(function(x){ return x.id !== afEditingFeeId; });
+  }
+  afRenderDisplay();
+  window.showNavToast('Auction Fees', 'Fee deleted.');
+  afCloseEdit();
+}
+
+function afNavOpen(){
+  document.getElementById('af-nav').classList.add('open');
+  document.getElementById('af-nav-backdrop').classList.add('open');
+}
+function afNavClose(){
+  document.getElementById('af-nav').classList.remove('open');
+  document.getElementById('af-nav-backdrop').classList.remove('open');
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    var m = document.getElementById('af-edit-modal');
+    if(m && m.classList.contains('open')){ afCloseEdit(); return; }
+  }
+});
+
+var afFirst = afActiveAuctions();
+if(afFirst.length) afSelect(afFirst[0].id);
+</script>
+
+</body>
+</html>

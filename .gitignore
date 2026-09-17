@@ -1,0 +1,10 @@
+# Stray home-directory copy (contains an unrelated cloned repo)
+/~/
+
+# Personal Claude Code settings
+.claude/settings.local.json
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auction Seller — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.as-row{cursor:pointer;transition:background .12s;}
+.as-row:hover td{background:var(--sur2);}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <button class="tbtn tbtn-p" onclick="asOpenAddModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Auction Seller</span>
+    </button>
+    <div class="kebab-outer" id="as-kebab">
+      <button class="tbtn kebab-btn" onclick="asToggleKebab(event)" aria-label="More">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+        </svg>
+      </button>
+      <div class="kebab-menu" id="as-kebab-menu">
+        <button class="kebab-item" onclick="asAction('Import')">Import</button>
+      </div>
+    </div>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0 0 24px;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:64px;text-align:center;">No.</th>
+                <th style="width:140px;text-align:left;">Is Active</th>
+                <th style="text-align:left;padding-left:24px;">Seller Name</th>
+              </tr>
+            </thead>
+            <tbody id="as-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="modal-backdrop modal-fullscreen-mobile" id="as-edit-modal" onclick="if(event.target===this) asCloseEdit()">
+    <div class="modal modal--wide">
+      <div class="modal-header">
+        <div class="modal-title">Edit Auction Seller</div>
+        <button class="modal-close" onclick="asCloseEdit()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="us-add-section">
+          <div class="us-add-section-head"><h4 class="us-add-section-title">Seller Details</h4></div>
+          <div class="us-add-field">
+            <label>Seller Name</label>
+            <input type="text" id="as-e-name" placeholder="Enter seller name"/>
+          </div>
+          <div class="us-add-field" style="flex-direction:row;align-items:center;gap:10px;">
+            <span class="us-yn-tog" id="as-e-active" onclick="this.classList.toggle('off')">
+              <span class="us-yn-tog-txt">YES</span><span class="us-yn-tog-knob"></span>
+            </span>
+            <label style="margin:0;">Is Active</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:flex-end;">
+        <div style="display:flex;gap:8px;">
+          <button class="modal-cancel" onclick="asCloseEdit()">Cancel</button>
+          <button class="modal-save"   onclick="asSaveEdit()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>BuySmartShell.init({ page: 'settings', title: 'Auction Seller' });
+
+const AS_SEED = [
+  { id:1,  active:true,  name:'(Unnamed)' },
+  { id:2,  active:false, name:'" DEL RIO"' },
+  { id:3,  active:false, name:'" INC"' },
+  { id:4,  active:false, name:'" INC."' },
+  { id:5,  active:false, name:'" L.L.P."' },
+  { id:6,  active:false, name:'" MOMENTUM MINI"' },
+  { id:7,  active:false, name:'"#1 Cochran of Monroeville"' },
+  { id:8,  active:false, name:'"(SWAG) SOUTHWEST AUTOMOTIVE GR"' },
+  { id:9,  active:true,  name:'"0 TO 60 MOTORSPORTS LLC"' },
+  { id:10, active:true,  name:'"01 AUTO WORLD MITSUBISHI"' },
+  { id:11, active:false, name:'"1 US MOTORS"' },
+  { id:12, active:true,  name:'"1041 AUTO SALES LLC"' },
+  { id:13, active:true,  name:'"110 AUTO BODY REPAIR INC"' }
+];
+
+function asEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function asRowHtml(r){
+  const togClass = 'us-yn-tog' + (r.active ? '' : ' off');
+  const togTxt   = r.active ? 'YES' : 'OFF';
+  return '<tr class="as-row" onclick="asOpenEdit(' + r.id + ')">' +
+    '<td style="text-align:center;"><a class="us-user-link" href="javascript:void(0)">' + r.id + '</a></td>' +
+    '<td><span class="' + togClass + '" data-id="' + r.id + '" onclick="event.stopPropagation();asToggleActive(' + r.id + ')"><span class="us-yn-tog-txt">' + togTxt + '</span><span class="us-yn-tog-knob"></span></span></td>' +
+    '<td style="text-align:left;padding-left:24px;">' + (r.name ? '<a class="us-user-link" href="javascript:void(0)">' + asEsc(r.name) + '</a>' : '') + '</td>' +
+  '</tr>';
+}
+
+function asRender(){
+  document.getElementById('as-tbody').innerHTML = AS_SEED.map(asRowHtml).join('');
+}
+
+function asToggleActive(id){
+  const r = AS_SEED.find(function(x){ return x.id === id; });
+  if(!r) return;
+  r.active = !r.active;
+  asRender();
+}
+
+let asEditingId = null;
+let asEditingMode = null;
+
+function asOpenEdit(id){
+  const r = AS_SEED.find(function(x){ return x.id === id; });
+  if(!r) return;
+  asEditingMode = 'edit';
+  asEditingId = id;
+  document.querySelector('#as-edit-modal .modal-title').textContent = 'Edit Auction Seller';
+  document.getElementById('as-e-name').value = r.name || '';
+  const tog = document.getElementById('as-e-active');
+  tog.classList.toggle('off', !r.active);
+  tog.querySelector('.us-yn-tog-txt').textContent = r.active ? 'YES' : 'OFF';
+  document.getElementById('as-edit-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('as-e-name').focus(); }, 30);
+}
+
+function asCloseEdit(){
+  document.getElementById('as-edit-modal').classList.remove('open');
+  asEditingId = null;
+}
+
+function asSaveEdit(){
+  const name = document.getElementById('as-e-name').value.trim();
+  if(!name){
+    window.showNavToast('Name required', 'Enter a seller name.');
+    document.getElementById('as-e-name').focus();
+    return;
+  }
+  const active = !document.getElementById('as-e-active').classList.contains('off');
+  if(asEditingMode === 'add'){
+    const nextId = AS_SEED.reduce(function(m,r){ return Math.max(m, r.id || 0); }, 0) + 1;
+    AS_SEED.push({ id:nextId, active:active, name:name });
+    asRender();
+    asCloseEdit();
+    window.showNavToast('Seller added', name + ' created.');
+  } else {
+    if(asEditingId == null){ asCloseEdit(); return; }
+    const r = AS_SEED.find(function(x){ return x.id === asEditingId; });
+    if(r){ r.name = name; r.active = active; }
+    asRender();
+    asCloseEdit();
+    window.showNavToast('Seller saved', name + ' updated.');
+  }
+}
+
+asRender();
+
+function asOpenAddModal(){
+  asEditingMode = 'add';
+  asEditingId   = null;
+  document.querySelector('#as-edit-modal .modal-title').textContent = 'Add Auction Seller';
+  document.getElementById('as-e-name').value = '';
+  const tog = document.getElementById('as-e-active');
+  tog.classList.remove('off');
+  tog.querySelector('.us-yn-tog-txt').textContent = 'YES';
+  document.getElementById('as-edit-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('as-e-name').focus(); }, 30);
+}
+function asToggleKebab(e){
+  e.stopPropagation();
+  document.getElementById('as-kebab-menu').classList.toggle('open');
+}
+function asCloseKebab(){
+  document.getElementById('as-kebab-menu').classList.remove('open');
+}
+function asAction(name){
+  asCloseKebab();
+  window.showNavToast(name, 'Coming soon.');
+}
+document.addEventListener('click', function(e){
+  const outer = document.getElementById('as-kebab');
+  if(outer && !outer.contains(e.target)) asCloseKebab();
+});
+</script>
+
+</body>
+</html>

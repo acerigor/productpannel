@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification Setting — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+
+.ns-wrap{margin:0;padding:8px 0 24px;}
+.ns-wrap .table-wrap{margin:0 0 20px;}
+.ns-heading{font-size:15px;font-weight:600;color:var(--tx);margin-bottom:14px;}
+.ns-add-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;max-width:520px;}
+.ns-save{background:var(--ac);color:#fff;border:none;padding:9px 22px;border-radius:8px;font:500 13px var(--font);cursor:pointer;transition:background .12s;}
+.ns-save:hover{background:var(--ac2);}
+.ns-save:disabled{opacity:.5;cursor:not-allowed;}
+
+.ns-user-cell{display:flex;align-items:center;gap:10px;}
+.ns-av-lg{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;flex-shrink:0;}
+.ns-col-not,.ns-row-not{display:flex;align-items:center;justify-content:flex-end;gap:18px;}
+.ns-chan{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--tx);cursor:pointer;}
+.ns-chan input{width:16px;height:16px;margin:0;accent-color:var(--ac);cursor:pointer;flex-shrink:0;}
+.ns-remove{width:24px;height:24px;background:transparent;border:none;color:var(--mu);cursor:pointer;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;}
+.ns-remove:hover{color:var(--rd);background:rgba(229,85,85,.08);}
+
+.sm-picker{position:relative;width:100%;}
+.sm-picker-btn{width:100%;height:40px;padding:0 12px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .12s;text-align:left;}
+.sm-picker-btn.placeholder{color:var(--mu);}
+.sm-picker-btn:hover,.sm-picker.open .sm-picker-btn{border-color:var(--ac);}
+.sm-picker-btn svg{width:12px;height:12px;color:var(--mu);flex-shrink:0;}
+.sm-picker-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;padding-right:8px;}
+.sm-picker-menu{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);max-height:280px;overflow-y:auto;z-index:60;display:none;padding:4px;}
+.sm-picker.open .sm-picker-menu{display:block;}
+.sm-picker-item{padding:8px 12px;border-radius:6px;color:var(--tx);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;}
+.sm-picker-item:hover{background:rgba(255,255,255,.05);color:var(--ac2);}
+.sm-picker-item.on{color:var(--ac);}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section">
+      <div class="ns-wrap">
+        <h3 class="ns-heading">Add Recipient</h3>
+        <div class="ns-add-row">
+          <div class="sm-picker" id="ns-pick">
+            <button type="button" class="sm-picker-btn placeholder" onclick="nsPickToggle(event, this)">
+              <span class="sm-picker-label">Select a recipient</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="sm-picker-menu" id="ns-pick-menu"></div>
+          </div>
+          <button class="ns-save" id="ns-save-btn" onclick="nsSaveRecipient()" disabled>Save</button>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="text-align:left;padding-left:16px;">Users</th>
+                  <th style="text-align:left;">Number</th>
+                  <th style="text-align:left;">Role</th>
+                  <th style="width:260px;text-align:right;padding-right:12px;">Notifications</th>
+                </tr>
+              </thead>
+              <tbody id="ns-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'settings', title: 'Notification Setting' });
+
+const NS_PEOPLE = [
+  { key:'RE', name:'Ralph Edwards',    role:'Sales',              phone:'923 105 5609', color:'#c96a2b' },
+  { key:'LM', name:'Lori McCoy',       role:'Management',         phone:'245 113 8907', color:'#f19828' },
+  { key:'KM', name:'Kathryn Murphy',   role:'Marketing',          phone:'468 764 1250', color:'#26c281' },
+  { key:'AB', name:'Annette Black',    role:'Human Resources',    phone:'135 978 6423', color:'#2dd4bf' },
+  { key:'DR', name:'Darlene Robertson',role:'Finance',            phone:'789 432 1567', color:'#26c281' },
+  { key:'EH', name:'Esther Howard',    role:'Customer Support',   phone:'567 890 2341', color:'#22c88a' },
+  { key:'CF', name:'Cody Fisher',      role:'Product Development',phone:'412 345 6789', color:'#c96a2b' },
+  { key:'AF', name:'Albert Flores',    role:'IT',                 phone:'876 543 2109', color:'#4f7cff' },
+  { key:'WW', name:'Wade Warren',      role:'Legal',              phone:'345 678 9012', color:'#4f7cff' },
+  { key:'GH', name:'Guy Hawkins',      role:'Operations',         phone:'234 567 8901', color:'#e55555' }
+];
+
+const NS_STORE    = 'buysmart:notifsetting:recipients';
+const NS_CH_STORE = 'buysmart:notifsetting:channels';
+let NS_RECIPIENTS = [];
+let NS_CHANNELS = {};
+let NS_PICK = '';
+
+function nsEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function nsLoad(){
+  try {
+    const rl = JSON.parse(localStorage.getItem(NS_STORE) || '[]');
+    if(Array.isArray(rl)) NS_RECIPIENTS = rl.filter(function(k){ return NS_PEOPLE.some(function(p){ return p.key === k; }); });
+  } catch(e){ NS_RECIPIENTS = []; }
+  try {
+    const ch = JSON.parse(localStorage.getItem(NS_CH_STORE) || '{}');
+    if(ch && typeof ch === 'object') NS_CHANNELS = ch;
+  } catch(e){ NS_CHANNELS = {}; }
+  Object.keys(NS_CHANNELS).forEach(function(k){
+    if(NS_RECIPIENTS.indexOf(k) < 0) delete NS_CHANNELS[k];
+  });
+}
+function nsSave(){
+  try { localStorage.setItem(NS_STORE,    JSON.stringify(NS_RECIPIENTS)); } catch(e){}
+  try { localStorage.setItem(NS_CH_STORE, JSON.stringify(NS_CHANNELS));   } catch(e){}
+}
+
+function nsRenderPickMenu(){
+  const el = document.getElementById('ns-pick-menu');
+  const available = NS_PEOPLE.filter(function(p){ return NS_RECIPIENTS.indexOf(p.key) < 0; });
+  if(!available.length){ el.innerHTML = '<div style="padding:12px;color:var(--mu);font-size:12px;text-align:center;">All recipients added</div>'; return; }
+  el.innerHTML = available.map(function(p){
+    const on = NS_PICK === p.key;
+    return '<div class="sm-picker-item' + (on ? ' on' : '') + '" data-key="' + p.key + '">' +
+      '<span class="ns-av-lg" style="width:22px;height:22px;background:' + p.color + ';">' + p.key + '</span>' +
+      '<span>' + nsEsc(p.name) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function nsPickToggle(e, btn){
+  e.stopPropagation();
+  nsRenderPickMenu();
+  const wrap = btn.closest('.sm-picker');
+  const wasOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.sm-picker.open').forEach(function(p){ p.classList.remove('open'); });
+  if(!wasOpen) wrap.classList.add('open');
+}
+
+function nsSetPick(key){
+  const p = NS_PEOPLE.find(function(x){ return x.key === key; });
+  if(!p) return;
+  NS_PICK = key;
+  const btn = document.querySelector('#ns-pick .sm-picker-btn');
+  btn.querySelector('.sm-picker-label').textContent = p.name;
+  btn.classList.remove('placeholder');
+  document.getElementById('ns-pick').classList.remove('open');
+  document.getElementById('ns-save-btn').disabled = false;
+}
+
+function nsSaveRecipient(){
+  if(!NS_PICK) return;
+  if(NS_RECIPIENTS.indexOf(NS_PICK) < 0){
+    NS_RECIPIENTS.push(NS_PICK);
+    NS_CHANNELS[NS_PICK] = { sms:true, email:true };
+    nsSave();
+    nsRenderTable();
+  }
+  NS_PICK = '';
+  const btn = document.querySelector('#ns-pick .sm-picker-btn');
+  btn.querySelector('.sm-picker-label').textContent = 'Select a recipient';
+  btn.classList.add('placeholder');
+  document.getElementById('ns-save-btn').disabled = true;
+}
+
+function nsSetChannel(key, kind, val){
+  if(!NS_CHANNELS[key]) NS_CHANNELS[key] = { sms:false, email:false };
+  NS_CHANNELS[key][kind] = !!val;
+  nsSave();
+}
+
+function nsRemoveRecipient(key){
+  const i = NS_RECIPIENTS.indexOf(key);
+  if(i < 0) return;
+  NS_RECIPIENTS.splice(i, 1);
+  delete NS_CHANNELS[key];
+  nsSave();
+  nsRenderTable();
+}
+
+function nsRenderTable(){
+  const el = document.getElementById('ns-rows');
+  if(!NS_RECIPIENTS.length){
+    el.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--mu);font-size:13px;padding:24px;">No recipients yet. Pick a recipient above and click Save.</td></tr>';
+    return;
+  }
+  el.innerHTML = NS_RECIPIENTS.map(function(k){
+    const p = NS_PEOPLE.find(function(x){ return x.key === k; });
+    if(!p) return '';
+    const ch = NS_CHANNELS[k] || { sms:false, email:false };
+    return '<tr data-key="' + k + '">' +
+      '<td style="text-align:left;padding-left:16px;">' +
+        '<span class="ns-user-cell">' +
+          '<span class="ns-av-lg" style="background:' + p.color + ';">' + p.key + '</span>' +
+          '<span>' + nsEsc(p.name) + '</span>' +
+        '</span>' +
+      '</td>' +
+      '<td style="text-align:left;">' + nsEsc(p.phone||'') + '</td>' +
+      '<td style="text-align:left;">' + nsEsc(p.role||'') + '</td>' +
+      '<td style="padding-right:12px;">' +
+        '<span class="ns-row-not">' +
+          '<label class="ns-chan"><input type="checkbox" onchange="nsSetChannel(\'' + k + '\',\'sms\',this.checked)"' + (ch.sms ? ' checked' : '') + '/> SMS</label>' +
+          '<label class="ns-chan"><input type="checkbox" onchange="nsSetChannel(\'' + k + '\',\'email\',this.checked)"' + (ch.email ? ' checked' : '') + '/> Email</label>' +
+          '<button class="ns-remove" onclick="nsRemoveRecipient(\'' + k + '\')" title="Remove"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+        '</span>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+document.addEventListener('click', function(e){
+  const item = e.target.closest && e.target.closest('.sm-picker-item[data-key]');
+  if(item){
+    nsSetPick(item.getAttribute('data-key'));
+    return;
+  }
+  const wrap = document.getElementById('ns-pick');
+  if(wrap && wrap.classList.contains('open') && !wrap.contains(e.target)){
+    wrap.classList.remove('open');
+  }
+});
+
+nsLoad();
+nsRenderTable();
+</script>
+
+</body>
+</html>

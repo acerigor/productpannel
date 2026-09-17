@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Script Management — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} .set-page-head .tbtn-p span{display:none;} }
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <button class="tbtn tbtn-p" onclick="scOpenAdd()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Add Script</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:64px;text-align:center;">No.</th>
+                <th>Script Title</th>
+                <th>Class Name</th>
+                <th>Method Name</th>
+                <th>File Name</th>
+              </tr>
+            </thead>
+            <tbody id="sc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-backdrop modal-fullscreen-mobile" id="sc-edit-modal" onclick="if(event.target===this)scCloseEdit()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="sc-edit-title">Edit Script</div>
+      <button class="modal-close" onclick="scCloseEdit()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label class="modal-field-label">Script Title</label>
+        <div class="modal-field"><input id="sc-edit-stitle" placeholder="Script title"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label">Class Name</label>
+        <div class="modal-field"><input id="sc-edit-class" placeholder="Class name"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label">Method Name</label>
+        <div class="modal-field"><input id="sc-edit-method" placeholder="Method name"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label">File Name</label>
+        <div class="modal-field"><input id="sc-edit-file" placeholder="File name"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" id="sc-edit-delete" onclick="scDelete()" style="display:none;">Delete</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="scCloseEdit()">Cancel</button>
+      <button class="modal-save" onclick="scSaveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'settings', title: 'Script Management' });
+
+var scData = [
+  { id:1,  stitle:'Manheim Runlist Scraper',     className:'ManheimScraper',       method:'scrapeRunlist',      file:'manheim_scraper.py' },
+  { id:2,  stitle:'ADESA Inventory Sync',        className:'AdesaInventorySync',   method:'syncInventory',      file:'adesa_sync.py' },
+  { id:3,  stitle:'Copart Export Builder',        className:'CopartExporter',       method:'buildExport',        file:'copart_export.py' },
+  { id:4,  stitle:'ACV Daily Report',             className:'AcvDailyReport',       method:'generateReport',     file:'acv_daily.py' },
+  { id:5,  stitle:'OVE Feed Parser',              className:'OveFeedParser',        method:'parseFeed',          file:'ove_feed.py' },
+  { id:6,  stitle:'TradeRev Sheet Writer',        className:'TradeRevWriter',       method:'writeSheet',         file:'traderev_writer.py' },
+  { id:7,  stitle:'BacklotCars Bid Processor',    className:'BacklotBidProcessor',  method:'processBids',        file:'backlot_bids.py' },
+  { id:8,  stitle:'Manheim Simulcast Monitor',    className:'SimulcastMonitor',     method:'monitorLanes',       file:'simulcast_monitor.py' },
+  { id:9,  stitle:'ServNet Data Importer',         className:'ServNetImporter',      method:'importData',         file:'servnet_import.py' },
+  { id:10, stitle:'Edge Pipeline Export',          className:'EdgeExporter',         method:'exportPipeline',     file:'edge_export.py' },
+  { id:11, stitle:'CarOffer Price Tracker',        className:'CarOfferTracker',      method:'trackPrices',        file:'caroffer_prices.py' },
+  { id:12, stitle:'Copart Salvage Proxy',          className:'CopartSalvageProxy',   method:'proxySalvage',       file:'copart_salvage.py' },
+  { id:13, stitle:'ADESA DealerBlock Sync',        className:'DealerBlockSync',      method:'syncDealerBlock',    file:'adesa_dealerblock.py' },
+  { id:14, stitle:'ACV Weekly Aggregator',         className:'AcvWeeklyAgg',         method:'aggregateWeekly',    file:'acv_weekly.py' },
+  { id:15, stitle:'Manheim Proxy Bid Runner',      className:'ProxyBidRunner',       method:'runProxyBids',       file:'manheim_proxy.py' }
+];
+var scNextId = 16;
+var scEditingId = null;
+
+function scEsc(s){ var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function scRender(){
+  var html = '';
+  for(var i = 0; i < scData.length; i++){
+    var r = scData[i];
+    html += '<tr onclick="scOpenEdit(' + r.id + ')" style="cursor:pointer;">' +
+      '<td style="text-align:center;">' + (i + 1) + '</td>' +
+      '<td>' + scEsc(r.stitle) + '</td>' +
+      '<td>' + scEsc(r.className) + '</td>' +
+      '<td>' + scEsc(r.method) + '</td>' +
+      '<td>' + scEsc(r.file) + '</td>' +
+    '</tr>';
+  }
+  document.getElementById('sc-tbody').innerHTML = html;
+}
+
+function scOpenEdit(id){
+  var r = scData.find(function(x){ return x.id === id; });
+  if(!r) return;
+  scEditingId = id;
+  document.getElementById('sc-edit-title').textContent = 'Edit Script';
+  document.getElementById('sc-edit-stitle').value = r.stitle;
+  document.getElementById('sc-edit-class').value = r.className;
+  document.getElementById('sc-edit-method').value = r.method;
+  document.getElementById('sc-edit-file').value = r.file;
+  document.getElementById('sc-edit-delete').style.display = '';
+  document.getElementById('sc-edit-modal').classList.add('open');
+}
+
+function scCloseEdit(){
+  document.getElementById('sc-edit-modal').classList.remove('open');
+  scEditingId = null;
+}
+
+function scSaveEdit(){
+  var stitle = document.getElementById('sc-edit-stitle').value.trim();
+  var cls    = document.getElementById('sc-edit-class').value.trim();
+  var method = document.getElementById('sc-edit-method').value.trim();
+  var file   = document.getElementById('sc-edit-file').value.trim();
+  if(!stitle){ window.showNavToast('Validation', 'Script title is required.'); return; }
+  if(scEditingId !== null){
+    var r = scData.find(function(x){ return x.id === scEditingId; });
+    if(r){ r.stitle = stitle; r.className = cls; r.method = method; r.file = file; }
+  } else {
+    scData.push({ id: scNextId++, stitle: stitle, className: cls, method: method, file: file });
+  }
+  scRender();
+  window.showNavToast('Script Management', 'Script saved successfully.');
+  scCloseEdit();
+}
+
+function scDelete(){
+  scData = scData.filter(function(x){ return x.id !== scEditingId; });
+  scRender();
+  window.showNavToast('Script Management', 'Script deleted.');
+  scCloseEdit();
+}
+
+function scOpenAdd(){
+  scEditingId = null;
+  document.getElementById('sc-edit-title').textContent = 'Add Script';
+  document.getElementById('sc-edit-stitle').value = '';
+  document.getElementById('sc-edit-class').value = '';
+  document.getElementById('sc-edit-method').value = '';
+  document.getElementById('sc-edit-file').value = '';
+  document.getElementById('sc-edit-delete').style.display = 'none';
+  document.getElementById('sc-edit-modal').classList.add('open');
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    var m = document.getElementById('sc-edit-modal');
+    if(m && m.classList.contains('open')){ scCloseEdit(); }
+  }
+});
+
+scRender();
+</script>
+
+</body>
+</html>

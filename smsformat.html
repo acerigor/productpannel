@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMS format — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+
+/* Picker (Sender dropdown) */
+.sm-picker{position:relative;width:100%;}
+.sm-picker-btn{width:100%;height:40px;padding:0 12px;background:var(--sur);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .12s;text-align:left;}
+.sm-picker-btn:hover,.sm-picker.open .sm-picker-btn{border-color:var(--ac);}
+.sm-picker-btn.placeholder{color:var(--mu);}
+.sm-picker-btn svg{width:12px;height:12px;color:var(--mu);flex-shrink:0;}
+.sm-picker-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;padding-right:8px;}
+.sm-picker-menu{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);max-height:240px;overflow-y:auto;z-index:60;display:none;padding:4px;}
+.sm-picker.open .sm-picker-menu{display:block;}
+.sm-picker-item{padding:8px 12px;border-radius:6px;color:var(--tx);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;}
+.sm-picker-item:hover{background:rgba(255,255,255,.05);color:var(--ac2);}
+.sm-picker-item.on{color:var(--ac);}
+
+/* Source card + form column */
+.sm-source-card{background:var(--sur2);border:0.5px solid var(--brd2);border-radius:12px;padding:16px 18px;}
+.sm-body-grid{display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start;}
+@media (max-width:820px){ .sm-body-grid{grid-template-columns:1fr;} }
+.sm-form-col{display:flex;flex-direction:column;gap:14px;}
+.sm-field{display:flex;flex-direction:column;gap:6px;}
+.sm-field > label{font-size:12px;font-weight:500;color:var(--mu);}
+.sm-field input,.sm-field textarea{background:var(--sur);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;padding:10px 12px;outline:none;transition:border-color .12s;}
+.sm-field input{height:40px;}
+.sm-field input:focus,.sm-field textarea:focus{border-color:var(--ac);}
+.sm-sub{font-size:11.5px;color:var(--mu);margin-top:-2px;margin-bottom:2px;}
+.sm-editor{border:0.5px solid var(--brd2);border-radius:10px;background:var(--sur);}
+.sm-editor textarea{width:100%;min-height:240px;border:none;border-radius:0;background:transparent;resize:vertical;padding:12px 14px;display:block;}
+.sm-editor-area{min-height:240px;padding:12px 14px;color:var(--tx);font-family:var(--font);font-size:13px;line-height:1.5;outline:none;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;}
+.sm-editor-area:empty::before{content:attr(data-placeholder);color:var(--mu);pointer-events:none;}
+.sm-chip{display:inline-flex;align-items:center;background:rgba(79,124,255,.14);color:var(--ac2);border:0.5px solid var(--ac);border-radius:14px;padding:1px 8px;font-size:11.5px;font-weight:500;margin:0 2px;user-select:all;vertical-align:baseline;line-height:1.4;}
+.sm-chip.sm-chip-preview{font-size:11px;}
+#sm-pick-column{width:auto;}
+#sm-pick-column-menu,#sm-pick-user-menu{left:0;right:auto;min-width:180px;max-height:200px;}
+#sm-pick-user{width:auto;}
+.sm-editor-area a,.sm-recv-bubble a{color:var(--ac2);text-decoration:underline;}
+#sm-pick-link{width:auto;}
+.sm-link-popover{position:fixed;top:0;left:0;right:auto;width:280px;max-width:calc(100vw - 16px);padding:10px;flex-direction:column;gap:8px;z-index:80;}
+.sm-picker.open > .sm-link-popover{display:flex;}
+.sm-link-label{font-size:11px;color:var(--mu);font-weight:500;}
+.sm-link-popover input{height:32px;padding:0 10px;background:var(--sur);border:0.5px solid var(--brd2);border-radius:6px;color:var(--tx);font-family:var(--font);font-size:12.5px;outline:none;}
+.sm-link-popover input:focus{border-color:var(--ac);}
+.sm-link-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:2px;align-items:center;}
+.sm-link-popover .sm-lp-btn{width:auto;height:auto;display:inline-flex;align-items:center;justify-content:center;padding:7px 14px;font:500 12.5px/1 var(--font);border-radius:6px;cursor:pointer;border:1px solid transparent;transition:background .12s, border-color .12s, color .12s;min-height:30px;white-space:nowrap;}
+.sm-link-popover .sm-lp-btn-cancel{background:transparent;border-color:var(--brd2);color:var(--tx);}
+.sm-link-popover .sm-lp-btn-cancel:hover{background:var(--sur);border-color:var(--ac);color:var(--ac);}
+.sm-link-popover .sm-lp-btn-insert{background:var(--ac);color:#fff;}
+.sm-link-popover .sm-lp-btn-insert:hover{background:var(--ac2);}
+.sm-link-popover .sm-lp-btn-remove{background:transparent;border-color:var(--rd);color:var(--rd);margin-right:auto;}
+.sm-link-popover .sm-lp-btn-remove:hover{background:rgba(229,85,85,.08);}
+.sm-editor-toolbar{display:flex;align-items:center;gap:10px;padding:8px 10px;border-top:0.5px solid var(--brd);background:var(--sur2);border-bottom-left-radius:9.5px;border-bottom-right-radius:9.5px;}
+.sm-toolbar-icons{display:flex;align-items:center;gap:2px;}
+.sm-toolbar-icons button{width:28px;height:28px;background:transparent;border:none;color:var(--mu);cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:0;}
+.sm-toolbar-icons button:hover{background:rgba(255,255,255,.04);color:var(--ac2);}
+.sm-toolbar-icons svg{width:14px;height:14px;}
+
+/* iPhone preview */
+.sm-preview-col{display:flex;justify-content:center;}
+.sm-iphone{width:260px;background:var(--sur);border:1px solid var(--brd2);border-radius:38px;padding:8px 8px 0;position:relative;overflow:hidden;}
+.sm-iphone-notch{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:90px;height:22px;background:#000;border-radius:14px;z-index:2;}
+.sm-iphone-statusbar{display:flex;justify-content:space-between;align-items:center;padding:10px 22px 0;font-size:11px;color:var(--tx);font-weight:600;height:32px;position:relative;z-index:3;}
+.sm-signal{display:inline-flex;align-items:center;gap:4px;}
+.sm-signal svg{width:14px;height:12px;color:var(--tx);}
+.sm-iphone-contact{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 0 12px;border-bottom:0.5px solid var(--brd);}
+.sm-avatar{width:36px;height:36px;border-radius:50%;background:var(--sur2);border:0.5px solid var(--brd2);display:flex;align-items:center;justify-content:center;color:var(--mu);}
+.sm-avatar svg{width:20px;height:20px;}
+.sm-contact-num{font-size:12px;color:var(--tx);font-weight:500;}
+.sm-iphone-chat{min-height:380px;padding:12px 12px 8px;display:flex;flex-direction:column;justify-content:flex-start;}
+.sm-recv-bubble{background:var(--sur2);border:0.5px solid var(--brd2);border-radius:14px 14px 14px 4px;padding:8px 12px;max-width:none;align-self:stretch;color:var(--tx);}
+.sm-recv-title{font-size:12px;font-weight:600;color:var(--tx);margin-bottom:2px;}
+.sm-recv-body{font-size:12px;color:var(--tx);line-height:1.35;white-space:pre-wrap;word-break:break-word;}
+.sm-recv-title:empty,.sm-recv-body:empty{display:none;}
+.sm-recv-bubble.empty{color:var(--mu);border-style:dashed;font-size:11.5px;text-align:center;align-self:stretch;max-width:none;}
+.sm-iphone-reply{display:flex;align-items:center;gap:6px;padding:8px 10px;border-top:0.5px solid var(--brd);}
+.sm-iphone-reply > svg{width:16px;height:16px;color:var(--mu);flex-shrink:0;}
+.sm-reply-input{flex:1;background:var(--sur);border:0.5px solid var(--brd2);border-radius:14px;padding:6px 12px;font-size:11.5px;color:var(--mu);}
+.sm-send-btn{width:24px;height:24px;background:var(--mu);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--sur);flex-shrink:0;}
+.sm-send-btn svg{width:12px;height:12px;}
+.sm-iphone-home{width:100px;height:4px;background:var(--brd2);border-radius:2px;margin:4px auto 8px;}
+
+.modal-delete{background:transparent;border:1px solid var(--rd);color:var(--rd);padding:8px 14px;border-radius:8px;font-family:var(--font);font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s;}
+.modal-delete:hover{background:rgba(229,85,85,.08);}
+.modal-save:disabled{opacity:.5;cursor:not-allowed;}
+#sm-edit-modal .modal--wide{width:700px;max-width:calc(100vw - 32px);}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <div class="assign-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input id="sm-search" type="text" placeholder="Search templates…" oninput="smFilter(this.value)"/>
+    </div>
+    <button class="tbtn tbtn-p" onclick="smOpenAddModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>SMS Template</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0 0 24px;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:48px;text-align:center;"><input type="checkbox" id="sm-check-all" onchange="smToggleAll(this)"/></th>
+                <th style="width:64px;text-align:center;">No.</th>
+                <th style="width:140px;text-align:left;">Is Active</th>
+                <th style="text-align:left;padding-left:24px;">Template Name</th>
+              </tr>
+            </thead>
+            <tbody id="sm-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="modal-backdrop modal-fullscreen-mobile" id="sm-edit-modal" onclick="if(event.target===this) smCloseEdit()">
+    <div class="modal modal--wide">
+      <div class="modal-header">
+        <div class="modal-title">Add SMS Template</div>
+        <button class="modal-close" onclick="smCloseEdit()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="sm-source-card">
+          <div class="sm-body-grid">
+            <div class="sm-form-col">
+              <div class="sm-field">
+                <label>Template name</label>
+                <input type="text" id="sm-e-name" placeholder="New sms" oninput="smSyncSaveEnabled(); smUpdatePreview();"/>
+              </div>
+              <div class="sm-field">
+                <label>Template</label>
+                <div class="sm-sub">This text message campaign will be sent to all contacts</div>
+                <div class="sm-editor">
+                  <div id="sm-e-message" class="sm-editor-area" contenteditable="true" data-placeholder="Write your message…"></div>
+                  <div class="sm-editor-toolbar">
+                    <div class="sm-toolbar-icons">
+                      <button type="button" onmousedown="event.preventDefault()" onclick="smBoldSelection()" title="Bold (Ctrl+B)" aria-label="Bold">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+                      </button>
+                      <div class="sm-picker" id="sm-pick-column">
+                        <button type="button" onmousedown="event.preventDefault()" onclick="smColumnMenuToggle(event, this)" title="Insert column" aria-label="Insert column">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                        </button>
+                        <div class="sm-picker-menu" id="sm-pick-column-menu"></div>
+                      </div>
+                      <div class="sm-picker" id="sm-pick-user">
+                        <button type="button" onmousedown="event.preventDefault()" onclick="smUserMenuToggle(event, this)" title="Insert user" aria-label="Insert user">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </button>
+                        <div class="sm-picker-menu" id="sm-pick-user-menu"></div>
+                      </div>
+                      <div class="sm-picker" id="sm-pick-link">
+                        <button type="button" onmousedown="event.preventDefault()" onclick="smOpenLinkPopover(event, this)" title="Insert link" aria-label="Insert link">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        </button>
+                        <div class="sm-picker-menu sm-link-popover" id="sm-link-popover">
+                          <label class="sm-link-label">URL</label>
+                          <input type="text" id="sm-link-url" placeholder="https://" onkeydown="smLinkKeydown(event)"/>
+                          <div class="sm-link-actions">
+                            <button type="button" class="sm-lp-btn sm-lp-btn-remove" id="sm-link-remove" style="display:none;" onmousedown="event.preventDefault()" onclick="smRemoveLink()">Remove</button>
+                            <button type="button" class="sm-lp-btn sm-lp-btn-cancel" onmousedown="event.preventDefault()" onclick="smCloseLinkPopover()">Cancel</button>
+                            <button type="button" class="sm-lp-btn sm-lp-btn-insert" onmousedown="event.preventDefault()" onclick="smConfirmLink()">Insert</button>
+                          </div>
+                        </div>
+                      </div>
+                      <button type="button" onmousedown="event.preventDefault()" onclick="smInsertActiveAnnouncement()" title="Insert active announcement" aria-label="Insert active announcement">
+                        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M0.786072 9.71112C0.527899 8.95879 0.578729 8.13476 0.927407 7.41987C1.27609 6.70497 1.89413 6.1576 2.64592 5.89786L4.9979 5.08801C5.16641 5.01875 8.09047 3.77593 10.1201 0.399982C10.218 0.236796 10.3605 0.104953 10.5308 0.0199401C10.7011 -0.0650725 10.8921 -0.0997236 11.0814 -0.0799426C11.2707 -0.0601617 11.4504 0.0132296 11.5994 0.13161C11.7485 0.24999 11.8606 0.408443 11.9227 0.588354L15.1784 10.0435C15.2404 10.2236 15.2497 10.4175 15.2052 10.6026C15.1607 10.7877 15.0643 10.9563 14.9273 11.0885C14.7903 11.2207 14.6184 11.3111 14.4319 11.349C14.2453 11.3869 14.0518 11.3707 13.8741 11.3024C10.9974 10.1988 8.49438 10.4605 7.45522 10.6504L8.10066 12.5249C8.1545 12.6806 8.16903 12.8473 8.14295 13.01C8.11686 13.1727 8.05097 13.3264 7.95114 13.4575L7.45025 14.1145C7.35348 14.2416 7.22766 14.3437 7.08333 14.4122C6.93899 14.4807 6.78035 14.5136 6.62067 14.5082C6.461 14.5028 6.30495 14.4592 6.16559 14.3811C6.02622 14.303 5.90761 14.1926 5.81967 14.0592L4.22148 11.6773C3.50783 11.8214 2.76611 11.7016 2.13422 11.3399C1.50232 10.9783 1.02325 10.3995 0.786072 9.71112ZM14.2315 10.365L10.9772 0.913922C9.17806 3.90712 6.77348 5.33594 5.79258 5.82176L7.12497 9.69129C8.19666 9.47299 10.9702 9.11754 14.2315 10.365ZM6.65282 13.5033L6.65506 13.5098L7.15595 12.8528L6.49037 10.9198L5.21392 11.3594L6.65282 13.5033ZM4.27376 10.6255L6.1648 9.97431L4.86253 6.19224L2.97149 6.84338C2.46996 7.01607 2.05757 7.38092 1.82504 7.85767C1.59251 8.33442 1.5589 8.88401 1.73159 9.38555C1.90428 9.88708 2.26914 10.2995 2.74589 10.532C3.22264 10.7645 3.77223 10.7981 4.27376 10.6255Z"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="sm-field" style="flex-direction:row;align-items:center;gap:10px;">
+                <label style="margin:0;">Is Active</label>
+                <span class="us-yn-tog" id="sm-e-active" onclick="this.classList.toggle('off')">
+                  <span class="us-yn-tog-txt">YES</span><span class="us-yn-tog-knob"></span>
+                </span>
+              </div>
+            </div>
+            <div class="sm-preview-col">
+              <div class="sm-iphone">
+                <div class="sm-iphone-notch"></div>
+                <div class="sm-iphone-statusbar">
+                  <span class="sm-time">10:55</span>
+                  <span class="sm-signal">
+                    <svg viewBox="0 0 24 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".5"/><rect x="5" y="6" width="3" height="6" rx=".5"/><rect x="10" y="3" width="3" height="9" rx=".5"/><rect x="15" y="0" width="3" height="12" rx=".5"/></svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7-6a10 10 0 0 1 14 0l-2 2a7 7 0 0 0-10 0zm-4-4a16 16 0 0 1 22 0l-2 2a13 13 0 0 0-18 0z"/></svg>
+                    <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="18" height="10" rx="2"/><rect x="3" y="3" width="14" height="6" rx="1" fill="currentColor"/><rect x="20" y="4" width="2" height="4" rx=".5" fill="currentColor"/></svg>
+                  </span>
+                </div>
+                <div class="sm-iphone-contact">
+                  <div class="sm-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                  <div class="sm-contact-num">(201) 222-1012</div>
+                </div>
+                <div class="sm-iphone-chat" id="sm-preview-chat">
+                  <div class="sm-recv-bubble empty" id="sm-preview-bubble">
+                    <div class="sm-recv-title" id="sm-preview-title"></div>
+                    <div class="sm-recv-body" id="sm-preview-body">Preview appears here</div>
+                  </div>
+                </div>
+                <div class="sm-iphone-reply">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <div class="sm-reply-input">Your message</div>
+                  <div class="sm-send-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l10 7-10 7z"/></svg></div>
+                </div>
+                <div class="sm-iphone-home"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button class="modal-delete" id="sm-e-delete" onclick="smDelete()" style="display:none;">Delete</button>
+        <div style="display:flex;gap:8px;margin-left:auto;">
+          <button class="modal-save" id="sm-e-save" onclick="smSaveEdit()">Save</button>
+          <button class="modal-cancel" onclick="smCloseEdit()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'settings', title: 'SMS format' });
+
+const SM_DEPARTMENTS = ['Sales', 'Marketing', 'Support', 'BDC'];
+const SM_USERS = [
+  { key:'AH', name:'Amin Hussain' },
+  { key:'HP', name:'Hardik Patadiya' },
+  { key:'BL', name:'Brenda Loredo' },
+  { key:'JP', name:'Jane Peras' },
+  { key:'SL', name:'Shaun Leva' },
+  { key:'LR', name:'Luis Rodriguez' }
+];
+const SM_COLUMNS = [
+  { token:'FirstName',   label:'First Name' },
+  { token:'LastName',    label:'Last Name' },
+  { token:'DealerName',  label:'Dealer Name' },
+  { token:'AuctionName', label:'Auction Name' },
+  { token:'Year',        label:'Year' },
+  { token:'Make',        label:'Make' },
+  { token:'Model',       label:'Model' },
+  { token:'VIN',         label:'VIN' },
+  { token:'StockNumber', label:'Stock Number' }
+];
+const SM_STORE = 'buysmart:sms:templates';
+const SM_SEED = [
+  { id:1, active:true,  name:'Rust Alert', senders:['Sales'],   message:'Watch for RUST\nCheck Carfax for Northern States' },
+  { id:2, active:false, name:'Skip Alert', senders:['Support'], message:'Skip Vehicles\nThat the previous owner did not properly maintain.' }
+];
+
+let SM_TEMPLATES = [];
+let smSearchQ = '';
+let smEditingId = null;
+let smEditingMode = null;
+let smSavedRange = null;
+let smEditingSenders = [];
+
+function smSaveRange(){
+  const editor = document.getElementById('sm-e-message');
+  const sel = window.getSelection();
+  if(sel && sel.rangeCount){
+    const r = sel.getRangeAt(0);
+    if(editor.contains(r.startContainer)) smSavedRange = r.cloneRange();
+  }
+}
+
+function smEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function smLoad(){
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(SM_STORE) || 'null'); } catch(e){}
+  SM_TEMPLATES = saved && Array.isArray(saved) ? saved : JSON.parse(JSON.stringify(SM_SEED));
+  SM_TEMPLATES.forEach(function(r){
+    if(!r.name) r.name = r.message || '';
+    if(!Array.isArray(r.senders)){
+      if(typeof r.sender === 'string' && r.sender) r.senders = [r.sender];
+      else r.senders = [];
+    }
+    r.senders = r.senders.filter(function(s){ return SM_DEPARTMENTS.indexOf(s) >= 0; });
+    delete r.sender;
+  });
+}
+
+function smSaveStore(){
+  try { localStorage.setItem(SM_STORE, JSON.stringify(SM_TEMPLATES)); } catch(e){}
+}
+
+function smRowHtml(r){
+  const togClass = 'us-yn-tog' + (r.active ? '' : ' off');
+  const togTxt   = r.active ? 'YES' : 'OFF';
+  return '<tr>' +
+    '<td style="text-align:center;"><input type="checkbox" class="sm-row-check" data-id="' + r.id + '" onchange="smSyncAll()"/></td>' +
+    '<td style="text-align:center;"><a class="us-user-link" href="javascript:void(0)" onclick="smOpenEdit(' + r.id + ')">' + r.id + '</a></td>' +
+    '<td><span class="' + togClass + '" data-id="' + r.id + '" onclick="smToggleActive(' + r.id + ')"><span class="us-yn-tog-txt">' + togTxt + '</span><span class="us-yn-tog-knob"></span></span></td>' +
+    '<td style="text-align:left;padding-left:24px;"><a class="us-user-link" href="javascript:void(0)" onclick="smOpenEdit(' + r.id + ')">' + smEsc(r.name || '') + '</a></td>' +
+  '</tr>';
+}
+
+function smRender(){
+  const q = smSearchQ.trim().toLowerCase();
+  const visible = SM_TEMPLATES.filter(function(r){
+    return !q || (r.name||'').toLowerCase().includes(q) || (r.senders||[]).join(', ').toLowerCase().includes(q) || (r.message||'').toLowerCase().includes(q);
+  });
+  document.getElementById('sm-tbody').innerHTML = visible.map(smRowHtml).join('');
+  smSyncAll();
+}
+
+function smFilter(q){ smSearchQ = q || ''; smRender(); }
+
+function smEnforceSingleActive(activeId){
+  SM_TEMPLATES.forEach(function(r){
+    if(r.id !== activeId) r.active = false;
+  });
+}
+
+function smToggleActive(id){
+  const r = SM_TEMPLATES.find(function(x){ return x.id === id; });
+  if(!r) return;
+  r.active = !r.active;
+  if(r.active) smEnforceSingleActive(id);
+  smSaveStore();
+  smRender();
+}
+
+function smToggleAll(el){
+  document.querySelectorAll('.sm-row-check').forEach(function(c){ c.checked = el.checked; });
+}
+function smSyncAll(){
+  const boxes = document.querySelectorAll('.sm-row-check');
+  const all = boxes.length > 0 && Array.from(boxes).every(function(b){ return b.checked; });
+  const some = Array.from(boxes).some(function(b){ return b.checked; });
+  const el = document.getElementById('sm-check-all');
+  if(el){ el.checked = all; el.indeterminate = !all && some; }
+}
+
+// ---------- Picker helpers ----------
+
+function smRenderPickerMenu(menuId, options, currentValue){
+  const menu = document.getElementById(menuId);
+  menu.innerHTML = options.map(function(opt){
+    return '<div class="sm-picker-item' + (opt === currentValue ? ' on' : '') + '" data-val="' + smEsc(opt) + '">' + smEsc(opt) + '</div>';
+  }).join('');
+}
+
+function smRenderSenderMenu(){
+  document.getElementById('sm-pick-sender-menu').innerHTML = SM_DEPARTMENTS.map(function(name){
+    const on = smEditingSenders.indexOf(name) >= 0;
+    return '<div class="sm-picker-item' + (on ? ' on' : '') + '" data-val="' + smEsc(name) + '">' +
+      '<span>' + smEsc(name) + '</span>' +
+      (on ? '<span style="margin-left:auto;">&#10003;</span>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function smUpdateSenderLabel(){
+  const btn = document.querySelector('#sm-pick-sender .sm-picker-btn');
+  const label = btn.querySelector('.sm-picker-label');
+  if(smEditingSenders.length === 0){
+    label.textContent = 'Pick sender';
+    btn.classList.add('placeholder');
+  } else if(smEditingSenders.length === 1){
+    label.textContent = smEditingSenders[0];
+    btn.classList.remove('placeholder');
+  } else {
+    label.textContent = smEditingSenders[0] + ' +' + (smEditingSenders.length - 1);
+    btn.classList.remove('placeholder');
+  }
+}
+
+function smToggleSender(name){
+  const i = smEditingSenders.indexOf(name);
+  if(i >= 0) smEditingSenders.splice(i, 1); else smEditingSenders.push(name);
+  smRenderSenderMenu();
+  smUpdateSenderLabel();
+  smSyncSaveEnabled();
+}
+
+function smPickerToggle(e, btn){
+  e.stopPropagation();
+  const wrap = btn.closest('.sm-picker');
+  const wasOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.sm-picker.open').forEach(function(p){ p.classList.remove('open'); });
+  if(!wasOpen) wrap.classList.add('open');
+}
+
+function smSetPicker(pickerId, value){
+  const wrap = document.getElementById(pickerId);
+  const btn = wrap.querySelector('.sm-picker-btn');
+  const label = wrap.querySelector('.sm-picker-label');
+  if(value){
+    label.textContent = value;
+    btn.classList.remove('placeholder');
+  } else {
+    label.textContent = 'Pick sender';
+    btn.classList.add('placeholder');
+  }
+  const menu = wrap.querySelector('.sm-picker-menu');
+  menu.querySelectorAll('.sm-picker-item').forEach(function(item){
+    item.classList.toggle('on', item.getAttribute('data-val') === value);
+  });
+}
+
+function smGetPicker(pickerId){
+  const wrap = document.getElementById(pickerId);
+  const btn = wrap.querySelector('.sm-picker-btn');
+  if(btn.classList.contains('placeholder')) return '';
+  return wrap.querySelector('.sm-picker-label').textContent;
+}
+
+// ---------- Preview ----------
+
+function smSerialize(el){
+  let out = '';
+  function walk(node){
+    if(node.nodeType === 3){ out += node.nodeValue; return; }
+    if(node.nodeType !== 1) return;
+    const tag = node.nodeName;
+    if(tag === 'BR'){ out += '\n'; return; }
+    if(tag === 'DIV' || tag === 'P'){
+      if(out && !out.endsWith('\n')) out += '\n';
+      Array.from(node.childNodes).forEach(walk);
+      return;
+    }
+    if(node.classList && node.classList.contains('sm-chip')){
+      out += '{' + (node.getAttribute('data-token') || '') + '}';
+      return;
+    }
+    if(tag === 'A'){
+      out += '[';
+      Array.from(node.childNodes).forEach(walk);
+      out += '](' + (node.getAttribute('href') || '') + ')';
+      return;
+    }
+    if(tag === 'B' || tag === 'STRONG'){
+      out += '**';
+      Array.from(node.childNodes).forEach(walk);
+      out += '**';
+      return;
+    }
+    Array.from(node.childNodes).forEach(walk);
+  }
+  Array.from(el.childNodes).forEach(walk);
+  return out;
+}
+
+function smDeserialize(str, opts){
+  const preview = opts && opts.preview;
+  let html = smEsc(str || '');
+  html = html.replace(/\{(@?[A-Za-z][A-Za-z0-9]*)\}/g, function(_, tok){
+    let label;
+    if(tok.charAt(0) === '@'){
+      const u = SM_USERS.find(function(x){ return x.key === tok.slice(1); });
+      label = u ? u.name : tok;
+    } else {
+      const c = SM_COLUMNS.find(function(x){ return x.token === tok; });
+      label = c ? c.label : tok;
+    }
+    const cls = 'sm-chip' + (preview ? ' sm-chip-preview' : '');
+    return '<span class="' + cls + '" contenteditable="false" data-token="' + smEsc(tok) + '">' + smEsc(label) + '</span>';
+  });
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(_, text, url){
+    const safe = smSanitizeUrl(url);
+    if(!safe) return text;
+    return '<a href="' + safe.replace(/"/g,'&quot;') + '" target="_blank" rel="noopener">' + text + '</a>';
+  });
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+function smSanitizeUrl(url){
+  if(!url) return '';
+  const lc = url.toLowerCase();
+  if(lc.startsWith('http://') || lc.startsWith('https://') || lc.startsWith('mailto:')) return url;
+  if(/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(url)) return 'https://' + url;
+  return '';
+}
+
+function smFindEnclosingAnchor(range, editor){
+  // Check ancestor chain
+  let node = range.startContainer;
+  while(node && node !== editor){
+    if(node.nodeType === 1 && node.tagName === 'A') return node;
+    node = node.parentNode;
+  }
+  // Case: range selectNode(anchor) → startContainer is parent, startOffset points at the anchor
+  if(range.startContainer.nodeType === 1){
+    const child = range.startContainer.childNodes[range.startOffset];
+    if(child && child.nodeType === 1 && child.tagName === 'A' && editor.contains(child)) return child;
+  }
+  return null;
+}
+
+function smOpenLinkPopover(e, btn){
+  e.stopPropagation();
+  const editor = document.getElementById('sm-e-message');
+  const sel = window.getSelection();
+  let range = null;
+  if(smSavedRange && editor.contains(smSavedRange.startContainer)) range = smSavedRange.cloneRange();
+  else if(sel.rangeCount && editor.contains(sel.anchorNode)) range = sel.getRangeAt(0);
+  if(!range){
+    window.showNavToast('Select text first', 'Highlight the text you want to hyperlink.');
+    return;
+  }
+  const anchor = smFindEnclosingAnchor(range, editor);
+  const input = document.getElementById('sm-link-url');
+  const removeBtn = document.getElementById('sm-link-remove');
+  if(anchor){
+    const r = document.createRange();
+    r.selectNode(anchor);
+    smSavedRange = r.cloneRange();
+    input.value = anchor.getAttribute('href') || 'https://';
+    removeBtn.style.display = '';
+  } else {
+    if(range.collapsed){
+      window.showNavToast('Select text first', 'Highlight the text you want to hyperlink.');
+      return;
+    }
+    smSavedRange = range.cloneRange();
+    input.value = 'https://';
+    removeBtn.style.display = 'none';
+  }
+  const wrap = btn.closest('.sm-picker');
+  document.querySelectorAll('.sm-picker.open').forEach(function(p){ p.classList.remove('open'); });
+  wrap.classList.add('open');
+  const popover = document.getElementById('sm-link-popover');
+  const selRect = smSavedRange.getBoundingClientRect();
+  popover.style.top = (selRect.bottom + 6) + 'px';
+  const pw = popover.offsetWidth || 260;
+  let left = selRect.left;
+  if(left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+  if(left < 8) left = 8;
+  popover.style.left = left + 'px';
+  setTimeout(function(){ input.focus(); input.select(); }, 0);
+}
+
+function smCloseLinkPopover(){
+  document.getElementById('sm-pick-link').classList.remove('open');
+}
+
+function smConfirmLink(){
+  const rawUrl = document.getElementById('sm-link-url').value.trim();
+  const url = smSanitizeUrl(rawUrl);
+  if(!url){
+    window.showNavToast('Invalid URL', 'Enter a URL starting with http://, https://, or mailto:.');
+    return;
+  }
+  const editor = document.getElementById('sm-e-message');
+  const range = smSavedRange ? smSavedRange.cloneRange() : null;
+  if(!range || range.collapsed || !editor.contains(range.startContainer)){
+    window.showNavToast('Select text first', 'Highlight the text you want to hyperlink.');
+    smCloseLinkPopover();
+    return;
+  }
+  const text = range.toString();
+  range.deleteContents();
+  const a = document.createElement('a');
+  a.href = url;
+  a.textContent = text || url;
+  a.setAttribute('target', '_blank');
+  a.setAttribute('rel', 'noopener');
+  range.insertNode(a);
+  const after = document.createRange();
+  after.setStartAfter(a);
+  after.collapse(true);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(after);
+  smSavedRange = after.cloneRange();
+  smCloseLinkPopover();
+  smSyncSaveEnabled();
+  smUpdatePreview();
+}
+
+function smLinkKeydown(e){
+  if(e.key === 'Enter'){ e.preventDefault(); smConfirmLink(); }
+  else if(e.key === 'Escape'){ e.preventDefault(); smCloseLinkPopover(); }
+}
+
+function smRemoveLink(){
+  const editor = document.getElementById('sm-e-message');
+  const range = smSavedRange ? smSavedRange.cloneRange() : null;
+  if(!range){ smCloseLinkPopover(); return; }
+  const anchor = smFindEnclosingAnchor(range, editor);
+  if(!anchor){ smCloseLinkPopover(); return; }
+  const parent = anchor.parentNode;
+  const textNode = document.createTextNode(anchor.textContent);
+  parent.replaceChild(textNode, anchor);
+  const after = document.createRange();
+  after.setStartAfter(textNode);
+  after.collapse(true);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(after);
+  smSavedRange = after.cloneRange();
+  smCloseLinkPopover();
+  smSyncSaveEnabled();
+  smUpdatePreview();
+}
+
+function smUpdatePreview(){
+  const raw = smSerialize(document.getElementById('sm-e-message'));
+  const bubble = document.getElementById('sm-preview-bubble');
+  const titleEl = document.getElementById('sm-preview-title');
+  const bodyEl  = document.getElementById('sm-preview-body');
+  if(!raw.trim()){
+    bubble.classList.add('empty');
+    titleEl.innerHTML = '';
+    bodyEl.textContent = 'Preview appears here';
+    return;
+  }
+  bubble.classList.remove('empty');
+  const nl = raw.indexOf('\n');
+  const line1 = nl < 0 ? raw : raw.slice(0, nl);
+  const rest  = nl < 0 ? '' : raw.slice(nl + 1);
+  titleEl.innerHTML = smDeserialize(line1, {preview:true});
+  bodyEl.innerHTML  = smDeserialize(rest,  {preview:true});
+}
+
+function smBoldSelection(){
+  document.getElementById('sm-e-message').focus();
+  document.execCommand('bold', false, null);
+  smSyncSaveEnabled();
+  smUpdatePreview();
+}
+
+function smRenderColumnMenu(){
+  document.getElementById('sm-pick-column-menu').innerHTML = SM_COLUMNS.map(function(c){
+    return '<div class="sm-picker-item" data-col="' + smEsc(c.token) + '" data-label="' + smEsc(c.label) + '">' + smEsc(c.label) + '</div>';
+  }).join('');
+}
+
+function smColumnMenuToggle(e, btn){
+  e.stopPropagation();
+  const wrap = btn.closest('.sm-picker');
+  if(!wrap.querySelector('.sm-picker-menu').innerHTML) smRenderColumnMenu();
+  const wasOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.sm-picker.open').forEach(function(p){ p.classList.remove('open'); });
+  if(!wasOpen) wrap.classList.add('open');
+}
+
+function smRenderUserMenu(){
+  document.getElementById('sm-pick-user-menu').innerHTML = SM_USERS.map(function(u){
+    return '<div class="sm-picker-item" data-usertoken="@' + smEsc(u.key) + '" data-label="' + smEsc(u.name) + '">' + smEsc(u.name) + '</div>';
+  }).join('');
+}
+
+function smUserMenuToggle(e, btn){
+  e.stopPropagation();
+  const wrap = btn.closest('.sm-picker');
+  if(!wrap.querySelector('.sm-picker-menu').innerHTML) smRenderUserMenu();
+  const wasOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.sm-picker.open').forEach(function(p){ p.classList.remove('open'); });
+  if(!wasOpen) wrap.classList.add('open');
+}
+
+function smInsertChip(token, label){
+  const editor = document.getElementById('sm-e-message');
+  editor.focus();
+  const sel = window.getSelection();
+  let range = null;
+  if(smSavedRange && editor.contains(smSavedRange.startContainer)) range = smSavedRange.cloneRange();
+  else if(sel.rangeCount && editor.contains(sel.anchorNode)) range = sel.getRangeAt(0);
+  if(!range){
+    range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+  }
+  range.deleteContents();
+  const chip = document.createElement('span');
+  chip.className = 'sm-chip';
+  chip.contentEditable = 'false';
+  chip.setAttribute('data-token', token);
+  chip.textContent = label;
+  range.insertNode(chip);
+  const space = document.createTextNode(' ');
+  chip.parentNode.insertBefore(space, chip.nextSibling);
+  const newRange = document.createRange();
+  newRange.setStartAfter(space);
+  newRange.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+  smSavedRange = newRange.cloneRange();
+  smSyncSaveEnabled();
+  smUpdatePreview();
+}
+
+function smSyncSaveEnabled(){
+  const btn = document.getElementById('sm-e-save');
+  const nameOk = document.getElementById('sm-e-name').value.trim().length > 0;
+  const msgOk = smSerialize(document.getElementById('sm-e-message')).trim().length > 0;
+  if(btn) btn.disabled = !(nameOk && msgOk);
+}
+
+function smToolbar(kind){
+  document.querySelectorAll('.sm-picker.open').forEach(function(p){ p.classList.remove('open'); });
+  window.showNavToast(kind, 'Coming soon.');
+}
+
+function smGetActiveAnnouncement(){
+  let list = null;
+  try { list = JSON.parse(localStorage.getItem('buysmart:announcements') || 'null'); } catch(e){}
+  if(!Array.isArray(list)) return null;
+  const active = list.find(function(r){ return r.active; });
+  return active && active.message ? active.message : null;
+}
+
+function smInsertActiveAnnouncement(){
+  const msg = smGetActiveAnnouncement();
+  if(!msg){
+    window.showNavToast('No active announcement', 'Activate one on the Announcements page first.');
+    return;
+  }
+  const editor = document.getElementById('sm-e-message');
+  editor.focus();
+  const sel = window.getSelection();
+  let range = null;
+  if(smSavedRange && editor.contains(smSavedRange.startContainer)) range = smSavedRange.cloneRange();
+  else if(sel.rangeCount && editor.contains(sel.anchorNode)) range = sel.getRangeAt(0);
+  if(!range){
+    range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+  }
+  range.deleteContents();
+  const parts = msg.split('\n');
+  let lastInserted = null;
+  parts.forEach(function(part, i){
+    if(i > 0){
+      const br = document.createElement('br');
+      range.insertNode(br);
+      range.setStartAfter(br);
+      range.collapse(true);
+      lastInserted = br;
+    }
+    if(part){
+      const tn = document.createTextNode(part);
+      range.insertNode(tn);
+      range.setStartAfter(tn);
+      range.collapse(true);
+      lastInserted = tn;
+    }
+  });
+  const after = document.createRange();
+  if(lastInserted) after.setStartAfter(lastInserted);
+  else after.setStart(range.startContainer, range.startOffset);
+  after.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(after);
+  smSavedRange = after.cloneRange();
+  smSyncSaveEnabled();
+  smUpdatePreview();
+}
+
+// ---------- Modal open / close / save / delete ----------
+
+function smOpenAddModal(){
+  smEditingMode = 'add';
+  smEditingId = null;
+  document.querySelector('#sm-edit-modal .modal-title').textContent = 'Add SMS Template';
+  document.getElementById('sm-e-name').value = '';
+  document.getElementById('sm-e-message').innerHTML = '';
+  smEditingSenders = [];
+  const tog = document.getElementById('sm-e-active');
+  tog.classList.remove('off');
+  tog.querySelector('.us-yn-tog-txt').textContent = 'YES';
+  document.getElementById('sm-e-delete').style.display = 'none';
+  smUpdatePreview();
+  smSyncSaveEnabled();
+  document.getElementById('sm-edit-modal').classList.add('open');
+}
+
+function smOpenEdit(id){
+  const r = SM_TEMPLATES.find(function(x){ return x.id === id; });
+  if(!r) return;
+  smEditingMode = 'edit';
+  smEditingId = id;
+  document.querySelector('#sm-edit-modal .modal-title').textContent = 'Edit SMS Template';
+  document.getElementById('sm-e-name').value = r.name || '';
+  document.getElementById('sm-e-message').innerHTML = smDeserialize(r.message || '');
+  smEditingSenders = (r.senders || []).slice();
+  const tog = document.getElementById('sm-e-active');
+  tog.classList.toggle('off', !r.active);
+  tog.querySelector('.us-yn-tog-txt').textContent = r.active ? 'YES' : 'OFF';
+  document.getElementById('sm-e-delete').style.display = '';
+  smUpdatePreview();
+  smSyncSaveEnabled();
+  document.getElementById('sm-edit-modal').classList.add('open');
+}
+
+function smCloseEdit(){
+  document.getElementById('sm-edit-modal').classList.remove('open');
+  smEditingId = null;
+  smEditingMode = null;
+  smEditingSenders = [];
+}
+
+function smSaveEdit(){
+  const name = document.getElementById('sm-e-name').value.trim();
+  const senders = smEditingSenders.slice();
+  const message = smSerialize(document.getElementById('sm-e-message')).trim();
+  if(!name){
+    window.showNavToast('Template name required', 'Enter a template name.');
+    document.getElementById('sm-e-name').focus();
+    return;
+  }
+  if(!message){
+    window.showNavToast('Message required', 'Enter a message.');
+    document.getElementById('sm-e-message').focus();
+    return;
+  }
+  const active = !document.getElementById('sm-e-active').classList.contains('off');
+  if(smEditingMode === 'add'){
+    const nextId = SM_TEMPLATES.reduce(function(m,r){ return Math.max(m, r.id || 0); }, 0) + 1;
+    SM_TEMPLATES.push({ id:nextId, active:active, name:name, senders:senders, message:message });
+    if(active) smEnforceSingleActive(nextId);
+    smSaveStore();
+    smRender();
+    smCloseEdit();
+    window.showNavToast('SMS Template added', 'Template created.');
+  } else {
+    if(smEditingId == null){ smCloseEdit(); return; }
+    const r = SM_TEMPLATES.find(function(x){ return x.id === smEditingId; });
+    if(r){ r.name = name; r.senders = senders; r.message = message; r.active = active; }
+    if(active) smEnforceSingleActive(smEditingId);
+    smSaveStore();
+    smRender();
+    smCloseEdit();
+    window.showNavToast('SMS Template saved', 'Template updated.');
+  }
+}
+
+function smDelete(){
+  if(smEditingMode !== 'edit' || smEditingId == null) return;
+  if(!confirm('Delete this template?')) return;
+  const idx = SM_TEMPLATES.findIndex(function(x){ return x.id === smEditingId; });
+  if(idx < 0){ smCloseEdit(); return; }
+  SM_TEMPLATES.splice(idx, 1);
+  smSaveStore();
+  smRender();
+  smCloseEdit();
+  window.showNavToast('SMS Template deleted', 'Template removed.');
+}
+
+// ---------- Picker outside-click + item click ----------
+
+document.addEventListener('click', function(e){
+  document.querySelectorAll('.sm-picker.open').forEach(function(p){
+    if(!p.contains(e.target)) p.classList.remove('open');
+  });
+  const item = e.target.closest && e.target.closest('.sm-picker-item');
+  if(item){
+    const wrap = item.closest('.sm-picker');
+    if(item.hasAttribute('data-col')){
+      wrap.classList.remove('open');
+      smInsertChip(item.getAttribute('data-col'), item.getAttribute('data-label'));
+    } else if(item.hasAttribute('data-usertoken')){
+      wrap.classList.remove('open');
+      smInsertChip(item.getAttribute('data-usertoken'), item.getAttribute('data-label'));
+    } else {
+      wrap.classList.remove('open');
+      const val = item.getAttribute('data-val');
+      smSetPicker(wrap.id, val);
+      smSyncSaveEnabled();
+    }
+  }
+});
+
+smLoad();
+smRender();
+
+(function(){
+  const editor = document.getElementById('sm-e-message');
+  function onEdit(){ smSyncSaveEnabled(); smUpdatePreview(); smSaveRange(); }
+  editor.addEventListener('input', onEdit);
+  editor.addEventListener('keyup', onEdit);
+  editor.addEventListener('mouseup', smSaveRange);
+  editor.addEventListener('blur', smSaveRange);
+  ['sm-pick-column-menu','sm-pick-user-menu'].forEach(function(id){
+    const m = document.getElementById(id);
+    if(m) m.addEventListener('mousedown', function(e){ e.preventDefault(); }, true);
+  });
+  window.addEventListener('scroll', function(){ smCloseLinkPopover(); }, true);
+  window.addEventListener('resize', smCloseLinkPopover);
+})();
+</script>
+
+</body>
+</html>

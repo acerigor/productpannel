@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Default Bid Formula — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){
+  .root.main-area{height:auto;min-height:0;overflow:visible;}
+  .set-page-head .tbtn-p span{display:none;}
+}
+#bf-edit-modal .modal{width:714px;}
+.bf-subtable-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.bf-subtable-label{font-size:13px;font-weight:600;color:var(--tx);}
+.bf-subtable-add{height:26px;font-size:11px;padding:0 10px;border-radius:7px;}
+.bf-subtable-gap{margin-top:16px;}
+.bf-del-col{width:44px;text-align:center;}
+.bf-del-btn{background:none;border:none;cursor:pointer;color:var(--mu);padding:4px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;}
+.bf-del-btn:hover{color:var(--rd);background:rgba(232,85,85,.08);}
+.bf-del-btn svg{width:14px;height:14px;}
+.bf-metric-select{background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;height:34px;padding:0 10px;color:var(--tx);font-size:13px;font-family:var(--font);cursor:pointer;}
+.bf-metric-select:focus{border-color:var(--ac);outline:none;}
+.bf-metric-select option{background:var(--sur2);color:var(--tx);}
+.bf-metric-label{font-weight:600;font-size:13px;color:var(--tx);vertical-align:middle;border-right:0.5px solid var(--brd);}
+.bf-metric-src{border-left:0.5px solid var(--brd);}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <button class="tbtn tbtn-p" onclick="bfOpenAdd()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Add Formula</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:64px;text-align:center;">No.</th>
+                <th style="text-align:right;">Min Value</th>
+                <th style="text-align:right;">Max Value</th>
+                <th style="text-align:right;">% of Market Value</th>
+                <th style="text-align:right;">VRank %</th>
+                <th style="text-align:right;">Price Rank %</th>
+              </tr>
+            </thead>
+            <tbody id="bf-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-backdrop modal-fullscreen-mobile" id="bf-edit-modal" onclick="if(event.target===this)bfCloseEdit()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="bf-edit-title">Edit Formula</div>
+      <button class="modal-close" onclick="bfCloseEdit()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:18px;">
+      <div>
+        <div class="modal-section-title">Value Limits</div>
+        <div style="display:flex;flex-direction:row;gap:14px;">
+          <div style="flex:1">
+            <label class="modal-field-label">Min Value</label>
+            <div class="modal-field">
+              <input id="bf-edit-min" type="number" placeholder="0" min="0" step="1" inputmode="numeric"/>
+            </div>
+          </div>
+          <div style="flex:1">
+            <label class="modal-field-label">Max Value</label>
+            <div class="modal-field">
+              <input id="bf-edit-max" type="number" placeholder="0" min="0" step="1" inputmode="numeric"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="modal-section-title">Market-Based Metrics</div>
+        <div style="display:flex;flex-direction:row;gap:14px;">
+          <div style="flex:1">
+            <label class="modal-field-label">% of Market Value</label>
+            <div class="modal-field">
+              <input id="bf-edit-market" type="number" placeholder="0" min="0" step="0.1" inputmode="decimal"/>
+            </div>
+          </div>
+          <div style="flex:1">
+            <label class="modal-field-label">VRank %</label>
+            <div class="modal-field">
+              <input id="bf-edit-vrank" type="number" placeholder="0" min="0" step="0.1" inputmode="decimal"/>
+            </div>
+          </div>
+          <div style="flex:1">
+            <label class="modal-field-label">Price Rank %</label>
+            <div class="modal-field">
+              <input id="bf-edit-prank" type="number" placeholder="0" min="0" step="0.1" inputmode="decimal"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="modal-section-title">VRank & PriceRank Configuration</div>
+        <div>
+          <div class="bf-subtable-head">
+            <span class="bf-subtable-label">VRank</span>
+            <button class="tbtn tbtn-p bf-subtable-add" onclick="bfAddVrank()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add
+            </button>
+          </div>
+          <div class="us-perm-table-wrap">
+            <table class="us-perm-table">
+              <thead>
+                <tr>
+                  <th style="width:48px;text-align:center;">No</th>
+                  <th style="text-align:right;">Min VRank</th>
+                  <th style="text-align:right;">Max VRank</th>
+                  <th style="text-align:right;">VRank Value</th>
+                  <th class="bf-del-col"></th>
+                </tr>
+              </thead>
+              <tbody id="bf-vrank-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="bf-subtable-gap">
+          <div class="bf-subtable-head">
+            <span class="bf-subtable-label">PriceRank</span>
+            <button class="tbtn tbtn-p bf-subtable-add" onclick="bfAddPrank()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add
+            </button>
+          </div>
+          <div class="us-perm-table-wrap">
+            <table class="us-perm-table">
+              <thead>
+                <tr>
+                  <th style="width:48px;text-align:center;">No</th>
+                  <th style="text-align:right;">Min Price Rank</th>
+                  <th style="text-align:right;">Max Price Rank</th>
+                  <th style="text-align:right;">Price Rank Value</th>
+                  <th class="bf-del-col"></th>
+                </tr>
+              </thead>
+              <tbody id="bf-prank-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="modal-section-title">Metrics</div>
+        <div>
+          <span class="bf-subtable-label">Appraisal</span>
+          <div class="us-perm-table-wrap" style="margin-top:8px;">
+            <table class="us-perm-table">
+              <tbody>
+                <tr>
+                  <td class="us-perm-desc-cell bf-metric-label" rowspan="2" style="width:140px;">Appraisal</td>
+                  <td class="us-perm-desc-cell" style="width:100px;"><select class="bf-metric-select" id="bf-m-appraisal-pricerank-op"><option>&lt;</option><option>&lt;=</option><option>&gt;</option><option>&gt;=</option><option>=</option></select></td>
+                  <td class="us-perm-desc-cell" style="font-size:13px;color:var(--tx);">PriceRank</td>
+                  <td class="us-perm-desc-cell bf-metric-src" style="width:120px;"><select class="bf-metric-select" id="bf-m-appraisal-pricerank-src"><option>Main</option></select></td>
+                </tr>
+                <tr>
+                  <td class="us-perm-desc-cell"><select class="bf-metric-select" id="bf-m-appraisal-vrank-op"><option>&lt;</option><option>&lt;=</option><option>&gt;</option><option>&gt;=</option><option>=</option></select></td>
+                  <td class="us-perm-desc-cell" style="font-size:13px;color:var(--tx);">VRank</td>
+                  <td class="us-perm-desc-cell bf-metric-src"><select class="bf-metric-select" id="bf-m-appraisal-vrank-src"><option>Main</option></select></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="bf-subtable-gap">
+          <span class="bf-subtable-label">PriceRank</span>
+          <div class="us-perm-table-wrap" style="margin-top:8px;">
+            <table class="us-perm-table">
+              <tbody>
+                <tr>
+                  <td class="us-perm-desc-cell bf-metric-label" rowspan="2" style="width:140px;">PriceRank</td>
+                  <td class="us-perm-desc-cell" style="width:100px;"><select class="bf-metric-select" id="bf-m-pricerank-pricerank-op"><option>&lt;</option><option>&lt;=</option><option>&gt;</option><option>&gt;=</option><option>=</option></select></td>
+                  <td class="us-perm-desc-cell" style="font-size:13px;color:var(--tx);">PriceRank</td>
+                  <td class="us-perm-desc-cell bf-metric-src" style="width:120px;"><select class="bf-metric-select" id="bf-m-pricerank-pricerank-src"><option>Main</option></select></td>
+                </tr>
+                <tr>
+                  <td class="us-perm-desc-cell"><select class="bf-metric-select" id="bf-m-pricerank-vrank-op"><option>&lt;</option><option>&lt;=</option><option>&gt;</option><option>&gt;=</option><option>=</option></select></td>
+                  <td class="us-perm-desc-cell" style="font-size:13px;color:var(--tx);">VRank</td>
+                  <td class="us-perm-desc-cell bf-metric-src"><select class="bf-metric-select" id="bf-m-pricerank-vrank-src"><option>Main</option></select></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="bf-subtable-gap">
+          <span class="bf-subtable-label">VRank</span>
+          <div class="us-perm-table-wrap" style="margin-top:8px;">
+            <table class="us-perm-table">
+              <tbody>
+                <tr>
+                  <td class="us-perm-desc-cell bf-metric-label" rowspan="2" style="width:140px;">VRank</td>
+                  <td class="us-perm-desc-cell" style="width:100px;"><select class="bf-metric-select" id="bf-m-vrank-pricerank-op"><option>&lt;</option><option>&lt;=</option><option>&gt;</option><option>&gt;=</option><option>=</option></select></td>
+                  <td class="us-perm-desc-cell" style="font-size:13px;color:var(--tx);">PriceRank</td>
+                  <td class="us-perm-desc-cell bf-metric-src" style="width:120px;"><select class="bf-metric-select" id="bf-m-vrank-pricerank-src"><option>Main</option></select></td>
+                </tr>
+                <tr>
+                  <td class="us-perm-desc-cell"><select class="bf-metric-select" id="bf-m-vrank-vrank-op"><option>&lt;</option><option>&lt;=</option><option>&gt;</option><option>&gt;=</option><option>=</option></select></td>
+                  <td class="us-perm-desc-cell" style="font-size:13px;color:var(--tx);">VRank</td>
+                  <td class="us-perm-desc-cell bf-metric-src"><select class="bf-metric-select" id="bf-m-vrank-vrank-src"><option>Main</option></select></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" id="bf-edit-delete" onclick="bfDelete()" style="display:none;">Delete</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="bfCloseEdit()">Cancel</button>
+      <button class="modal-save" onclick="bfSaveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>
+BuySmartShell.init({ page: 'settings', title: 'Default Bid Formula' });
+
+var bfData = [
+  { id:1, min:0,     max:5000,   market:65, vrank:10, prank:5, vranks:[{id:1,min:0,max:50,value:10},{id:2,min:51,max:100,value:5}], pranks:[{id:1,min:0,max:50,value:5},{id:2,min:51,max:100,value:3}] },
+  { id:2, min:5001,  max:10000,  market:70, vrank:8,  prank:4, vranks:[], pranks:[] },
+  { id:3, min:10001, max:20000,  market:75, vrank:6,  prank:3, vranks:[], pranks:[] },
+  { id:4, min:20001, max:50000,  market:80, vrank:5,  prank:2, vranks:[], pranks:[] },
+  { id:5, min:50001, max:100000, market:85, vrank:4,  prank:1, vranks:[], pranks:[] }
+];
+var bfNextId = 6;
+var bfEditingId = null;
+var bfEditVranks = [];
+var bfEditPranks = [];
+var bfVrankNextId = 100;
+var bfPrankNextId = 100;
+
+function bfFmt(n){ return n.toLocaleString(); }
+
+function bfRender(){
+  var html = '';
+  for(var i = 0; i < bfData.length; i++){
+    var r = bfData[i];
+    html += '<tr onclick="bfOpenEdit(' + r.id + ')" style="cursor:pointer;">' +
+      '<td style="text-align:center;">' + (i + 1) + '</td>' +
+      '<td style="text-align:right;">' + bfFmt(r.min) + '</td>' +
+      '<td style="text-align:right;">' + bfFmt(r.max) + '</td>' +
+      '<td style="text-align:right;">' + r.market + '%</td>' +
+      '<td style="text-align:right;">' + r.vrank + '%</td>' +
+      '<td style="text-align:right;">' + r.prank + '%</td>' +
+    '</tr>';
+  }
+  document.getElementById('bf-tbody').innerHTML = html;
+}
+
+var bfDelSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+function bfRenderVrank(){
+  var html = '';
+  for(var i = 0; i < bfEditVranks.length; i++){
+    var r = bfEditVranks[i];
+    html += '<tr>' +
+      '<td class="us-perm-desc-cell" style="text-align:center;">' + (i+1) + '</td>' +
+      '<td class="us-perm-desc-cell" style="text-align:right;">' + r.min + '</td>' +
+      '<td class="us-perm-desc-cell" style="text-align:right;">' + r.max + '</td>' +
+      '<td class="us-perm-desc-cell" style="text-align:right;">' + r.value + '</td>' +
+      '<td class="us-perm-desc-cell bf-del-col"><button class="bf-del-btn" onclick="bfRemoveVrank('+r.id+')" title="Remove">'+bfDelSvg+'</button></td>' +
+    '</tr>';
+  }
+  if(!bfEditVranks.length) html = '<tr><td class="us-perm-desc-cell" colspan="5" style="text-align:center;color:var(--mu);">No rows</td></tr>';
+  document.getElementById('bf-vrank-tbody').innerHTML = html;
+}
+
+function bfRenderPrank(){
+  var html = '';
+  for(var i = 0; i < bfEditPranks.length; i++){
+    var r = bfEditPranks[i];
+    html += '<tr>' +
+      '<td class="us-perm-desc-cell" style="text-align:center;">' + (i+1) + '</td>' +
+      '<td class="us-perm-desc-cell" style="text-align:right;">' + r.min + '</td>' +
+      '<td class="us-perm-desc-cell" style="text-align:right;">' + r.max + '</td>' +
+      '<td class="us-perm-desc-cell" style="text-align:right;">' + r.value + '</td>' +
+      '<td class="us-perm-desc-cell bf-del-col"><button class="bf-del-btn" onclick="bfRemovePrank('+r.id+')" title="Remove">'+bfDelSvg+'</button></td>' +
+    '</tr>';
+  }
+  if(!bfEditPranks.length) html = '<tr><td class="us-perm-desc-cell" colspan="5" style="text-align:center;color:var(--mu);">No rows</td></tr>';
+  document.getElementById('bf-prank-tbody').innerHTML = html;
+}
+
+function bfAddVrank(){
+  bfEditVranks.push({id:bfVrankNextId++, min:0, max:0, value:0});
+  bfRenderVrank();
+}
+function bfAddPrank(){
+  bfEditPranks.push({id:bfPrankNextId++, min:0, max:0, value:0});
+  bfRenderPrank();
+}
+function bfRemoveVrank(id){
+  bfEditVranks = bfEditVranks.filter(function(x){ return x.id !== id; });
+  bfRenderVrank();
+}
+function bfRemovePrank(id){
+  bfEditPranks = bfEditPranks.filter(function(x){ return x.id !== id; });
+  bfRenderPrank();
+}
+
+function bfCopyArr(arr){ return (arr||[]).map(function(r){ return {id:r.id, min:r.min, max:r.max, value:r.value}; }); }
+
+var bfMetricGroups = ['appraisal','pricerank','vrank'];
+var bfMetricTargets = ['pricerank','vrank'];
+function bfDefaultMetrics(){
+  var m = {};
+  for(var i=0;i<bfMetricGroups.length;i++){
+    m[bfMetricGroups[i]] = {};
+    for(var j=0;j<bfMetricTargets.length;j++){
+      m[bfMetricGroups[i]][bfMetricTargets[j]] = {op:'<', src:'Main'};
+    }
+  }
+  return m;
+}
+function bfCopyMetrics(m){
+  if(!m) return bfDefaultMetrics();
+  var c = {};
+  for(var i=0;i<bfMetricGroups.length;i++){
+    var g = bfMetricGroups[i];
+    c[g] = {};
+    for(var j=0;j<bfMetricTargets.length;j++){
+      var t = bfMetricTargets[j];
+      c[g][t] = {op:(m[g]&&m[g][t]?m[g][t].op:'<'), src:(m[g]&&m[g][t]?m[g][t].src:'Main')};
+    }
+  }
+  return c;
+}
+function bfLoadMetrics(m){
+  for(var i=0;i<bfMetricGroups.length;i++){
+    for(var j=0;j<bfMetricTargets.length;j++){
+      var g=bfMetricGroups[i], t=bfMetricTargets[j];
+      document.getElementById('bf-m-'+g+'-'+t+'-op').value = m[g][t].op;
+      document.getElementById('bf-m-'+g+'-'+t+'-src').value = m[g][t].src;
+    }
+  }
+}
+function bfReadMetrics(){
+  var m = {};
+  for(var i=0;i<bfMetricGroups.length;i++){
+    var g=bfMetricGroups[i];
+    m[g] = {};
+    for(var j=0;j<bfMetricTargets.length;j++){
+      var t=bfMetricTargets[j];
+      m[g][t] = {
+        op: document.getElementById('bf-m-'+g+'-'+t+'-op').value,
+        src: document.getElementById('bf-m-'+g+'-'+t+'-src').value
+      };
+    }
+  }
+  return m;
+}
+
+function bfOpenEdit(id){
+  var r = bfData.find(function(x){ return x.id === id; });
+  if(!r) return;
+  bfEditingId = id;
+  document.getElementById('bf-edit-title').textContent = 'Edit Formula';
+  document.getElementById('bf-edit-min').value = r.min;
+  document.getElementById('bf-edit-max').value = r.max;
+  document.getElementById('bf-edit-market').value = r.market;
+  document.getElementById('bf-edit-vrank').value = r.vrank;
+  document.getElementById('bf-edit-prank').value = r.prank;
+  bfEditVranks = bfCopyArr(r.vranks);
+  bfEditPranks = bfCopyArr(r.pranks);
+  bfRenderVrank();
+  bfRenderPrank();
+  bfLoadMetrics(bfCopyMetrics(r.metrics));
+  document.getElementById('bf-edit-delete').style.display = '';
+  document.getElementById('bf-edit-modal').classList.add('open');
+}
+
+function bfCloseEdit(){
+  document.getElementById('bf-edit-modal').classList.remove('open');
+  bfEditingId = null;
+}
+
+function bfSaveEdit(){
+  var min = parseFloat(document.getElementById('bf-edit-min').value) || 0;
+  var max = parseFloat(document.getElementById('bf-edit-max').value) || 0;
+  var market = parseFloat(document.getElementById('bf-edit-market').value) || 0;
+  var vrank = parseFloat(document.getElementById('bf-edit-vrank').value) || 0;
+  var prank = parseFloat(document.getElementById('bf-edit-prank').value) || 0;
+  if(bfEditingId !== null){
+    var r = bfData.find(function(x){ return x.id === bfEditingId; });
+    if(r){ r.min = min; r.max = max; r.market = market; r.vrank = vrank; r.prank = prank; r.vranks = bfCopyArr(bfEditVranks); r.pranks = bfCopyArr(bfEditPranks); r.metrics = bfReadMetrics(); }
+  } else {
+    bfData.push({ id: bfNextId++, min: min, max: max, market: market, vrank: vrank, prank: prank, vranks: bfCopyArr(bfEditVranks), pranks: bfCopyArr(bfEditPranks), metrics: bfReadMetrics() });
+  }
+  bfRender();
+  window.showNavToast('Default Bid Formula', 'Formula saved successfully.');
+  bfCloseEdit();
+}
+
+function bfDelete(){
+  bfData = bfData.filter(function(x){ return x.id !== bfEditingId; });
+  bfRender();
+  window.showNavToast('Default Bid Formula', 'Formula deleted.');
+  bfCloseEdit();
+}
+
+function bfOpenAdd(){
+  bfEditingId = null;
+  document.getElementById('bf-edit-title').textContent = 'Add Formula';
+  document.getElementById('bf-edit-min').value = '';
+  document.getElementById('bf-edit-max').value = '';
+  document.getElementById('bf-edit-market').value = '';
+  document.getElementById('bf-edit-vrank').value = '';
+  document.getElementById('bf-edit-prank').value = '';
+  bfEditVranks = [];
+  bfEditPranks = [];
+  bfRenderVrank();
+  bfRenderPrank();
+  bfLoadMetrics(bfDefaultMetrics());
+  document.getElementById('bf-edit-delete').style.display = 'none';
+  document.getElementById('bf-edit-modal').classList.add('open');
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    var m = document.getElementById('bf-edit-modal');
+    if(m && m.classList.contains('open')){ bfCloseEdit(); }
+  }
+});
+
+bfRender();
+</script>
+
+</body>
+</html>

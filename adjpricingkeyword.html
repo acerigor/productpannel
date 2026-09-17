@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adjustment Value Rules — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.apk-list{display:flex;flex-direction:column;gap:12px;margin:0;}
+.apk-rule{background:var(--sur);border:0.5px solid var(--brd2);border-radius:12px;overflow:hidden;}
+.apk-rule-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:0.5px solid var(--brd);}
+.apk-drag{width:24px;height:24px;color:var(--mu);cursor:grab;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.apk-drag:active{cursor:grabbing;}
+.apk-drag svg{width:14px;height:14px;pointer-events:none;}
+.apk-rule.dragging{opacity:.35;transform:scale(.98);}
+.apk-rule.drop-target{border-color:var(--ac);background:rgba(79,124,255,.04);box-shadow:inset 0 0 0 2px rgba(79,124,255,.18);}
+.apk-badge{width:28px;height:28px;border-radius:50%;background:rgba(79,124,255,.14);color:var(--ac2);border:1px solid var(--ac);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+.apk-name{flex:1;height:36px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;padding:0 12px;outline:none;transition:border-color .12s;}
+.apk-name:focus{border-color:var(--ac);}
+.apk-collapse{width:32px;height:32px;background:transparent;border:none;color:var(--mu);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;}
+.apk-collapse:hover{background:var(--sur2);color:var(--ac2);}
+.apk-collapse svg{width:14px;height:14px;transition:transform .15s;}
+.apk-rule.collapsed .apk-collapse svg{transform:rotate(180deg);}
+.apk-rule-body{padding:16px 20px 20px;}
+.apk-section-divider{position:relative;text-align:center;margin:14px 0 12px;}
+.apk-section-divider::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--brd);}
+.apk-section-pill{position:relative;display:inline-block;background:rgba(79,124,255,.12);color:var(--ac2);border:0.5px solid var(--ac);padding:4px 14px;border-radius:999px;font-size:10.5px;font-weight:600;letter-spacing:.6px;}
+.apk-pricing-row{display:grid;grid-template-columns:1fr 1fr 140px;gap:16px;align-items:end;}
+.apk-pricing-row > .us-add-field,
+.apk-cond-row > .us-add-field{grid-column:auto;margin-top:0;}
+.apk-priority-head{display:flex;justify-content:center;margin-bottom:6px;}
+.apk-priority-pill{color:var(--ac2);background:rgba(79,124,255,.12);border:0.5px solid var(--ac);border-radius:999px;padding:3px 10px;font-size:10.5px;font-weight:600;letter-spacing:.6px;}
+.apk-priority input{text-align:center;}
+.apk-conditions{display:flex;flex-direction:column;gap:10px;}
+.apk-cond-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:end;}
+.apk-add-cond{width:100%;background:rgba(79,124,255,.06);border:1px dashed var(--ac);color:var(--ac2);height:44px;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;}
+.apk-add-cond:hover{background:rgba(79,124,255,.12);}
+.apk-add-cond svg{width:14px;height:14px;}
+.apk-page-foot{display:flex;align-items:center;gap:8px;margin:16px 0 24px;padding-top:16px;border-top:0.5px solid var(--brd);}
+.apk-clear-all{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--rd);color:var(--rd);padding:8px 14px;border-radius:8px;font-family:var(--font);font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s;}
+.apk-clear-all:hover{background:rgba(229,85,85,.08);}
+.apk-clear-all svg{width:14px;height:14px;}
+.apk-picker{position:relative;width:100%;}
+.apk-picker-btn{width:100%;height:40px;padding:0 12px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .12s;}
+.apk-picker-btn:hover,.apk-picker.open .apk-picker-btn{border-color:var(--ac);}
+.apk-picker-btn svg{width:12px;height:12px;color:var(--mu);flex-shrink:0;}
+.apk-picker-menu{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);max-height:240px;overflow-y:auto;z-index:60;display:none;padding:4px;}
+.apk-picker.open .apk-picker-menu{display:block;}
+.apk-picker-item{padding:8px 12px;border-radius:6px;color:var(--tx);font-size:13px;cursor:pointer;}
+.apk-picker-item:hover{background:rgba(255,255,255,.05);color:var(--ac2);}
+.apk-picker-item.on{color:var(--ac);}
+.apk-kebab-check{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
+.apk-kebab-check input{margin:0;accent-color:var(--ac);width:14px;height:14px;flex-shrink:0;}
+@media (max-width:900px){
+  .apk-pricing-row{grid-template-columns:1fr 1fr;}
+  .apk-pricing-row .apk-priority{grid-column:1 / -1;}
+  .apk-cond-row{grid-template-columns:1fr 1fr;}
+}
+@media (max-width:560px){
+  .apk-pricing-row{grid-template-columns:1fr;}
+  .apk-cond-row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <button class="tbtn tbtn-p" onclick="apkAddRule()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Add New Rules</span>
+    </button>
+    <div class="kebab-outer" id="apk-kebab">
+      <button class="tbtn kebab-btn" onclick="apkToggleKebab(event)" aria-label="More">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+        </svg>
+      </button>
+      <div class="kebab-menu" id="apk-kebab-menu">
+        <label class="kebab-item apk-kebab-check">
+          <input type="checkbox" id="apk-collapse-all" onchange="apkToggleCollapseAll(this)"/>
+          <span>Collapse All</span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section">
+      <div class="apk-list" id="apk-list"></div>
+      <div class="apk-page-foot">
+        <button class="apk-clear-all" onclick="apkClearAll()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          Clear All
+        </button>
+        <div class="sp"></div>
+        <button class="modal-save"   onclick="apkSaveAll()">Save</button>
+        <button class="modal-cancel" onclick="apkCancelAll()">Cancel</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>BuySmartShell.init({ page: 'settings', title: 'Adjustment Value Rules' });
+
+const APK_FIELD_OPTIONS = ['AutoCheck','CarFax','Description','Title','VIN','Year','Make','Model'];
+const APK_OP_OPTIONS    = ['Contains','Equals','Starts With','Ends With','Not Contains'];
+const APK_STORE = 'buysmart:apk';
+
+const APK_SEED = [
+  { id:1, name:'AutoCheck Junk Alert', wholesalePct:5, retailPct:5, priority:1, expanded:true, conditions:[ {field:'AutoCheck', operator:'Contains', value:'Junk'} ] }
+];
+
+let APK_RULES = [];
+
+function apkEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function apkLoad(){
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(APK_STORE) || 'null'); } catch(e){}
+  APK_RULES = saved && Array.isArray(saved) ? saved : JSON.parse(JSON.stringify(APK_SEED));
+  APK_RULES.forEach(function(r){ r.expanded = false; });
+}
+
+const APK_ICONS = {
+  drag: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>',
+  caretUp:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>',
+  caretDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+  chev:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>',
+  x:         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  plus:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+};
+
+function apkPickerHtml(idAttr, current, options){
+  const items = options.map(function(o){ return '<div class="apk-picker-item' + (o===current?' on':'') + '" data-val="' + apkEsc(o) + '">' + apkEsc(o) + '</div>'; }).join('');
+  return '<div class="apk-picker" data-picker="' + idAttr + '">' +
+    '<button type="button" class="apk-picker-btn" onclick="apkPickerToggle(event, \'' + idAttr + '\')">' +
+      '<span class="apk-picker-label">' + apkEsc(current || '') + '</span>' +
+      APK_ICONS.caretDown +
+    '</button>' +
+    '<div class="apk-picker-menu">' + items + '</div>' +
+  '</div>';
+}
+
+function apkCondRowHtml(rule, cond, i){
+  const fieldId = 'apk-cond-field-' + rule.id + '-' + i;
+  const opId    = 'apk-cond-op-'    + rule.id + '-' + i;
+  return '<div class="apk-cond-row" data-cond="' + i + '">' +
+    '<div class="us-add-field"><label>Select Field</label>' + apkPickerHtml(fieldId, cond.field, APK_FIELD_OPTIONS) + '</div>' +
+    '<div class="us-add-field"><label>Operator</label>' + apkPickerHtml(opId, cond.operator, APK_OP_OPTIONS) + '</div>' +
+    '<div class="us-add-field"><label>Value</label><input type="text" value="' + apkEsc(cond.value || '') + '" oninput="apkFieldCondValue(' + rule.id + ',' + i + ',this.value)"/></div>' +
+  '</div>';
+}
+
+function apkRuleHtml(rule, index){
+  const conds = (rule.conditions || []).map(function(c, i){ return apkCondRowHtml(rule, c, i); }).join('');
+  return '<div class="apk-rule' + (rule.expanded ? '' : ' collapsed') + '" data-id="' + rule.id + '">' +
+    '<div class="apk-rule-head">' +
+      '<span class="apk-drag" title="Drag" onmousedown="apkDragArm(event,' + rule.id + ')" onmouseup="apkDragDisarm(event,' + rule.id + ')">' + APK_ICONS.drag + '</span>' +
+      '<span class="apk-badge">' + (index + 1) + '</span>' +
+      '<input type="text" class="apk-name" value="' + apkEsc(rule.name) + '" oninput="apkFieldName(' + rule.id + ', this.value)"/>' +
+      '<button class="apk-collapse" onclick="apkToggleExpand(' + rule.id + ')" aria-label="Toggle">' + APK_ICONS.chev + '</button>' +
+    '</div>' +
+    '<div class="apk-rule-body" style="display:' + (rule.expanded ? 'block' : 'none') + ';">' +
+      '<div class="apk-section-divider"><span class="apk-section-pill">PRICING &amp; PRIORITY SETTING</span></div>' +
+      '<div class="apk-pricing-row">' +
+        '<div class="us-add-field"><label>Wholesale %</label><input type="number" step="any" value="' + rule.wholesalePct + '" oninput="apkFieldNum(' + rule.id + ',\'wholesalePct\',this.value)"/></div>' +
+        '<div class="us-add-field"><label>Retail %</label><input type="number" step="any" value="' + rule.retailPct + '" oninput="apkFieldNum(' + rule.id + ',\'retailPct\',this.value)"/></div>' +
+        '<div class="us-add-field apk-priority">' +
+          '<div class="apk-priority-head"><span class="apk-priority-pill">PRIORITY</span></div>' +
+          '<input type="number" step="1" value="' + rule.priority + '" oninput="apkFieldNum(' + rule.id + ',\'priority\',this.value)"/>' +
+        '</div>' +
+      '</div>' +
+      '<div class="apk-section-divider"><span class="apk-section-pill">KEYWORDS SETTING</span></div>' +
+      '<div class="apk-conditions" id="apk-cond-' + rule.id + '">' + conds + '</div>' +
+      '<button class="apk-add-cond" onclick="apkAddCondition(' + rule.id + ')">' + APK_ICONS.plus + ' Add Condition</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function apkRender(){
+  document.getElementById('apk-list').innerHTML = APK_RULES.map(function(r, i){ return apkRuleHtml(r, i); }).join('');
+  apkWireDrag();
+}
+
+let apkDragSrcId = null;
+
+function apkDragArm(e, id){
+  const el = document.querySelector('.apk-rule[data-id="' + id + '"]');
+  if(el) el.setAttribute('draggable', 'true');
+}
+function apkDragDisarm(e, id){
+  const el = document.querySelector('.apk-rule[data-id="' + id + '"]');
+  if(el && !el.classList.contains('dragging')) el.removeAttribute('draggable');
+}
+
+function apkWireDrag(){
+  document.querySelectorAll('#apk-list .apk-rule').forEach(function(card){
+    card.addEventListener('dragstart', function(e){
+      apkDragSrcId = parseInt(card.getAttribute('data-id'), 10);
+      if(e.dataTransfer){
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', String(apkDragSrcId)); } catch(_){}
+      }
+      setTimeout(function(){ card.classList.add('dragging'); }, 0);
+    });
+    card.addEventListener('dragend', function(){
+      card.classList.remove('dragging');
+      card.removeAttribute('draggable');
+      document.querySelectorAll('.apk-rule.drop-target').forEach(function(c){ c.classList.remove('drop-target'); });
+      apkDragSrcId = null;
+    });
+    card.addEventListener('dragover', function(e){
+      e.preventDefault();
+      if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    });
+    card.addEventListener('dragenter', function(){
+      if(apkDragSrcId == null) return;
+      const tgtId = parseInt(card.getAttribute('data-id'), 10);
+      if(tgtId !== apkDragSrcId) card.classList.add('drop-target');
+    });
+    card.addEventListener('dragleave', function(e){
+      if(!card.contains(e.relatedTarget)) card.classList.remove('drop-target');
+    });
+    card.addEventListener('drop', function(e){
+      e.preventDefault();
+      card.classList.remove('drop-target');
+      const tgtId = parseInt(card.getAttribute('data-id'), 10);
+      if(apkDragSrcId == null || tgtId === apkDragSrcId) return;
+      const srcIdx = APK_RULES.findIndex(function(r){ return r.id === apkDragSrcId; });
+      const tgtIdx = APK_RULES.findIndex(function(r){ return r.id === tgtId; });
+      if(srcIdx < 0 || tgtIdx < 0) return;
+      const row = APK_RULES.splice(srcIdx, 1)[0];
+      APK_RULES.splice(tgtIdx, 0, row);
+      apkRender();
+    });
+  });
+}
+
+function apkFindRule(id){ return APK_RULES.find(function(r){ return r.id === id; }); }
+function apkFieldName(id, v){ const r = apkFindRule(id); if(r) r.name = v; }
+function apkFieldNum(id, key, v){
+  const r = apkFindRule(id); if(!r) return;
+  const n = parseFloat(v);
+  r[key] = isNaN(n) ? 0 : n;
+}
+function apkFieldCondValue(id, i, v){
+  const r = apkFindRule(id); if(!r || !r.conditions[i]) return;
+  r.conditions[i].value = v;
+}
+function apkFieldCondPick(id, i, key, v){
+  const r = apkFindRule(id); if(!r || !r.conditions[i]) return;
+  r.conditions[i][key] = v;
+}
+
+function apkToggleExpand(id){
+  const r = apkFindRule(id); if(!r) return;
+  r.expanded = !r.expanded;
+  const el = document.querySelector('.apk-rule[data-id="' + id + '"]');
+  if(el){
+    el.classList.toggle('collapsed', !r.expanded);
+    el.querySelector('.apk-rule-body').style.display = r.expanded ? 'block' : 'none';
+  }
+  apkSyncCollapseAll();
+}
+
+function apkAddRule(){
+  const collapseMaster = APK_RULES.length > 0 && APK_RULES.every(function(r){ return !r.expanded; });
+  const nextId = APK_RULES.reduce(function(m,r){ return Math.max(m, r.id || 0); }, 0) + 1;
+  APK_RULES.push({
+    id: nextId,
+    name: '',
+    wholesalePct: 0,
+    retailPct: 0,
+    priority: APK_RULES.length + 1,
+    expanded: !collapseMaster,
+    conditions: [ { field:'AutoCheck', operator:'Contains', value:'' } ]
+  });
+  apkRender();
+  apkSyncCollapseAll();
+  window.showNavToast('Rule added', 'New rule appended.');
+}
+
+function apkToggleKebab(e){
+  e.stopPropagation();
+  document.getElementById('apk-kebab-menu').classList.toggle('open');
+}
+function apkCloseKebab(){
+  document.getElementById('apk-kebab-menu').classList.remove('open');
+}
+function apkToggleCollapseAll(cb){
+  const collapse = !!cb.checked;
+  APK_RULES.forEach(function(r){ r.expanded = !collapse; });
+  apkRender();
+}
+function apkSyncCollapseAll(){
+  const cb = document.getElementById('apk-collapse-all');
+  if(!cb) return;
+  cb.checked = APK_RULES.length > 0 && APK_RULES.every(function(r){ return !r.expanded; });
+}
+
+function apkAddCondition(id){
+  const r = apkFindRule(id); if(!r) return;
+  r.conditions = r.conditions || [];
+  r.conditions.push({ field:'AutoCheck', operator:'Contains', value:'' });
+  document.getElementById('apk-cond-' + id).innerHTML = r.conditions.map(function(c, i){ return apkCondRowHtml(r, c, i); }).join('');
+}
+
+function apkRemoveCondition(id, i){
+  const r = apkFindRule(id); if(!r) return;
+  r.conditions.splice(i, 1);
+  document.getElementById('apk-cond-' + id).innerHTML = r.conditions.map(function(c, i){ return apkCondRowHtml(r, c, i); }).join('');
+}
+
+function apkClearAll(){
+  if(!confirm('Clear all rules?')) return;
+  APK_RULES = [];
+  apkRender();
+  apkSyncCollapseAll();
+  window.showNavToast('Rules cleared', 'All rules removed.');
+}
+
+function apkSaveAll(){
+  try { localStorage.setItem(APK_STORE, JSON.stringify(APK_RULES)); } catch(e){}
+  window.showNavToast('Rules saved', 'Adjustment Value Rules rules updated.');
+}
+
+function apkCancelAll(){
+  apkLoad();
+  apkRender();
+  apkSyncCollapseAll();
+  window.showNavToast('Changes discarded', 'Values reverted.');
+}
+
+// Picker toggle + outside-click close
+function apkPickerToggle(e, pickerId){
+  e.stopPropagation();
+  const wrap = e.currentTarget.closest('.apk-picker');
+  const alreadyOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.apk-picker.open').forEach(function(p){ p.classList.remove('open'); });
+  if(!alreadyOpen) wrap.classList.add('open');
+}
+
+document.addEventListener('click', function(e){
+  document.querySelectorAll('.apk-picker.open').forEach(function(p){
+    if(!p.contains(e.target)) p.classList.remove('open');
+  });
+  const kebabOuter = document.getElementById('apk-kebab');
+  if(kebabOuter && !kebabOuter.contains(e.target)) apkCloseKebab();
+  // Handle item click
+  const item = e.target.closest && e.target.closest('.apk-picker-item');
+  if(item){
+    const wrap = item.closest('.apk-picker');
+    const pickerId = wrap.getAttribute('data-picker');
+    const val = item.getAttribute('data-val');
+    wrap.querySelector('.apk-picker-label').textContent = val;
+    wrap.querySelectorAll('.apk-picker-item').forEach(function(x){ x.classList.toggle('on', x === item); });
+    wrap.classList.remove('open');
+    // Parse pickerId: apk-cond-<field|op>-<ruleId>-<i>
+    const m = pickerId.match(/^apk-cond-(field|op)-(\d+)-(\d+)$/);
+    if(m){
+      const key = m[1] === 'field' ? 'field' : 'operator';
+      apkFieldCondPick(parseInt(m[2],10), parseInt(m[3],10), key, val);
+    }
+  }
+});
+
+apkLoad();
+apkRender();
+apkSyncCollapseAll();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Announcements — BuySmart</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.an-col-kebab{width:24px;height:24px;background:transparent;border:none;color:var(--mu);cursor:pointer;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;padding:0;}
+.an-col-kebab:hover{background:var(--sur2);color:var(--ac2);}
+.an-req{color:var(--rd);margin-right:2px;}
+.modal-save:disabled{opacity:.5;cursor:not-allowed;}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <button class="back-btn" onclick="location.href='settings.html'" aria-label="Back to Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      Settings
+    </button>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+    <div class="assign-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input id="an-search" type="text" placeholder="Search announcements…" oninput="anFilter(this.value)"/>
+    </div>
+    <button class="tbtn tbtn-p" onclick="anOpenAddModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Announcements</span>
+    </button>
+  </div>
+  <div class="set-scroll">
+    <section class="set-section" style="padding:0;">
+      <div class="table-wrap" style="margin:0 0 24px;">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:48px;text-align:center;"><input type="checkbox" id="an-check-all" onchange="anToggleAll(this)"/></th>
+                <th style="width:64px;text-align:center;">No.</th>
+                <th style="width:180px;text-align:left;">
+                  <span style="display:inline-flex;align-items:center;gap:8px;">Is Active
+                    <button class="an-col-kebab" onclick="anColKebab('active')" aria-label="Column actions">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                    </button>
+                  </span>
+                </th>
+                <th style="text-align:left;padding-left:24px;">Message</th>
+              </tr>
+            </thead>
+            <tbody id="an-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="modal-backdrop modal-fullscreen-mobile" id="an-edit-modal" onclick="if(event.target===this) anCloseEdit()">
+    <div class="modal modal--wide">
+      <div class="modal-header">
+        <div class="modal-title">Add Flash Message</div>
+        <button class="modal-close" onclick="anCloseEdit()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="us-add-section" style="grid-template-columns:1fr;">
+          <div class="us-add-field" style="grid-column:auto;margin-top:0;">
+            <label><span class="an-req">*</span> Message</label>
+            <textarea id="an-e-message" rows="4" placeholder="Enter Message" style="width:100%;padding:10px 12px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;outline:none;resize:vertical;min-height:100px;" oninput="anSyncSaveEnabled()"></textarea>
+          </div>
+          <div class="us-add-field" style="grid-column:auto;margin-top:0;flex-direction:row;align-items:center;gap:10px;">
+            <label style="margin:0;">Is Active</label>
+            <span class="us-yn-tog" id="an-e-active" onclick="this.classList.toggle('off')">
+              <span class="us-yn-tog-txt">YES</span><span class="us-yn-tog-knob"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:flex-end;">
+        <button class="modal-save" id="an-e-save" onclick="anSaveEdit()">Save</button>
+        <button class="modal-cancel" onclick="anCloseEdit()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>BuySmartShell.init({ page: 'settings', title: 'Announcements' });
+
+const AN_SEED = [
+  { id:1, active:true,  message:'Watch for RUST - Check Carfax for Northern States' },
+  { id:2, active:false, message:'Skip Vehicles that the previous owner did not properly maintain.' }
+];
+const AN_STORE = 'buysmart:announcements';
+
+function anSaveStore(){
+  try { localStorage.setItem(AN_STORE, JSON.stringify(AN_SEED)); } catch(e){}
+}
+function anLoad(){
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(AN_STORE) || 'null'); } catch(e){}
+  if(saved && Array.isArray(saved)){
+    AN_SEED.length = 0;
+    saved.forEach(function(r){ AN_SEED.push(r); });
+  }
+}
+
+function anEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function anRowHtml(r){
+  const togClass = 'us-yn-tog' + (r.active ? '' : ' off');
+  const togTxt   = r.active ? 'YES' : 'OFF';
+  return '<tr>' +
+    '<td style="text-align:center;"><input type="checkbox" class="an-row-check" data-id="' + r.id + '" onchange="anSyncAll()"/></td>' +
+    '<td style="text-align:center;"><a class="us-user-link" href="javascript:void(0)" onclick="anOpenEdit(' + r.id + ')">' + r.id + '</a></td>' +
+    '<td><span class="' + togClass + '" data-id="' + r.id + '" onclick="anToggleActive(' + r.id + ')"><span class="us-yn-tog-txt">' + togTxt + '</span><span class="us-yn-tog-knob"></span></span></td>' +
+    '<td style="text-align:left;padding-left:24px;"><a class="us-user-link" href="javascript:void(0)" onclick="anOpenEdit(' + r.id + ')">' + anEsc(r.message) + '</a></td>' +
+  '</tr>';
+}
+
+let anSearchQ = '';
+function anRender(){
+  const q = anSearchQ.trim().toLowerCase();
+  const visible = AN_SEED.filter(function(r){
+    return !q || (r.message||'').toLowerCase().includes(q);
+  });
+  document.getElementById('an-tbody').innerHTML = visible.map(anRowHtml).join('');
+  anSyncAll();
+}
+function anFilter(q){ anSearchQ = q || ''; anRender(); }
+
+function anEnforceSingleActive(activeId){
+  AN_SEED.forEach(function(r){
+    if(r.id !== activeId) r.active = false;
+  });
+}
+
+function anToggleActive(id){
+  const r = AN_SEED.find(function(x){ return x.id === id; });
+  if(!r) return;
+  r.active = !r.active;
+  if(r.active) anEnforceSingleActive(id);
+  anSaveStore();
+  anRender();
+}
+
+let anEditingId = null;
+let anEditingMode = null;
+
+function anSyncSaveEnabled(){
+  const btn = document.getElementById('an-e-save');
+  const has = document.getElementById('an-e-message').value.trim().length > 0;
+  if(btn) btn.disabled = !has;
+}
+
+function anOpenAddModal(){
+  anEditingMode = 'add';
+  anEditingId = null;
+  document.querySelector('#an-edit-modal .modal-title').textContent = 'Add Flash Message';
+  document.getElementById('an-e-message').value = '';
+  const tog = document.getElementById('an-e-active');
+  tog.classList.remove('off');
+  tog.querySelector('.us-yn-tog-txt').textContent = 'YES';
+  anSyncSaveEnabled();
+  document.getElementById('an-edit-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('an-e-message').focus(); }, 30);
+}
+
+function anOpenEdit(id){
+  const r = AN_SEED.find(function(x){ return x.id === id; });
+  if(!r) return;
+  anEditingMode = 'edit';
+  anEditingId = id;
+  document.querySelector('#an-edit-modal .modal-title').textContent = 'Edit Flash Message';
+  document.getElementById('an-e-message').value = r.message || '';
+  const tog = document.getElementById('an-e-active');
+  tog.classList.toggle('off', !r.active);
+  tog.querySelector('.us-yn-tog-txt').textContent = r.active ? 'YES' : 'OFF';
+  anSyncSaveEnabled();
+  document.getElementById('an-edit-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('an-e-message').focus(); }, 30);
+}
+
+function anCloseEdit(){
+  document.getElementById('an-edit-modal').classList.remove('open');
+  anEditingId = null;
+  anEditingMode = null;
+}
+
+function anSaveEdit(){
+  const message = document.getElementById('an-e-message').value.trim();
+  if(!message){
+    window.showNavToast('Message required', 'Enter a message.');
+    document.getElementById('an-e-message').focus();
+    return;
+  }
+  const active = !document.getElementById('an-e-active').classList.contains('off');
+  if(anEditingMode === 'add'){
+    const nextId = AN_SEED.reduce(function(m,r){ return Math.max(m, r.id || 0); }, 0) + 1;
+    AN_SEED.push({ id:nextId, active:active, message:message });
+    if(active) anEnforceSingleActive(nextId);
+    anSaveStore();
+    anRender();
+    anCloseEdit();
+    window.showNavToast('Announcement added', 'Message created.');
+  } else {
+    if(anEditingId == null){ anCloseEdit(); return; }
+    const r = AN_SEED.find(function(x){ return x.id === anEditingId; });
+    if(r){ r.message = message; r.active = active; }
+    if(active) anEnforceSingleActive(anEditingId);
+    anSaveStore();
+    anRender();
+    anCloseEdit();
+    window.showNavToast('Announcement saved', 'Message updated.');
+  }
+}
+
+function anColKebab(kind){ window.showNavToast('Column actions', kind + ' menu — coming soon.'); }
+
+function anToggleAll(el){
+  document.querySelectorAll('.an-row-check').forEach(function(c){ c.checked = el.checked; });
+}
+function anSyncAll(){
+  const boxes = document.querySelectorAll('.an-row-check');
+  const all = boxes.length > 0 && Array.from(boxes).every(function(b){ return b.checked; });
+  const some = Array.from(boxes).some(function(b){ return b.checked; });
+  const el = document.getElementById('an-check-all');
+  if(el){ el.checked = all; el.indeterminate = !all && some; }
+}
+
+anLoad();
+anRender();
+</script>
+
+</body>
+</html>
