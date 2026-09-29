@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporting &amp; Analytics — CorePanel</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.set-scroll{flex:1;overflow-y:auto;padding:24px 24px 60px;}
+@media (max-width:640px){.set-scroll{padding:20px 16px 40px;}}
+
+.rp-layout{display:flex;gap:20px;align-items:flex-start;}
+@media (max-width:900px){.rp-layout{flex-direction:column;gap:16px;}}
+
+/* Folder rail */
+.rp-side{width:220px;flex-shrink:0;}
+@media (max-width:900px){.rp-side{width:100%;}}
+.rp-side-label{font-size:10.5px;font-weight:600;color:var(--mu);text-transform:uppercase;
+  letter-spacing:.8px;margin-bottom:10px;}
+.rp-folder{display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;border-radius:9px;
+  background:transparent;border:0.5px solid transparent;color:var(--tx);font:500 13px/1 var(--font);
+  cursor:pointer;text-align:left;transition:background .12s,border-color .12s,color .12s;}
+.rp-folder:hover{background:var(--sur2);}
+.rp-folder.active{background:rgba(79,124,255,.12);border-color:rgba(79,124,255,.35);color:var(--ac2);}
+.rp-folder svg{width:15px;height:15px;flex-shrink:0;}
+.rp-folder-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rp-folder-count{min-width:24px;height:20px;padding:0 7px;border-radius:10px;background:var(--sur2);
+  color:var(--mu);font:600 11px/20px var(--mono);text-align:center;flex-shrink:0;}
+.rp-folder.active .rp-folder-count{background:var(--ac);color:#fff;}
+
+/* Main column */
+.rp-main{flex:1;min-width:0;}
+/* shared app.css insets .table-wrap by 20px; this page's scroll area already has padding */
+.rp-main .table-wrap{margin:0;}
+.rp-create{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;
+  background:var(--ac);border:none;border-radius:10px;color:#fff;font:600 13.5px/1 var(--font);
+  cursor:pointer;transition:background .15s;margin-bottom:18px;}
+.rp-create:hover{background:var(--ac2);}
+.rp-create svg{width:15px;height:15px;}
+.rp-found{display:flex;align-items:baseline;gap:7px;margin-bottom:12px;}
+.rp-found-num{font-size:15px;font-weight:700;color:var(--ac2);font-family:var(--mono);}
+.rp-found-txt{font-size:14px;font-weight:600;color:var(--tx);}
+
+.rp-name{font-size:13px;font-weight:600;color:var(--tx);}
+.rp-owner{font-size:11px;color:var(--mu);margin-top:2px;}
+.rp-desc{font-size:12.5px;color:var(--tx2);line-height:1.5;max-width:520px;white-space:normal;}
+.rp-src{display:inline-flex;align-items:center;padding:0 10px;height:24px;border-radius:6px;
+  background:rgba(79,124,255,.12);color:var(--ac2);font-size:11.5px;font-weight:500;white-space:nowrap;}
+.rp-src.sales{background:rgba(34,200,138,.12);color:var(--gr);}
+.rp-src.appointment{background:rgba(245,166,35,.12);color:var(--am);}
+
+/* Row actions */
+.rp-act{position:relative;}
+.rp-kebab{width:30px;height:30px;display:flex;align-items:center;justify-content:center;margin:0 auto;
+  background:transparent;border:none;border-radius:7px;color:var(--mu);cursor:pointer;transition:background .12s,color .12s;}
+.rp-kebab:hover{background:var(--hover);color:var(--tx);}
+.rp-kebab svg{width:15px;height:15px;}
+.rp-menu{display:none;position:fixed;z-index:200;min-width:150px;background:var(--sur);
+  border:0.5px solid var(--brd2);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden;}
+.rp-menu.open{display:block;}
+.rp-menu-item{display:flex;align-items:center;gap:9px;width:100%;padding:0 13px;min-height:38px;
+  background:none;border:none;border-bottom:0.5px solid var(--brd);color:var(--tx);
+  font:500 12.5px/1 var(--font);cursor:pointer;text-align:left;}
+.rp-menu-item:last-child{border-bottom:none;}
+.rp-menu-item:hover{background:var(--hover);color:var(--ac2);}
+.rp-menu-item.danger:hover{color:var(--rd);}
+.rp-menu-item svg{width:14px;height:14px;color:var(--mu);flex-shrink:0;}
+.rp-menu-item:hover svg{color:inherit;}
+
+.rp-empty{padding:40px 16px;text-align:center;color:var(--mu);font-size:12.5px;}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <a class="ur-back" href="settings.html" onclick="if(document.referrer.indexOf('settings.html')!==-1){history.back();return false;}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Settings
+    </a>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+  </div>
+
+  <div class="set-scroll">
+    <div class="rp-layout">
+
+      <div class="rp-side">
+        <div class="rp-side-label">Report Folders</div>
+        <button class="rp-folder active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span class="rp-folder-name">Standard Reports</span>
+          <span class="rp-folder-count" id="rp-folder-count">0</span>
+        </button>
+      </div>
+
+      <div class="rp-main">
+        <button class="rp-create" onclick="rpOpenCreate()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create New Report
+        </button>
+
+        <div class="rp-found">
+          <span class="rp-found-num" id="rp-count">0</span>
+          <span class="rp-found-txt">Report Found</span>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:60px;">No</th>
+                  <th style="width:260px;">Report Name - Owner</th>
+                  <th>Description</th>
+                  <th style="width:170px;">Primary Data Source</th>
+                  <th style="width:80px;text-align:center;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="rp-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Row actions menu -->
+<div class="rp-menu" id="rp-menu">
+  <button class="rp-menu-item" onclick="rpEdit()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Edit
+  </button>
+  <button class="rp-menu-item danger" onclick="rpDelete()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+    Delete
+  </button>
+</div>
+
+<!-- Create report -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="rp-modal" onclick="if(event.target===this) rpCloseCreate()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="rp-modal-title">Create New Report</div>
+      <button class="modal-close" onclick="rpCloseCreate()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="modal-field-label" for="rp-new-name">Report Name</label>
+        <div class="modal-field"><input id="rp-new-name" placeholder="e.g. Lead Response Time Report"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="rp-new-desc">Description</label>
+        <div class="modal-field"><input id="rp-new-desc" placeholder="What does this report show?"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="rp-new-src">Primary Data Source</label>
+        <div class="modal-field">
+          <select id="rp-new-src">
+            <option>Lead Source</option>
+            <option>Sales Source</option>
+            <option>Appointment</option>
+            <option>Sales</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="rpCloseCreate()">Cancel</button>
+      <button class="modal-save" id="rp-modal-save" onclick="rpSaveCreate()">Create report</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script src="shared/reports-data.js"></script>
+<script>BuySmartShell.init({ page: 'settings', title: 'Reporting & Analytics' });</script>
+<script>
+var REPORTS = ReportsStore.load();
+
+var SRC_CLASS = { 'Sales':'sales', 'Appointment':'appointment' };
+
+function rpEscape(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function rpRender(){
+  var tb = document.getElementById('rp-tbody');
+  if(!REPORTS.length){
+    tb.innerHTML = '<tr><td colspan="5"><div class="rp-empty">No reports in this folder yet.</div></td></tr>';
+  } else {
+    tb.innerHTML = REPORTS.map(function(r, i){
+      var cls = SRC_CLASS[r.src] || '';
+      return '<tr>' +
+        '<td>' + (i+1) + '</td>' +
+        '<td><div class="rp-name">' + rpEscape(r.name) + '</div><div class="rp-owner">' + rpEscape(r.owner) + '</div></td>' +
+        '<td><div class="rp-desc">' + rpEscape(r.desc) + '</div></td>' +
+        '<td><span class="rp-src ' + cls + '">' + rpEscape(r.src) + '</span></td>' +
+        '<td style="text-align:center;"><div class="rp-act">' +
+          '<button class="rp-kebab" aria-label="Report actions" onclick="rpOpenMenu(event,' + r.id + ')">' +
+            '<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/></svg>' +
+          '</button>' +
+        '</div></td>' +
+      '</tr>';
+    }).join('');
+  }
+  document.getElementById('rp-count').textContent = REPORTS.length;
+  document.getElementById('rp-folder-count').textContent = REPORTS.length;
+}
+
+// -- Row actions menu --
+var rpMenu = document.getElementById('rp-menu');
+var rpMenuId = null;
+
+function rpOpenMenu(e, id){
+  e.stopPropagation();
+  var wasOpen = rpMenu.classList.contains('open') && rpMenuId === id;
+  rpCloseMenu();
+  if(wasOpen) return;
+  rpMenuId = id;
+  rpMenu.classList.add('open');
+  var r = e.currentTarget.getBoundingClientRect();
+  var w = rpMenu.offsetWidth, h = rpMenu.offsetHeight;
+  var left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8));
+  var top = r.bottom + 4;
+  if(top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 4);
+  rpMenu.style.left = left + 'px';
+  rpMenu.style.top = top + 'px';
+}
+function rpCloseMenu(){ rpMenu.classList.remove('open'); rpMenuId = null; }
+function rpCurrent(){ return REPORTS.filter(function(r){ return r.id === rpMenuId; })[0]; }
+
+function rpEdit(){
+  var r = rpCurrent(); rpCloseMenu();
+  if(r) location.href = 'report-edit.html?id=' + r.id;
+}
+function rpDelete(){
+  var r = rpCurrent(); rpCloseMenu();
+  if(!r) return;
+  REPORTS = REPORTS.filter(function(x){ return x.id !== r.id; });
+  ReportsStore.save(REPORTS);
+  rpRender();
+  window.showNavToast('Report Deleted', r.name + ' has been deleted.');
+}
+
+rpMenu.addEventListener('click', function(e){ e.stopPropagation(); });
+document.addEventListener('click', rpCloseMenu);
+window.addEventListener('resize', rpCloseMenu);
+document.querySelector('.set-scroll').addEventListener('scroll', rpCloseMenu);
+
+// -- Create report --
+var rpModal = document.getElementById('rp-modal');
+
+function rpOpenCreate(){
+  document.getElementById('rp-new-name').value = '';
+  document.getElementById('rp-new-desc').value = '';
+  document.getElementById('rp-new-src').selectedIndex = 0;
+  rpModal.classList.add('open');
+}
+function rpCloseCreate(){ rpModal.classList.remove('open'); }
+function rpSaveCreate(){
+  var nameEl = document.getElementById('rp-new-name');
+  var name = nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  var maxId = REPORTS.reduce(function(m, x){ return Math.max(m, x.id); }, 0);
+  REPORTS.push({
+    id: maxId + 1,
+    name: name,
+    owner: 'You',
+    desc: document.getElementById('rp-new-desc').value.trim() || '—',
+    src: document.getElementById('rp-new-src').value,
+    status: 'Active'
+  });
+  ReportsStore.save(REPORTS);
+  rpRender();
+  rpCloseCreate();
+  window.showNavToast('Report Created', name + ' has been created.');
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){ rpCloseMenu(); rpCloseCreate(); }
+});
+
+rpRender();
+</script>
+
+</body>
+</html>

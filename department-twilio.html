@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Department Twilio — CorePanel</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.set-scroll{flex:1;overflow-y:auto;padding:24px 24px 60px;}
+@media (max-width:640px){.set-scroll{padding:20px 16px 40px;}}
+.set-scroll .table-wrap{margin:0;}
+
+/* Toolbar above the table */
+.dt-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.dt-search{display:flex;align-items:center;gap:8px;flex:1;min-width:220px;max-width:420px;height:42px;
+  padding:0 13px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:10px;transition:border-color .15s;}
+.dt-search:focus-within{border-color:var(--ac);}
+.dt-search svg{width:15px;height:15px;color:var(--mu);flex-shrink:0;}
+.dt-search input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--tx);
+  font-family:var(--font);font-size:13px;}
+.dt-search input::placeholder{color:var(--mu);}
+.dt-add{display:flex;align-items:center;gap:7px;margin-left:auto;height:42px;padding:0 18px;background:var(--ac);
+  border:none;border-radius:10px;color:#fff;font:600 13px/1 var(--font);cursor:pointer;transition:background .15s;white-space:nowrap;}
+.dt-add:hover{background:var(--ac2);}
+.dt-add svg{width:14px;height:14px;}
+
+/* Table cells */
+.dt-dept{color:var(--tx);}
+.dt-admin{color:var(--ac2);}
+.dt-phone{font-family:var(--mono);color:var(--tx);}
+.dt-simul{display:flex;align-items:center;gap:6px;flex-wrap:wrap;white-space:normal;}
+.dt-chip{display:inline-flex;align-items:center;gap:6px;padding:0 8px;height:26px;border-radius:6px;
+  background:rgba(79,124,255,.12);color:var(--ac2);font-size:11.5px;font-family:var(--mono);}
+.dt-chip button{background:none;border:none;color:inherit;cursor:pointer;opacity:.7;padding:0;line-height:1;font-size:13px;}
+.dt-chip button:hover{opacity:1;color:var(--rd);}
+.dt-simul-btn{height:28px;padding:0 12px;background:var(--ac);border:none;border-radius:7px;color:#fff;
+  font:600 11.5px/1 var(--font);cursor:pointer;transition:background .15s;white-space:nowrap;}
+.dt-simul-btn:hover{background:var(--ac2);}
+.dt-actions{display:flex;align-items:center;justify-content:center;gap:6px;}
+.dt-icon{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent;
+  border:0.5px solid var(--brd2);border-radius:7px;color:var(--mu);cursor:pointer;transition:all .12s;}
+.dt-icon:hover{color:var(--ac2);border-color:var(--ac);}
+.dt-icon.danger:hover{color:var(--rd);border-color:var(--rd);}
+.dt-icon svg{width:14px;height:14px;}
+.dt-empty{padding:34px 12px;text-align:center;color:var(--mu);font-size:12.5px;}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <a class="ur-back" href="settings.html" onclick="if(document.referrer.indexOf('settings.html')!==-1){history.back();return false;}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Settings
+    </a>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+  </div>
+
+  <div class="set-scroll">
+
+    <div class="dt-bar">
+      <label class="dt-search">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+        <input id="dt-search" placeholder="Search department phones..." oninput="dtRender()"/>
+      </label>
+      <button class="dt-add" onclick="dtOpenAdd()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Department Phone
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:70px;">No.</th>
+              <th style="width:200px;">Department</th>
+              <th style="width:220px;">Admin</th>
+              <th style="width:180px;">Phone Number</th>
+              <th style="width:260px;">Simul Call</th>
+              <th style="width:110px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="dt-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Add / edit department phone -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="dt-modal" onclick="if(event.target===this) dtClose()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="dt-modal-title">Add Department Phone</div>
+      <button class="modal-close" onclick="dtClose()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="modal-field-label" for="dt-dept">Department</label>
+        <div class="modal-field"><input id="dt-dept" placeholder="e.g. sales"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="dt-admin">Admin</label>
+        <div class="modal-field"><select id="dt-admin"></select></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="dt-phone">Phone Number</label>
+        <div class="modal-field"><input id="dt-phone" placeholder="8327893422" inputmode="tel"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="dtClose()">Cancel</button>
+      <button class="modal-save" id="dt-modal-save" onclick="dtSave()">Add phone</button>
+    </div>
+  </div>
+</div>
+
+<!-- Simul call number -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="dt-sim-modal" onclick="if(event.target===this) dtSimClose()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Simul Call Number</div>
+      <button class="modal-close" onclick="dtSimClose()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="modal-field-label" for="dt-sim-phone">Phone Number</label>
+        <div class="modal-field"><input id="dt-sim-phone" placeholder="8327893422" inputmode="tel"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="dtSimClose()">Cancel</button>
+      <button class="modal-save" onclick="dtSimSave()">Add number</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script>BuySmartShell.init({ page: 'settings', title: 'Department Twilio' });</script>
+<script>
+var DEPT_PHONES = [
+  { id:1, dept:'sales', admin:'Amin Hussain',    phone:'8327893422', simul:[] },
+  { id:2, dept:'sales', admin:'Amin Hussain FL', phone:'8502577111', simul:[] }
+];
+
+var ADMINS = ['Amin Hussain', 'Amin Hussain FL', 'Amin Hussain DS'];
+document.getElementById('dt-admin').innerHTML = ADMINS.map(function(a){
+  return '<option value="' + a + '">' + a + '</option>';
+}).join('');
+
+function dtEscape(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function dtRender(){
+  var q = (document.getElementById('dt-search').value || '').toLowerCase().trim();
+  var rows = DEPT_PHONES.filter(function(r){
+    return !q || (r.dept + ' ' + r.admin + ' ' + r.phone).toLowerCase().indexOf(q) >= 0;
+  });
+  var tb = document.getElementById('dt-tbody');
+  if(!rows.length){
+    tb.innerHTML = '<tr><td colspan="6"><div class="dt-empty">' +
+      (q ? 'No department phones match “' + dtEscape(q) + '”.' : 'No department phones yet.') + '</div></td></tr>';
+    return;
+  }
+  tb.innerHTML = rows.map(function(r, i){
+    var chips = r.simul.map(function(num, si){
+      return '<span class="dt-chip">' + dtEscape(num) +
+        '<button onclick="dtSimRemove(' + r.id + ',' + si + ')" aria-label="Remove ' + dtEscape(num) + '">&#x2715;</button></span>';
+    }).join('');
+    return '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td class="dt-dept">' + dtEscape(r.dept) + '</td>' +
+      '<td class="dt-admin">' + dtEscape(r.admin) + '</td>' +
+      '<td class="dt-phone">' + dtEscape(r.phone) + '</td>' +
+      '<td><div class="dt-simul">' + chips +
+        '<button class="dt-simul-btn" onclick="dtSimOpen(' + r.id + ')">Add Phone #</button>' +
+      '</div></td>' +
+      '<td><div class="dt-actions">' +
+        '<button class="dt-icon" onclick="dtOpenEdit(' + r.id + ')" aria-label="Edit ' + dtEscape(r.dept) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+        '</button>' +
+        '<button class="dt-icon danger" onclick="dtDelete(' + r.id + ')" aria-label="Delete ' + dtEscape(r.dept) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+        '</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function dtFind(id){ return DEPT_PHONES.filter(function(r){ return r.id === id; })[0]; }
+
+// -- Add / edit --
+var dtModal = document.getElementById('dt-modal');
+var dtEditId = null;
+
+function dtOpenAdd(){
+  dtEditId = null;
+  document.getElementById('dt-modal-title').textContent = 'Add Department Phone';
+  document.getElementById('dt-modal-save').textContent = 'Add phone';
+  document.getElementById('dt-dept').value = '';
+  document.getElementById('dt-admin').selectedIndex = 0;
+  document.getElementById('dt-phone').value = '';
+  dtModal.classList.add('open');
+}
+function dtOpenEdit(id){
+  var r = dtFind(id);
+  if(!r) return;
+  dtEditId = id;
+  document.getElementById('dt-modal-title').textContent = 'Edit Department Phone';
+  document.getElementById('dt-modal-save').textContent = 'Save changes';
+  document.getElementById('dt-dept').value = r.dept;
+  document.getElementById('dt-admin').value = r.admin;
+  document.getElementById('dt-phone').value = r.phone;
+  dtModal.classList.add('open');
+}
+function dtClose(){ dtModal.classList.remove('open'); dtEditId = null; }
+function dtSave(){
+  var deptEl = document.getElementById('dt-dept');
+  var phoneEl = document.getElementById('dt-phone');
+  var dept = deptEl.value.trim();
+  var phone = phoneEl.value.trim();
+  if(!dept){ deptEl.focus(); return; }
+  if(!phone){ phoneEl.focus(); return; }
+  var admin = document.getElementById('dt-admin').value;
+
+  if(dtEditId !== null){
+    var r = dtFind(dtEditId);
+    if(r){ r.dept = dept; r.admin = admin; r.phone = phone; }
+    dtRender();
+    dtClose();
+    window.showNavToast('Department Phone Updated', dept + ' has been updated.');
+    return;
+  }
+  var maxId = DEPT_PHONES.reduce(function(m, x){ return Math.max(m, x.id); }, 0);
+  DEPT_PHONES.push({ id:maxId+1, dept:dept, admin:admin, phone:phone, simul:[] });
+  dtRender();
+  dtClose();
+  window.showNavToast('Department Phone Added', dept + ' has been added.');
+}
+function dtDelete(id){
+  var r = dtFind(id);
+  if(!r) return;
+  DEPT_PHONES = DEPT_PHONES.filter(function(x){ return x.id !== id; });
+  dtRender();
+  window.showNavToast('Department Phone Deleted', r.dept + ' (' + r.phone + ') has been deleted.');
+}
+
+// -- Simul call numbers --
+var dtSimModal = document.getElementById('dt-sim-modal');
+var dtSimId = null;
+
+function dtSimOpen(id){
+  dtSimId = id;
+  document.getElementById('dt-sim-phone').value = '';
+  dtSimModal.classList.add('open');
+}
+function dtSimClose(){ dtSimModal.classList.remove('open'); dtSimId = null; }
+function dtSimSave(){
+  var el = document.getElementById('dt-sim-phone');
+  var num = el.value.trim();
+  if(!num){ el.focus(); return; }
+  var r = dtFind(dtSimId);
+  if(r){ r.simul.push(num); }
+  dtRender();
+  dtSimClose();
+  window.showNavToast('Simul Call Added', num + ' will ring at the same time.');
+}
+function dtSimRemove(id, idx){
+  var r = dtFind(id);
+  if(!r) return;
+  r.simul.splice(idx, 1);
+  dtRender();
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){ dtClose(); dtSimClose(); }
+});
+
+dtRender();
+</script>
+
+</body>
+</html>

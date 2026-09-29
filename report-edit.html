@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit Report — CorePanel</title>
+<link rel="stylesheet" href="shared/app.css">
+<link rel="stylesheet" href="shared/settings.css">
+<link rel="stylesheet" href="shared/contact-panel.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif;}
+.root.main-area{height:calc(100vh - 64px);min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+@media (max-width:640px){ .root.main-area{height:auto;min-height:0;overflow:visible;} }
+.set-scroll{flex:1;overflow-y:auto;padding:24px 24px 60px;}
+@media (max-width:640px){.set-scroll{padding:20px 16px 40px;}}
+
+/* Summary card */
+.re-head{background:var(--sur);border:0.5px solid var(--brd2);border-radius:12px;padding:18px 20px;margin-bottom:16px;}
+.re-head-title{font-size:15px;font-weight:600;color:var(--tx);margin-bottom:10px;}
+.re-meta{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--mu);margin-top:6px;}
+.re-meta-val{color:var(--ac2);font-weight:500;}
+.re-meta-val.status{color:var(--gr);}
+
+/* Tab card */
+.re-card{background:var(--sur);border:0.5px solid var(--brd2);border-radius:12px;overflow:hidden;}
+.re-tabs{display:flex;align-items:center;gap:4px;padding:0 20px;border-bottom:0.5px solid var(--brd2);overflow-x:auto;}
+.re-tab{padding:14px 12px;background:none;border:none;border-bottom:2px solid transparent;color:var(--mu);
+  font:600 11.5px/1 var(--font);text-transform:uppercase;letter-spacing:.7px;cursor:pointer;white-space:nowrap;
+  transition:color .12s,border-color .12s;}
+.re-tab:hover{color:var(--tx);}
+.re-tab.active{color:var(--ac2);border-bottom-color:var(--ac);}
+.re-panel{display:none;padding:22px 20px;}
+.re-panel.active{display:block;}
+
+.re-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px;}
+@media (max-width:820px){.re-grid{grid-template-columns:1fr;}}
+.re-field{display:flex;flex-direction:column;gap:6px;min-width:0;}
+.re-label{font-size:12px;color:var(--mu);}
+.re-input{height:42px;padding:0 13px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:9px;
+  color:var(--tx);font-family:var(--font);font-size:13px;outline:none;transition:border-color .15s;width:100%;}
+.re-input:focus{border-color:var(--ac);}
+select.re-input{appearance:none;-webkit-appearance:none;padding-right:34px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f94' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 13px center;}
+select.re-input option{background:var(--sur2);color:var(--tx);}
+
+.re-foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;
+  padding:16px 20px;border-top:0.5px solid var(--brd2);}
+.re-update{background:var(--ac);border:none;border-radius:8px;padding:0 20px;height:36px;color:#fff;
+  font:600 13px/1 var(--font);cursor:pointer;transition:background .15s;}
+.re-update:hover{background:var(--ac2);}
+.re-cancel{background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;padding:0 18px;height:36px;
+  color:var(--mu);font:500 13px/1 var(--font);cursor:pointer;transition:color .15s,border-color .15s;}
+.re-cancel:hover{color:var(--tx);border-color:var(--mu);}
+
+.re-soon{padding:30px 4px;text-align:center;color:var(--mu);font-size:12.5px;line-height:1.6;}
+
+/* Columns tab */
+.rc-hint{font-size:12.5px;color:var(--mu);margin-bottom:14px;}
+.rc-table{border:0.5px solid var(--brd2);border-radius:10px;overflow:hidden;}
+.rc-row{display:grid;grid-template-columns:44px minmax(120px,1fr) minmax(200px,1.5fr) minmax(120px,1fr) 56px;
+  align-items:center;border-bottom:0.5px solid var(--brd);}
+.rc-row:last-child{border-bottom:none;}
+.rc-head{background:var(--sur2);}
+.rc-head > div{padding:12px 10px;font-size:11px;font-weight:600;color:var(--mu);
+  text-transform:uppercase;letter-spacing:.5px;}
+.rc-body-row{background:var(--sur);transition:background .1s;}
+.rc-body-row:hover{background:rgba(79,124,255,.04);}
+.rc-body-row.dragging{opacity:.4;}
+.rc-body-row.drop-target{box-shadow:inset 0 2px 0 var(--ac);}
+.rc-grip{display:flex;align-items:center;justify-content:center;height:100%;padding:12px 0;
+  color:var(--mu);opacity:.5;cursor:grab;}
+.rc-body-row:hover .rc-grip{opacity:.9;}
+.rc-grip:active{cursor:grabbing;}
+.rc-grip svg{width:14px;height:14px;}
+.rc-field{padding:12px 10px;font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rc-header-cell{padding:8px 10px;min-width:0;}
+.rc-input{width:100%;height:36px;padding:0 11px;background:var(--sur2);border:0.5px solid var(--brd2);
+  border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;outline:none;transition:border-color .15s;}
+.rc-input:focus{border-color:var(--ac);}
+.rc-ds{padding:12px 10px;font-size:12.5px;color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rc-del-cell{display:flex;align-items:center;justify-content:center;padding:8px;}
+.rc-del{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent;
+  border:none;border-radius:7px;color:var(--rd);cursor:pointer;opacity:.75;transition:opacity .12s,background .12s;}
+.rc-del:hover{opacity:1;background:rgba(232,85,85,.12);}
+.rc-del svg{width:15px;height:15px;}
+.rc-add-cell{display:flex;align-items:center;justify-content:center;padding:6px;}
+.rc-add{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:var(--ac);
+  border:none;border-radius:7px;color:#fff;cursor:pointer;transition:background .12s;}
+.rc-add:hover{background:var(--ac2);}
+.rc-add svg{width:15px;height:15px;}
+.rc-empty{padding:26px 12px;text-align:center;color:var(--mu);font-size:12.5px;background:var(--sur);}
+/* Filters tab */
+.rf-banner{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:11px 14px;margin-bottom:14px;
+  background:rgba(79,124,255,.07);border:0.5px solid rgba(79,124,255,.25);border-radius:9px;}
+.rf-banner-title{font-size:13px;font-weight:600;color:var(--tx);}
+.rf-banner-sub{font-size:12px;color:var(--mu);}
+.rf-pill{margin-left:auto;padding:0 10px;height:24px;border-radius:12px;background:var(--ac);color:#fff;
+  font:600 11.5px/24px var(--mono);white-space:nowrap;}
+.rf-table{border:0.5px solid var(--brd2);border-radius:10px;overflow:hidden;}
+.rf-row{display:grid;
+  grid-template-columns:52px minmax(130px,1.2fr) 80px minmax(140px,1.3fr) minmax(140px,1.3fr) minmax(110px,1fr) 120px;
+  align-items:center;border-bottom:0.5px solid var(--brd);}
+.rf-row:last-child{border-bottom:none;}
+.rf-head{background:var(--sur2);}
+.rf-head > div{padding:12px 10px;font-size:11px;font-weight:600;color:var(--mu);
+  text-transform:uppercase;letter-spacing:.5px;}
+.rf-body-row{background:var(--sur);transition:background .1s;}
+.rf-body-row:nth-child(even){background:var(--sur2);}
+.rf-body-row:hover{background:rgba(79,124,255,.05);}
+.rf-num{padding:12px 10px;font-size:12.5px;color:var(--mu);font-family:var(--mono);position:relative;}
+.rf-del{position:absolute;left:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;display:none;
+  align-items:center;justify-content:center;background:var(--sur);border:none;border-radius:6px;
+  color:var(--rd);cursor:pointer;}
+.rf-body-row:hover .rf-del{display:flex;}
+.rf-del:hover{background:rgba(232,85,85,.14);}
+.rf-del svg{width:14px;height:14px;}
+.rf-field{padding:12px 10px;font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rf-mid{padding:7px 10px;min-width:0;}
+.rf-check-cell{display:flex;align-items:center;justify-content:center;padding:10px;}
+.rf-input{width:100%;height:34px;padding:0 10px;background:var(--sur);border:0.5px solid var(--brd2);
+  border-radius:7px;color:var(--tx);font-family:var(--font);font-size:12.5px;outline:none;transition:border-color .15s;}
+.rf-body-row:nth-child(even) .rf-input{background:var(--sur);}
+.rf-input:focus{border-color:var(--ac);}
+.rf-input::placeholder{color:var(--mu);}
+select.rf-input{appearance:none;-webkit-appearance:none;padding-right:28px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%237a7f94' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+select.rf-input option{background:var(--sur2);color:var(--tx);}
+.rf-ds{padding:12px 10px;font-size:12.5px;color:var(--ac2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rf-vis{display:flex;align-items:center;gap:8px;padding:10px;}
+.rf-vis-label{font-size:11px;font-weight:600;color:var(--mu);letter-spacing:.4px;}
+.rf-vis-label.on{color:var(--gr);}
+.rf-box{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--brd2);background:var(--sur);
+  cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s;padding:0;}
+.rf-box:hover{border-color:var(--ac);}
+.rf-box.on{background:var(--ac);border-color:var(--ac);}
+.rf-box.on::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;
+  transform:rotate(45deg);margin-top:-2px;}
+.rf-add-cell{display:flex;align-items:center;justify-content:center;padding:6px;}
+@media (max-width:900px){
+  .rf-row{grid-template-columns:44px 1fr 80px 120px;grid-auto-rows:min-content;row-gap:2px;padding-bottom:6px;}
+  .rf-head{display:none;}
+  .rf-num{grid-row:1 / span 3;}
+  .rf-field{grid-column:2;}
+  .rf-mid{grid-column:2 / span 3;}
+  .rf-ds{grid-column:2;}
+  .rf-check-cell{grid-row:1;grid-column:3;}
+  .rf-vis{grid-row:1;grid-column:4;}
+}
+
+/* Permission tab */
+.rp-perm-table{border:0.5px solid var(--brd2);border-radius:10px;overflow:hidden;}
+.rp-perm-row{display:grid;grid-template-columns:minmax(160px,1fr) minmax(120px,240px) minmax(120px,240px);
+  align-items:center;border-bottom:0.5px solid var(--brd);}
+.rp-perm-row:last-child{border-bottom:none;}
+.rp-perm-head{background:var(--sur2);}
+.rp-perm-head > div{padding:12px 14px;font-size:11px;font-weight:600;color:var(--mu);
+  text-transform:uppercase;letter-spacing:.5px;}
+.rp-perm-body-row{background:var(--sur);transition:background .1s;}
+.rp-perm-body-row:hover{background:rgba(79,124,255,.04);}
+.rp-perm-user{padding:14px;font-size:13px;color:var(--ac2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rp-perm-cell{display:flex;align-items:center;justify-content:center;padding:12px;}
+
+@media (max-width:720px){
+  .rc-row{grid-template-columns:34px 1fr 44px;grid-auto-rows:min-content;}
+  .rc-head{display:none;}
+  .rc-header-cell{grid-column:2;}
+  .rc-ds{grid-column:2;padding-top:0;}
+  .rc-field{grid-column:2;padding-bottom:4px;}
+  .rc-grip{grid-row:1 / span 3;}
+  .rc-del-cell{grid-row:1 / span 3;}
+}
+</style>
+</head>
+<body>
+
+<div class="root main-area" id="root">
+  <div class="set-page-head">
+    <a class="ur-back" href="reporting.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Reports
+    </a>
+    <span class="set-page-title"></span>
+    <div class="sp"></div>
+  </div>
+
+  <div class="set-scroll">
+
+    <div class="re-head">
+      <div class="re-head-title" id="re-title">Report</div>
+      <div class="re-meta">Status: <span class="re-meta-val status" id="re-status">Active</span></div>
+      <div class="re-meta">Primary Data Source: <span class="re-meta-val" id="re-src-label">—</span></div>
+    </div>
+
+    <div class="re-card">
+      <div class="re-tabs" role="tablist">
+        <button class="re-tab active" data-tab="detail" role="tab">Detail</button>
+        <button class="re-tab" data-tab="columns" role="tab">Columns</button>
+        <button class="re-tab" data-tab="filters" role="tab">Filters</button>
+        <button class="re-tab" data-tab="permission" role="tab">Permission</button>
+      </div>
+
+      <div class="re-panel active" id="panel-detail">
+        <div class="re-grid">
+          <div class="re-field">
+            <label class="re-label" for="re-name">Report Name</label>
+            <input class="re-input" id="re-name" placeholder="Report name"/>
+          </div>
+          <div class="re-field">
+            <label class="re-label" for="re-desc">Description</label>
+            <input class="re-input" id="re-desc" placeholder="What does this report show?"/>
+          </div>
+          <div class="re-field">
+            <label class="re-label" for="re-src">Primary Data Source</label>
+            <select class="re-input" id="re-src"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="re-panel" id="panel-columns">
+        <div class="rc-hint">Edit column headers, drag rows to reorder, or add/remove columns.</div>
+        <div class="rc-table">
+          <div class="rc-row rc-head">
+            <div></div>
+            <div>Field Name</div>
+            <div>Column Header</div>
+            <div>Datasource Name</div>
+            <div class="rc-add-cell">
+              <button class="rc-add" onclick="rcAdd()" aria-label="Add column">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="rc-rows"></div>
+        </div>
+      </div>
+
+      <div class="re-panel" id="panel-filters">
+        <div class="rc-hint">Set conditions to filter the report data. Add or remove fields with the + button.</div>
+        <div class="rf-banner">
+          <span class="rf-banner-title">Filter Columns</span>
+          <span class="rf-banner-sub">— check to make a filter visible to users</span>
+          <span class="rf-pill" id="rf-pill">0 / 0 visible</span>
+        </div>
+        <div class="rf-table">
+          <div class="rf-row rf-head">
+            <div>#</div>
+            <div>Field Name</div>
+            <div style="text-align:center;">Default</div>
+            <div>Operator</div>
+            <div>Value(s)</div>
+            <div>DataSource</div>
+            <div class="rf-add-cell">
+              <button class="rc-add" onclick="rfAdd()" aria-label="Add filter field">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="rf-rows"></div>
+        </div>
+      </div>
+
+      <div class="re-panel" id="panel-permission">
+        <div class="rc-hint">Set which admin users can view or execute this report.</div>
+        <div class="rp-perm-table">
+          <div class="rp-perm-row rp-perm-head">
+            <div>Admin User</div>
+            <div style="text-align:center;">Can View</div>
+            <div style="text-align:center;">Can Execute</div>
+          </div>
+          <div id="rp-perm-rows"></div>
+        </div>
+      </div>
+
+      <div class="re-foot">
+        <button class="re-update" onclick="reUpdate()">Update</button>
+        <button class="re-cancel" onclick="reCancel()">Cancel</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="shared/notifications.js"></script>
+<script src="shared/contact-panel.js"></script>
+<script src="shared/search-index.js"></script>
+<script src="shared/shell.js"></script>
+<script src="shared/reports-data.js"></script>
+<script>BuySmartShell.init({ page: 'settings', title: 'Edit Report' });</script>
+<script>
+var reId = parseInt(new URLSearchParams(location.search).get('id'), 10);
+var reReport = isNaN(reId) ? null : ReportsStore.get(reId);
+
+var srcSelect = document.getElementById('re-src');
+srcSelect.innerHTML = ReportsStore.SOURCES.map(function(s){
+  return '<option value="' + s + '">' + s + '</option>';
+}).join('');
+
+function reFill(){
+  if(!reReport){
+    document.getElementById('re-title').textContent = 'Report not found';
+    document.querySelector('.re-card').style.display = 'none';
+    return;
+  }
+  document.getElementById('re-title').textContent = reReport.name;
+  document.getElementById('re-status').textContent = reReport.status || 'Active';
+  document.getElementById('re-src-label').textContent = reReport.src;
+  document.getElementById('re-name').value = reReport.name;
+  document.getElementById('re-desc').value = reReport.desc === '—' ? '' : reReport.desc;
+  srcSelect.value = reReport.src;
+  reCols = (reReport.cols || ReportsStore.defaultColumns(reReport.src)).map(function(c){
+    return { field:c.field, header:c.header, ds:c.ds };
+  });
+  rcRender();
+  reFilters = (reReport.filters || ReportsStore.defaultFilters(reReport.src)).map(function(f){
+    return { field:f.field, def:!!f.def, op:f.op || '-', val:f.val || '', ds:f.ds, visible:!!f.visible };
+  });
+  rfRender();
+  rePerms = (reReport.perms || ReportsStore.defaultPermissions()).map(function(p){
+    return { user:p.user, view:!!p.view, exec:!!p.exec };
+  });
+  rpPermRender();
+}
+
+document.querySelectorAll('.re-tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    var key = tab.getAttribute('data-tab');
+    document.querySelectorAll('.re-tab').forEach(function(t){ t.classList.toggle('active', t === tab); });
+    document.querySelectorAll('.re-panel').forEach(function(p){
+      p.classList.toggle('active', p.id === 'panel-' + key);
+    });
+  });
+});
+
+// -- Columns tab --
+var reCols = [];
+
+function rcEscape(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function rcRender(){
+  var wrap = document.getElementById('rc-rows');
+  if(!reCols.length){
+    wrap.innerHTML = '<div class="rc-empty">No columns yet. Use + to add one.</div>';
+    return;
+  }
+  wrap.innerHTML = reCols.map(function(c, i){
+    return '<div class="rc-row rc-body-row" data-idx="' + i + '" draggable="false">' +
+      '<div class="rc-grip" title="Drag to reorder">' +
+        '<svg viewBox="0 0 14 14" fill="currentColor"><circle cx="5" cy="2" r="1.2"/><circle cx="9" cy="2" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="12" r="1.2"/><circle cx="9" cy="12" r="1.2"/></svg>' +
+      '</div>' +
+      '<div class="rc-field">' + rcEscape(c.field) + '</div>' +
+      '<div class="rc-header-cell"><input class="rc-input" value="' + rcEscape(c.header) + '" oninput="rcSetHeader(' + i + ', this.value)" aria-label="Column header for ' + rcEscape(c.field) + '"/></div>' +
+      '<div class="rc-ds">' + rcEscape(c.ds) + '</div>' +
+      '<div class="rc-del-cell">' +
+        '<button class="rc-del" onclick="rcRemove(' + i + ')" aria-label="Remove ' + rcEscape(c.field) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  rcWireDrag();
+}
+
+function rcSetHeader(i, val){ if(reCols[i]) reCols[i].header = val; }
+function rcRemove(i){
+  if(!reCols[i]) return;
+  reCols.splice(i, 1);
+  rcRender();
+}
+function rcAdd(){
+  reCols.push({ field:'New Field', header:'New Column', ds: srcSelect.value });
+  rcRender();
+  var inputs = document.querySelectorAll('#rc-rows .rc-input');
+  var last = inputs[inputs.length - 1];
+  if(last){ last.focus(); last.select(); }
+}
+
+// Drag to reorder, gated on the grip like the dashboard widgets
+var rcDragIdx = null;
+function rcWireDrag(){
+  document.querySelectorAll('#rc-rows .rc-body-row').forEach(function(row){
+    var idx = +row.getAttribute('data-idx');
+    row.querySelector('.rc-grip').addEventListener('mousedown', function(){
+      row.setAttribute('draggable', 'true');
+    });
+    row.addEventListener('dragstart', function(e){
+      if(row.getAttribute('draggable') !== 'true'){ e.preventDefault(); return; }
+      rcDragIdx = idx;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(idx));
+      setTimeout(function(){ row.classList.add('dragging'); }, 0);
+    });
+    row.addEventListener('dragend', function(){
+      row.classList.remove('dragging');
+      row.setAttribute('draggable', 'false');
+      rcDragIdx = null;
+      document.querySelectorAll('.rc-body-row.drop-target').forEach(function(el){ el.classList.remove('drop-target'); });
+    });
+    row.addEventListener('dragover', function(e){
+      if(rcDragIdx === null || rcDragIdx === idx) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.rc-body-row.drop-target').forEach(function(el){ el.classList.remove('drop-target'); });
+      row.classList.add('drop-target');
+    });
+    row.addEventListener('dragleave', function(){ row.classList.remove('drop-target'); });
+    row.addEventListener('drop', function(e){
+      e.preventDefault();
+      row.classList.remove('drop-target');
+      if(rcDragIdx === null || rcDragIdx === idx) return;
+      var moved = reCols.splice(rcDragIdx, 1)[0];
+      reCols.splice(idx, 0, moved);
+      rcDragIdx = null;
+      rcRender();
+    });
+  });
+}
+document.addEventListener('mouseup', function(){
+  document.querySelectorAll('#rc-rows .rc-body-row[draggable="true"]').forEach(function(el){
+    if(!el.classList.contains('dragging')) el.setAttribute('draggable', 'false');
+  });
+});
+
+// -- Filters tab --
+var reFilters = [];
+
+function rfRender(){
+  var wrap = document.getElementById('rf-rows');
+  if(!reFilters.length){
+    wrap.innerHTML = '<div class="rc-empty">No filter fields yet. Use + to add one.</div>';
+  } else {
+    wrap.innerHTML = reFilters.map(function(f, i){
+      var ops = ReportsStore.OPERATORS.map(function(o){
+        return '<option value="' + rcEscape(o) + '"' + (o === f.op ? ' selected' : '') + '>' + rcEscape(o) + '</option>';
+      }).join('');
+      return '<div class="rf-row rf-body-row">' +
+        '<div class="rf-num">' + (i+1) +
+          '<button class="rf-del" onclick="rfRemove(' + i + ')" aria-label="Remove ' + rcEscape(f.field) + '">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+          '</button>' +
+        '</div>' +
+        '<div class="rf-field">' + rcEscape(f.field) + '</div>' +
+        '<div class="rf-check-cell">' +
+          '<button class="rf-box' + (f.def ? ' on' : '') + '" onclick="rfToggleDefault(' + i + ')" aria-label="Default for ' + rcEscape(f.field) + '" aria-pressed="' + (f.def ? 'true' : 'false') + '"></button>' +
+        '</div>' +
+        '<div class="rf-mid"><select class="rf-input" onchange="rfSet(' + i + ',\'op\',this.value)" aria-label="Operator for ' + rcEscape(f.field) + '">' + ops + '</select></div>' +
+        '<div class="rf-mid"><input class="rf-input" value="' + rcEscape(f.val) + '" placeholder="-" oninput="rfSet(' + i + ',\'val\',this.value)" aria-label="Value for ' + rcEscape(f.field) + '"/></div>' +
+        '<div class="rf-ds">' + rcEscape(f.ds) + '</div>' +
+        '<div class="rf-vis">' +
+          '<button class="rf-box' + (f.visible ? ' on' : '') + '" onclick="rfToggleVisible(' + i + ')" aria-label="Visible to users: ' + rcEscape(f.field) + '" aria-pressed="' + (f.visible ? 'true' : 'false') + '"></button>' +
+          '<span class="rf-vis-label' + (f.visible ? ' on' : '') + '">' + (f.visible ? 'ON' : 'OFF') + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  var visible = reFilters.filter(function(f){ return f.visible; }).length;
+  document.getElementById('rf-pill').textContent = visible + ' / ' + reFilters.length + ' visible';
+}
+
+function rfSet(i, key, val){ if(reFilters[i]) reFilters[i][key] = val; }
+function rfToggleDefault(i){
+  if(!reFilters[i]) return;
+  reFilters[i].def = !reFilters[i].def;
+  rfRender();
+}
+function rfToggleVisible(i){
+  if(!reFilters[i]) return;
+  reFilters[i].visible = !reFilters[i].visible;
+  rfRender();
+}
+function rfRemove(i){
+  if(!reFilters[i]) return;
+  reFilters.splice(i, 1);
+  rfRender();
+}
+function rfAdd(){
+  reFilters.push({ field:'New Field', def:false, op:'-', val:'', ds:srcSelect.value, visible:false });
+  rfRender();
+}
+
+// -- Permission tab --
+var rePerms = [];
+
+function rpPermRender(){
+  document.getElementById('rp-perm-rows').innerHTML = rePerms.map(function(p, i){
+    return '<div class="rp-perm-row rp-perm-body-row">' +
+      '<div class="rp-perm-user">' + rcEscape(p.user) + '</div>' +
+      '<div class="rp-perm-cell">' +
+        '<button class="rf-box' + (p.view ? ' on' : '') + '" onclick="rpPermToggle(' + i + ',\'view\')" aria-label="Can view: ' + rcEscape(p.user) + '" aria-pressed="' + (p.view ? 'true' : 'false') + '"></button>' +
+      '</div>' +
+      '<div class="rp-perm-cell">' +
+        '<button class="rf-box' + (p.exec ? ' on' : '') + '" onclick="rpPermToggle(' + i + ',\'exec\')" aria-label="Can execute: ' + rcEscape(p.user) + '" aria-pressed="' + (p.exec ? 'true' : 'false') + '"></button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function rpPermToggle(i, key){
+  if(!rePerms[i]) return;
+  rePerms[i][key] = !rePerms[i][key];
+  rpPermRender();
+}
+
+function reUpdate(){
+  if(!reReport) return;
+  var nameEl = document.getElementById('re-name');
+  var name = nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  reReport = ReportsStore.update(reReport.id, {
+    name: name,
+    desc: document.getElementById('re-desc').value.trim() || '—',
+    src: srcSelect.value,
+    cols: reCols,
+    filters: reFilters,
+    perms: rePerms
+  });
+  reFill();
+  window.showNavToast('Report Updated', name + ' has been updated.');
+}
+
+function reCancel(){ location.href = 'reporting.html'; }
+
+reFill();
+</script>
+
+</body>
+</html>
