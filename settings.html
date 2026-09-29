@@ -15,6 +15,7 @@ html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif
 .set-scroll{flex:1;overflow-y:auto;padding:24px 24px 60px;}
 @media (max-width:640px){.set-scroll{padding:20px 16px 40px;}}
 .set-section-label{font-size:10.5px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.8px;font-family:var(--font);margin-bottom:12px;}
+.set-grid + .set-section-label{margin-top:28px;}
 .set-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 @media (max-width:900px){.set-grid{grid-template-columns:repeat(2,1fr);}}
 @media (max-width:640px){.set-grid{grid-template-columns:1fr;}}
@@ -63,6 +64,7 @@ html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif
         <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
       </div>
 
+      <!-- Hidden for now — restore this card to bring User Roles back
       <div class="set-card" onclick="location.href='userroles.html'">
         <div class="set-card-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -73,11 +75,222 @@ html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif
         </div>
         <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
       </div>
+      -->
+
+      <div class="set-card" onclick="fpOpen()">
+        <div class="set-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/></svg>
+        </div>
+        <div class="set-card-info">
+          <div class="set-card-title">Forgot Password Email Setting</div>
+          <div class="set-card-desc">Change Forgot Password Email Setting</div>
+        </div>
+        <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </div>
+
+      <div class="set-card" onclick="location.href='reporting.html'">
+        <div class="set-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+        </div>
+        <div class="set-card-info">
+          <div class="set-card-title">Reporting &amp; Analytics</div>
+          <div class="set-card-desc">Go To Report</div>
+        </div>
+        <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </div>
+
+    </div>
+
+    <div class="set-section-label">Video Conference Setting</div>
+    <div class="set-grid">
+
+      <div class="set-card" onclick="vcOpen()">
+        <div class="set-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        </div>
+        <div class="set-card-info">
+          <div class="set-card-title">Video Conference Credentials</div>
+          <div class="set-card-desc">Change Video Conference Credentials</div>
+        </div>
+        <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </div>
+
+    </div>
+
+    <div class="set-section-label">Organizational Structure &amp; Management</div>
+    <div class="set-grid">
+
+      <div class="set-card" onclick="location.href='department-twilio.html'">
+        <div class="set-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div class="set-card-info">
+          <div class="set-card-title">Department Twilio</div>
+          <div class="set-card-desc">Manage Department Twilio</div>
+        </div>
+        <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </div>
+
+    </div>
+
+    <div class="set-section-label">CRM Management</div>
+    <div class="set-grid">
+
+      <div class="set-card" onclick="location.href='crm-vendors.html'">
+        <div class="set-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13l2.5 2.5a2 2 0 0 0 2.83 0L16 13"/><path d="M2 9l4-3 5 2h2l5-2 4 3"/><path d="M6 6v9l4.5 4a2 2 0 0 0 3 0L18 15V6"/></svg>
+        </div>
+        <div class="set-card-info">
+          <div class="set-card-title">CRM Vendors</div>
+          <div class="set-card-desc">Manage CRM Vendors</div>
+        </div>
+        <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </div>
+
+      <div class="set-card" onclick="location.href='crm-vendor-groups.html'">
+        <div class="set-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </div>
+        <div class="set-card-info">
+          <div class="set-card-title">CRM Vendors Group</div>
+          <div class="set-card-desc">Manage CRM Vendors Group</div>
+        </div>
+        <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </div>
+
+      <div class="set-card" onclick="location.href='cron.html'">
+        <div class="set-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="set-card-info">
+          <div class="set-card-title">Cron</div>
+          <div class="set-card-desc">Manage Cron Jobs</div>
+        </div>
+        <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </div>
+
+    </div>
+
+    <div class="set-section-label">Telephony</div>
+    <div class="set-grid">
+
+      <div class="set-card" onclick="location.href='phone-numbers.html'">
+        <div class="set-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94"/><path d="M13 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1-.88 4.18 2 2 0 0 1 1.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L4.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 13 16.92z"/></svg>
+        </div>
+        <div class="set-card-info">
+          <div class="set-card-title">Phone Number Assignment</div>
+          <div class="set-card-desc">Manage Phone Number Assignment</div>
+        </div>
+        <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </div>
+
+      <div class="set-card" onclick="location.href='phone-locations.html'">
+        <div class="set-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="set-card-info">
+          <div class="set-card-title">Phone Location</div>
+          <div class="set-card-desc">Manage Phone Location</div>
+        </div>
+        <span class="set-card-info-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+      </div>
 
     </div>
 
   </div>
 </div>
+
+<!-- Forgot Password Email Setting -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="fp-modal" onclick="if(event.target===this) fpClose()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Forgot Password Email Setting</div>
+      <button class="modal-close" onclick="fpClose()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="modal-field-label" for="fp-host">Host</label>
+        <div class="modal-field"><input id="fp-host" value="smtp.gmail.com" placeholder="smtp.example.com"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="fp-username">Username</label>
+        <div class="modal-field"><input id="fp-username" value="sales@usadirectauto.com" placeholder="you@example.com"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="fp-password">Password</label>
+        <div class="modal-field">
+          <span class="us-pw-wrap" style="flex:1;">
+            <input id="fp-password" type="password" value="EmailPass123" placeholder="Enter password"/>
+            <button type="button" class="us-pw-eye" onclick="fpTogglePw(this)" aria-label="Show password">
+              <svg class="us-pw-svg us-pw-svg-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="us-pw-svg us-pw-svg-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </span>
+        </div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="fp-port">Port</label>
+        <div class="modal-field"><input id="fp-port" value="587" placeholder="587"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-save" onclick="fpClose()">Save changes</button>
+      <button class="modal-cancel" onclick="fpClose()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Video Conference Credentials -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="vc-modal" onclick="if(event.target===this) vcClose()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Video Conference Credentials</div>
+      <button class="modal-close" onclick="vcClose()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="modal-field-label" for="vc-app-id">App ID</label>
+        <div class="modal-field"><input id="vc-app-id" value="0ff930245fa74e9bbcd8ba219286a294" placeholder="App ID"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="vc-app-cert">App Certificate</label>
+        <div class="modal-field"><input id="vc-app-cert" value="9335a02247fa47aaa3a50cdfe1a5bb20" placeholder="App Certificate"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="vc-cust-id">Customer ID</label>
+        <div class="modal-field"><input id="vc-cust-id" value="ae347ee9dbc145a892a8abfb481acd30" placeholder="Customer ID"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="vc-cust-secret">Customer Secret</label>
+        <div class="modal-field"><input id="vc-cust-secret" value="bac5c057d0234391b5ae3fd056a82b01" placeholder="Customer Secret"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-save" onclick="vcClose()">Save changes</button>
+      <button class="modal-cancel" onclick="vcClose()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var fpModal = document.getElementById('fp-modal');
+  var vcModal = document.getElementById('vc-modal');
+  function vcOpen(){ vcModal.classList.add('open'); }
+  function vcClose(){ vcModal.classList.remove('open'); }
+  function fpOpen(){ fpModal.classList.add('open'); }
+  function fpClose(){ fpModal.classList.remove('open'); }
+  function fpTogglePw(btn){
+    var input = document.getElementById('fp-password');
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.classList.toggle('showing', show);
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  }
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){ fpClose(); vcClose(); }
+  });
+</script>
 
 <script src="shared/notifications.js"></script>
 <script src="shared/contact-panel.js"></script>
