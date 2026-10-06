@@ -205,6 +205,92 @@ html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif
 .ov-field input:focus,.ov-field textarea:focus{border-color:var(--ac);}
 .ov-field textarea{height:auto;min-height:80px;padding:10px 12px;resize:vertical;line-height:1.55;}
 .ov-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:8px;}
+.ov-field select{height:40px;padding:0 34px 0 12px;background:var(--sur2);border:0.5px solid var(--brd2);border-radius:8px;color:var(--tx);font-family:var(--font);font-size:13px;outline:none;transition:border-color .15s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f94' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+.ov-field select:focus{border-color:var(--ac);}
+.ov-field select option{background:var(--sur2);color:var(--tx);}
+
+/* General Info tabs */
+.gi-tabs{display:flex;align-items:center;gap:4px;padding:0 32px;border-bottom:0.5px solid var(--brd2);overflow-x:auto;}
+.gi-tab{padding:14px 10px;background:none;border:none;border-bottom:2px solid transparent;color:var(--mu);
+  font:600 12.5px/1 var(--font);cursor:pointer;white-space:nowrap;transition:color .12s,border-color .12s;}
+.gi-tab:hover{color:var(--tx);}
+.gi-tab.active{color:var(--ac);border-bottom-color:var(--ac);}
+.gi-panel{display:none;}
+.gi-panel.active{display:block;}
+.gi-wrap{padding:26px 32px;display:flex;flex-direction:column;gap:22px;max-width:1000px;}
+.gi-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 26px;}
+@media (max-width:820px){.gi-grid{grid-template-columns:1fr;}}
+.gi-pw{position:relative;display:flex;}
+.gi-pw input{flex:1;min-width:0;padding-right:40px;}
+.gi-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;background:transparent;
+  border:none;border-radius:6px;color:var(--mu);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.gi-eye:hover{color:var(--tx);background:var(--sur);}
+.gi-eye svg{width:16px;height:16px;}
+.gi-eye .gi-eye-off{display:none;}
+.gi-eye.showing .gi-eye-on{display:none;}
+.gi-eye.showing .gi-eye-off{display:block;}
+.gi-switch-row{display:flex;align-items:center;gap:12px;align-self:end;min-height:40px;}
+.gi-switch{width:42px;height:24px;border-radius:12px;background:var(--sur2);border:0.5px solid var(--brd2);
+  position:relative;cursor:pointer;flex-shrink:0;padding:0;transition:background .15s,border-color .15s;}
+.gi-switch::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;
+  background:var(--mu);transition:transform .15s,background .15s;}
+.gi-switch.on{background:rgba(79,124,255,.22);border-color:var(--ac);}
+.gi-switch.on::after{transform:translateX(18px);background:var(--ac);}
+.gi-switch-label{font-size:13px;color:var(--tx);}
+.gi-soon{padding:44px 32px;text-align:center;color:var(--mu);font-size:12.5px;line-height:1.6;}
+.gi-divider{grid-column:1 / -1;height:1px;background:var(--brd);margin:6px 0;}
+/* Loan App Setting */
+.la-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.la-title{font-size:17px;font-weight:700;color:var(--tx);margin-right:auto;}
+.la-btn{display:flex;align-items:center;gap:7px;height:38px;padding:0 16px;background:var(--ac);border:none;
+  border-radius:9px;color:#fff;font:600 12.5px/1 var(--font);cursor:pointer;transition:background .15s;white-space:nowrap;}
+.la-btn:hover{background:var(--ac2);}
+.la-btn.secondary{background:rgba(79,124,255,.16);color:var(--ac2);}
+.la-btn.secondary:hover{background:rgba(79,124,255,.26);}
+.la-btn svg{width:14px;height:14px;}
+.la-field{color:var(--tx);}
+.la-value{color:var(--mu);font-family:var(--mono);font-size:12px;}
+.la-footer{justify-content:flex-end;gap:22px;}
+.rs-providers{display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
+.la-empty{padding:34px 12px;text-align:center;color:var(--mu);font-size:12.5px;}
+
+/* General Setting cards */
+.gs-wrap{padding:26px 32px;}
+/* shared app.css insets .table-wrap by 20px; these panels already have padding */
+.gs-wrap .table-wrap{margin:0;}
+.gs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media (max-width:1100px){.gs-grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:700px){.gs-grid{grid-template-columns:1fr;}}
+.gs-card{display:flex;align-items:center;gap:13px;padding:16px;background:var(--sur2);
+  border:0.5px solid var(--brd2);border-radius:10px;cursor:pointer;transition:border-color .15s;}
+.gs-card:hover{border-color:var(--ac);}
+.gs-card-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;background:rgba(79,124,255,.1);color:var(--ac);}
+.gs-card-icon svg{width:18px;height:18px;}
+.gs-card-info{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.gs-card-title{font-size:13.5px;font-weight:600;color:var(--tx);font-family:var(--font);}
+.gs-card-desc{font-size:11.5px;color:var(--mu);font-family:var(--font);}
+
+/* Reputation Management rows */
+.rep-rows{display:flex;flex-direction:column;gap:14px;}
+.rep-row{display:grid;grid-template-columns:minmax(150px,1fr) minmax(240px,2.2fr) 44px;gap:16px;align-items:end;}
+@media (max-width:720px){.rep-row{grid-template-columns:1fr 1fr 44px;}}
+.rep-btn{width:36px;height:36px;border-radius:50%;border:none;color:#fff;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:filter .12s;}
+.rep-btn:hover{filter:brightness(1.1);}
+.rep-btn svg{width:16px;height:16px;}
+.rep-btn.add{background:var(--gr);}
+.rep-btn.del{background:var(--rd);}
+.rep-empty{color:var(--mu);font-size:12.5px;padding:8px 0;}
+
+.gi-table-wrap{padding:26px 32px;}
+.gi-table-wrap .table-wrap{margin:0;}
+.gi-cron-name{color:var(--tx);white-space:normal;}
+.gi-cron-link{color:var(--ac2);font-family:var(--mono);font-size:11.5px;}
+.gi-cron-time{font-family:var(--mono);font-size:12.5px;}
+.gi-cron-run{color:var(--mu);font-size:12px;white-space:normal;}
+.gi-cron-status{display:inline-flex;align-items:center;justify-content:center;padding:0 14px;height:26px;
+  border-radius:6px;background:var(--gr);color:#fff;font-size:11.5px;font-weight:600;white-space:nowrap;}
 .au-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:none;align-items:center;justify-content:center;}
 .au-backdrop.open{display:flex;}
 .au-modal{background:var(--sur);border:0.5px solid var(--brd2);border-radius:14px;width:420px;max-width:92vw;max-height:90vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.4);}
@@ -281,69 +367,366 @@ textarea.au-input{height:auto;padding:10px 12px;}
 
     <div class="org-content">
       <div class="org-panel active" id="orgpanel-overview">
-        <div class="ov-wrap">
-          <div class="ov-logo-area">
-            <div class="ov-logo" id="ov-logo"></div>
-            <div class="ov-logo-info">
-              <div class="ov-company-name" id="ov-display-name"></div>
-              <div class="ov-company-type" id="ov-display-type"></div>
+        <div class="gi-tabs" role="tablist">
+          <button class="gi-tab active" data-gi="general-info" role="tab">General Info</button>
+          <button class="gi-tab" data-gi="email" role="tab">Email Setting</button>
+          <button class="gi-tab" data-gi="cron" role="tab">Cron Setting</button>
+          <button class="gi-tab" data-gi="reputation" role="tab">Reputation Management</button>
+          <button class="gi-tab" data-gi="general-setting" role="tab">General Setting</button>
+          <button class="gi-tab" data-gi="loan" role="tab">Loan App Setting</button>
+        </div>
+
+        <div class="gi-panel active" id="gipanel-general-info">
+          <div class="gi-wrap">
+            <div class="gi-grid">
+              <div class="ov-field">
+                <label for="gi-name">Name</label>
+                <input type="text" id="gi-name" placeholder="Full name"/>
+              </div>
+              <div class="ov-field">
+                <label for="gi-email">Email</label>
+                <input type="email" id="gi-email" placeholder="name@company.com"/>
+              </div>
+
+              <div class="ov-field">
+                <label for="gi-dept">Departments</label>
+                <select id="gi-dept">
+                  <option>Management</option>
+                  <option>Sales</option>
+                  <option>Service</option>
+                  <option>Finance</option>
+                  <option>Support</option>
+                </select>
+              </div>
+              <div class="ov-field">
+                <label for="gi-role">User Role</label>
+                <select id="gi-role">
+                  <option>Admin</option>
+                  <option>Agent</option>
+                  <option>User</option>
+                </select>
+              </div>
+
+              <div class="ov-field">
+                <label for="gi-pass">Password</label>
+                <span class="gi-pw">
+                  <input type="password" id="gi-pass" value="Password123" placeholder="Enter password"/>
+                  <button type="button" class="gi-eye" onclick="giTogglePw('gi-pass', this)" aria-label="Show password">
+                    <svg class="gi-eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="gi-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </span>
+              </div>
+              <div class="ov-field">
+                <label for="gi-pass2">Confirm Password</label>
+                <span class="gi-pw">
+                  <input type="password" id="gi-pass2" value="Password123" placeholder="Confirm password"/>
+                  <button type="button" class="gi-eye" onclick="giTogglePw('gi-pass2', this)" aria-label="Show password">
+                    <svg class="gi-eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="gi-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </span>
+              </div>
+
+              <div class="ov-field">
+                <label for="gi-mobile">Mobile</label>
+                <input type="tel" id="gi-mobile" placeholder="2818819303"/>
+              </div>
+              <div class="ov-field">
+                <label for="gi-ext">Extension</label>
+                <input type="text" id="gi-ext" placeholder="1"/>
+              </div>
+
+              <div class="ov-field">
+                <label for="gi-phone">Phone Number</label>
+                <select id="gi-phone">
+                  <option>2544574533</option>
+                  <option>3253124123</option>
+                  <option>8327893422</option>
+                </select>
+              </div>
+              <div class="ov-field">
+                <label for="gi-weburl">Web Url</label>
+                <input type="text" id="gi-weburl" placeholder="https://example.com"/>
+              </div>
+
+              <div class="ov-field">
+                <label for="gi-apiurl">API URL</label>
+                <input type="text" id="gi-apiurl" placeholder="https://api.example.com"/>
+              </div>
+              <div class="ov-field">
+                <label for="gi-replace">Select Replace Option</label>
+                <select id="gi-replace">
+                  <option>Select Option</option>
+                  <option>Replace All</option>
+                  <option>Replace Missing Only</option>
+                  <option>Do Not Replace</option>
+                </select>
+              </div>
+
+              <div class="ov-field">
+                <label for="gi-subs">Select Subscriptions</label>
+                <select id="gi-subs">
+                  <option>Full</option>
+                  <option>Standard</option>
+                  <option>Basic</option>
+                  <option>Trial</option>
+                </select>
+              </div>
+              <div class="gi-switch-row">
+                <button type="button" class="gi-switch" id="gi-personal" onclick="giToggleSwitch(this)"
+                        role="switch" aria-checked="false" aria-label="Send calls to Personal Number"></button>
+                <span class="gi-switch-label">Send calls to Personal Number</span>
+              </div>
+
+              <div class="ov-field">
+                <label for="gi-store">Store</label>
+                <input type="text" id="gi-store" placeholder="Store name"/>
+              </div>
+            </div>
+
+            <div class="ov-actions">
+              <button class="btn btn-primary" onclick="ovSave()">Save</button>
             </div>
           </div>
+        </div>
 
-          <div class="ov-section">
-            <div class="ov-section-title">Company Info</div>
-            <div class="ov-details">
+        <div class="gi-panel" id="gipanel-email">
+          <div class="gi-wrap">
+            <div class="gi-grid">
               <div class="ov-field">
-                <label for="ov-f-name">Company Name</label>
-                <input type="text" id="ov-f-name" placeholder="Company name"/>
+                <label for="gi-crm-user">CRM Email UserName</label>
+                <input type="email" id="gi-crm-user" placeholder="crm@company.com"/>
               </div>
               <div class="ov-field">
-                <label for="ov-f-type">Company Type</label>
-                <input type="text" id="ov-f-type" placeholder="e.g. Automotive Dealership"/>
+                <label for="gi-crm-pass">CRM Email Password</label>
+                <span class="gi-pw">
+                  <input type="password" id="gi-crm-pass" value="CrmEmailPass123" placeholder="Enter password"/>
+                  <button type="button" class="gi-eye" onclick="giTogglePw('gi-crm-pass', this)" aria-label="Show password">
+                    <svg class="gi-eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="gi-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </span>
+              </div>
+
+              <div class="gi-divider"></div>
+
+              <div class="ov-field">
+                <label for="gi-dp-host">Dialpad Email Host</label>
+                <input type="text" id="gi-dp-host" value="smtp.gmail.com" placeholder="smtp.example.com"/>
+              </div>
+              <div class="ov-field">
+                <label for="gi-dp-user">Dialpad Email Username</label>
+                <input type="email" id="gi-dp-user" placeholder="sales@company.com"/>
+              </div>
+
+              <div class="ov-field">
+                <label for="gi-dp-pass">Dialpad Email Password</label>
+                <span class="gi-pw">
+                  <input type="password" id="gi-dp-pass" value="DialpadPass123" placeholder="Enter password"/>
+                  <button type="button" class="gi-eye" onclick="giTogglePw('gi-dp-pass', this)" aria-label="Show password">
+                    <svg class="gi-eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="gi-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </span>
+              </div>
+              <div class="ov-field">
+                <label for="gi-dp-port">Dialpad Email Port</label>
+                <input type="text" id="gi-dp-port" value="587" placeholder="587" inputmode="numeric"/>
+              </div>
+            </div>
+
+            <div class="ov-actions">
+              <button class="btn btn-primary" onclick="ovSave()">Save</button>
+            </div>
+          </div>
+        </div>
+        <div class="gi-panel" id="gipanel-cron">
+          <div class="gi-table-wrap">
+            <div class="table-wrap">
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width:60px;">No.</th>
+                      <th style="width:180px;">Cron</th>
+                      <th style="width:360px;">Link</th>
+                      <th style="width:130px;">Executing</th>
+                      <th style="width:160px;">Hour / Minute / Time</th>
+                      <th style="width:120px;">Type</th>
+                      <th style="width:170px;">Last Run</th>
+                      <th style="width:130px;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="gi-cron-tbody"></tbody>
+                </table>
               </div>
             </div>
           </div>
-
-          <div class="ov-section">
-            <div class="ov-section-title">About</div>
-            <div class="ov-field">
-              <label for="ov-f-about">Description</label>
-              <textarea id="ov-f-about" placeholder="About the company..." rows="3"></textarea>
+        </div>
+        <div class="gi-panel" id="gipanel-reputation">
+          <div class="gi-wrap">
+            <div class="rep-rows" id="rep-rows"></div>
+            <div class="ov-actions">
+              <button class="btn btn-primary" onclick="repUpdate()">Update</button>
+              <button class="modal-cancel" onclick="repCancel()">Cancel</button>
             </div>
           </div>
+        </div>
+        <div class="gi-panel" id="gipanel-general-setting">
+          <div class="gs-wrap">
+            <div class="gs-grid">
 
-          <div class="ov-section">
-            <div class="ov-section-title">Contact Details</div>
-            <div class="ov-details">
-              <div class="ov-field">
-                <label for="ov-f-phone">Phone</label>
-                <input type="tel" id="ov-f-phone" placeholder="(555) 000-0000"/>
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/><path d="M2 13v3M22 13v3"/></svg>
+                </div>
+                <div class="gs-card-info">
+                  <div class="gs-card-title">ChatGPT X API Key</div>
+                  <div class="gs-card-desc">Set ChatGPT API Key</div>
+                </div>
               </div>
-              <div class="ov-field">
-                <label for="ov-f-email">Email</label>
-                <input type="email" id="ov-f-email" placeholder="info@company.com"/>
+
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 15 14"/><path d="M9 2h6"/></svg>
+                </div>
+                <div class="gs-card-info">
+                  <div class="gs-card-title">Call Recording Lifespan X Days</div>
+                  <div class="gs-card-desc">Change Call Recording Lifespan X Days</div>
+                </div>
               </div>
-              <div class="ov-field">
-                <label for="ov-f-website">Website</label>
-                <input type="text" id="ov-f-website" placeholder="company.com"/>
+
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.2a8.5 8.5 0 0 1-.9-3.8 8.38 8.38 0 0 1 8.4-9 8.38 8.38 0 0 1 8.6 8.5z"/><circle cx="9" cy="11.5" r=".6" fill="currentColor"/><circle cx="12.5" cy="11.5" r=".6" fill="currentColor"/><circle cx="16" cy="11.5" r=".6" fill="currentColor"/></svg>
+                </div>
+                <div class="gs-card-info">
+                  <div class="gs-card-title">SMS and Phone Setting</div>
+                  <div class="gs-card-desc">Change SMS and Phone Setting</div>
+                </div>
               </div>
-              <div class="ov-field">
-                <label for="ov-f-founded">Founded</label>
-                <input type="text" id="ov-f-founded" placeholder="Year"/>
+
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="m17 6 3 3"/><path d="m14 9 3 3"/></svg>
+                </div>
+                <div class="gs-card-info">
+                  <div class="gs-card-title">Phone Credentials</div>
+                  <div class="gs-card-desc">Change Phone Credentials</div>
+                </div>
               </div>
+
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16.6A4.5 4.5 0 0 0 17.5 8h-1.3A7 7 0 1 0 4 14.9"/><polyline points="12 12 12 21"/><polyline points="8.5 15.5 12 12 15.5 15.5"/></svg>
+                </div>
+                <div class="gs-card-info">
+                  <div class="gs-card-title">FTP Settings</div>
+                  <div class="gs-card-desc">Change FTP Settings</div>
+                </div>
+              </div>
+
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="4" height="6" rx="1"/><rect x="10" y="9" width="4" height="6" rx="1"/><rect x="18" y="9" width="4" height="6" rx="1"/><path d="M6 12h4M14 12h4"/></svg>
+                </div>
+                <div class="gs-card-info">
+                  <div class="gs-card-title">Task Queue</div>
+                  <div class="gs-card-desc">Change Task Queue</div>
+                </div>
+              </div>
+
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5 16c.6-1.6 1.7-2.4 3-2.4s2.4.8 3 2.4"/><line x1="14" y1="10" x2="19" y2="10"/><line x1="14" y1="14" x2="19" y2="14"/></svg>
+                </div>
+                <div class="gs-card-info">
+                  <div class="gs-card-title">Business Card Setting</div>
+                  <div class="gs-card-desc">Change Business Card Setting</div>
+                </div>
+              </div>
+
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17 8.5 14.5a2 2 0 0 1 0-2.8l3-3a2 2 0 0 1 2.8 0L17 11.5"/><path d="M2 9h3l4 4"/><path d="M22 9h-3l-4 4"/><path d="M11 17l2 2a2 2 0 0 0 2.8 0l.2-.2"/></svg>
+                </div>
+                <div class="gs-card-info">
+                  <div class="gs-card-title">AI Setting</div>
+                  <div class="gs-card-desc">Change AI Setting</div>
+                </div>
+              </div>
+
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                </div>
+                <div class="gs-card-info">
+                  <div class="gs-card-title">Time Zone Setting</div>
+                  <div class="gs-card-desc">Change Organization Timezone</div>
+                </div>
+              </div>
+
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="13" height="11" rx="2"/><path d="M6.5 10V7a4 4 0 0 1 8 0v3"/><circle cx="18.5" cy="16.5" r="4.5"/><polyline points="18.5 14.5 18.5 16.5 20 17.5"/></svg>
+                </div>
+                <div class="gs-card-info">
+                  <div class="gs-card-title">2FA Setting</div>
+                  <div class="gs-card-desc">Manage Two-Factor Authentication</div>
+                </div>
+              </div>
+
             </div>
           </div>
-
-          <div class="ov-section">
-            <div class="ov-section-title">Address</div>
-            <div class="ov-field">
-              <label for="ov-f-address">Full Address</label>
-              <input type="text" id="ov-f-address" placeholder="Street, City, State, ZIP"/>
+        </div>
+        <div class="gi-panel" id="gipanel-loan">
+          <div class="gs-wrap">
+            <div class="la-head">
+              <div class="la-title">Loan App Setting</div>
+              <button class="la-btn secondary" onclick="laReportSetting()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.63.68 1.1 1.51 1H21a2 2 0 1 1 0 4h-.09c-.83-.1-1.37.37-1.51 1z"/></svg>
+                Report Setting
+              </button>
+              <button class="la-btn" onclick="laOpenAdd()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
             </div>
-          </div>
 
-          <div class="ov-actions">
-            <button class="btn btn-primary" onclick="ovSave()">Save</button>
+            <div class="table-wrap">
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width:70px;">No.</th>
+                      <th style="width:300px;">Field</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody id="la-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tfooter la-footer">
+              <div class="rows-per-page-wrap">
+                <span>Rows per page:</span>
+                <select class="rows-select" id="la-per-page" onchange="laPerPageChanged()">
+                  <option>10</option>
+                  <option>25</option>
+                  <option>50</option>
+                  <option>100</option>
+                </select>
+              </div>
+              <span id="la-range">0-0 of 0</span>
+              <div class="pgn">
+                <button class="pb" id="la-first" onclick="laGo(1)" aria-label="First page">&#x00AB;</button>
+                <button class="pb" id="la-prev" onclick="laGo(laPage-1)" aria-label="Previous page">&#x2039;</button>
+                <button class="pb" id="la-next" onclick="laGo(laPage+1)" aria-label="Next page">&#x203A;</button>
+                <button class="pb" id="la-last" onclick="laGo(laPages())" aria-label="Last page">&#x00BB;</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -615,6 +998,165 @@ textarea.au-input{height:auto;padding:10px 12px;}
     <div class="au-footer">
       <button class="au-btn-cancel" onclick="actCloseModal()">Cancel</button>
       <button class="au-btn-save" onclick="actSaveNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loan App report settings -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="rs-modal" onclick="if(event.target===this) rsClose()">
+  <div class="modal modal--wide">
+    <div class="modal-header">
+      <div class="modal-title">Report Setting</div>
+      <button class="modal-close" onclick="rsClose()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="modal-field-label">Credit Report Provider</label>
+        <div class="rs-providers">
+          <span class="gi-switch-row">
+            <button type="button" class="gi-switch" id="rs-cbc" onclick="rsPickProvider('cbc')"
+                    role="switch" aria-checked="false" aria-label="CBC"></button>
+            <span class="gi-switch-label">CBC</span>
+          </span>
+          <span class="gi-switch-row">
+            <button type="button" class="gi-switch on" id="rs-700" onclick="rsPickProvider('700')"
+                    role="switch" aria-checked="true" aria-label="700Credit"></button>
+            <span class="gi-switch-label">700Credit</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-grid">
+        <div>
+          <label class="modal-field-label" for="rs-account">700Credit Account</label>
+          <div class="modal-field"><input id="rs-account" value="acme-pq" placeholder="Account name"/></div>
+        </div>
+        <div>
+          <label class="modal-field-label" for="rs-password">700Credit Password</label>
+          <div class="modal-field">
+            <span class="gi-pw" style="flex:1;">
+              <input type="password" id="rs-password" value="SevenHundredPass1" placeholder="Enter password"/>
+              <button type="button" class="gi-eye" onclick="giTogglePw('rs-password', this)" aria-label="Show password">
+                <svg class="gi-eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="gi-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <label class="modal-field-label" for="rs-client-id">700Credit Client ID</label>
+          <div class="modal-field"><input id="rs-client-id" value="7c28fdbf-eba7-4c9e-804a-28b1f0e6d3a9" placeholder="Client ID"/></div>
+        </div>
+        <div>
+          <label class="modal-field-label" for="rs-client-secret">700Credit Client Secret</label>
+          <div class="modal-field">
+            <span class="gi-pw" style="flex:1;">
+              <input type="password" id="rs-client-secret" value="ClientSecretPlaceholderValue123456" placeholder="Client secret"/>
+              <button type="button" class="gi-eye" onclick="giTogglePw('rs-client-secret', this)" aria-label="Show client secret">
+                <svg class="gi-eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="gi-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-grid-full">
+          <label class="modal-field-label" for="rs-gateway">700Credit Gateway URL</label>
+          <div class="modal-field"><input id="rs-gateway" value="https://gateway.700creditsolution.com/Request" placeholder="https://..."/></div>
+        </div>
+
+        <div>
+          <label class="modal-field-label" for="rs-token-url">Token URL</label>
+          <div class="modal-field"><input id="rs-token-url" value="https://gateway.700creditsolution.com/Token" placeholder="https://..."/></div>
+        </div>
+        <div>
+          <label class="modal-field-label" for="rs-sign-url">Sign URL</label>
+          <div class="modal-field"><input id="rs-sign-url" value="https://gateway.700creditsolution.com/Sign" placeholder="https://..."/></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="rsClose()">Cancel</button>
+      <button class="modal-save" onclick="rsSave()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loan App field editor -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="la-modal" onclick="if(event.target===this) laClose()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="la-modal-title">Add Field</div>
+      <button class="modal-close" onclick="laClose()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="modal-field-label" for="la-f-field">Loan App Field</label>
+        <div class="modal-field"><select id="la-f-field"></select></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="la-f-value">Loan App Value</label>
+        <div class="modal-field"><input id="la-f-value" placeholder="e.g. PersonalInfo.CheckSSN"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" id="la-modal-delete" onclick="laDelete()">Delete</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="laClose()">Cancel</button>
+      <button class="modal-save" id="la-modal-save" onclick="laSave()">Add field</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cron Setting row editor -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="gi-cron-modal" onclick="if(event.target===this) giCronClose()">
+  <div class="modal modal--wide">
+    <div class="modal-header">
+      <div class="modal-title">Edit Cron</div>
+      <button class="modal-close" onclick="giCronClose()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div>
+          <label class="modal-field-label" for="gi-cron-name">Cron Name</label>
+          <div class="modal-field"><input id="gi-cron-name" placeholder="Cron name"/></div>
+        </div>
+        <div>
+          <label class="modal-field-label" for="gi-cron-link">Link</label>
+          <div class="modal-field"><input id="gi-cron-link" placeholder="https://api.example.com/api/scripts/..."/></div>
+        </div>
+        <div>
+          <label class="modal-field-label" for="gi-cron-exec">Executing Setting</label>
+          <div class="modal-field">
+            <select id="gi-cron-exec">
+              <option>Every minute</option>
+              <option>Every hour</option>
+              <option>Daily</option>
+              <option>Weekly</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="modal-field-label" for="gi-cron-type">Type</label>
+          <div class="modal-field">
+            <select id="gi-cron-type">
+              <option>Automatic</option>
+              <option>Manual</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="modal-field-label" for="gi-cron-mins">Minutes</label>
+          <div class="modal-field"><input id="gi-cron-mins" placeholder="10" inputmode="numeric"/></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" onclick="giCronDelete()">Delete</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="giCronClose()">Cancel</button>
+      <button class="modal-save" onclick="giCronSave()">Save changes</button>
     </div>
   </div>
 </div>
@@ -1044,10 +1586,347 @@ function auSave(){
     window.showNavToast('User Added', fullName + ' added as ' + roleLabel + '.');
   }
 }
-document.addEventListener('keydown', function(e){ if(e.key==='Escape') auClose(); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ auClose(); giCronClose(); laClose(); rsClose(); } });
 
 function ovSave(){
   window.showNavToast('Saved','Organization profile saved successfully.');
+}
+
+document.querySelectorAll('.gi-tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    var key = tab.getAttribute('data-gi');
+    document.querySelectorAll('.gi-tab').forEach(function(t){ t.classList.toggle('active', t === tab); });
+    document.querySelectorAll('.gi-panel').forEach(function(p){
+      p.classList.toggle('active', p.id === 'gipanel-' + key);
+    });
+  });
+});
+
+function giTogglePw(id, btn){
+  var input = document.getElementById(id);
+  var show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.classList.toggle('showing', show);
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+}
+
+function giToggleSwitch(el){
+  var on = !el.classList.contains('on');
+  el.classList.toggle('on', on);
+  el.setAttribute('aria-checked', on ? 'true' : 'false');
+}
+
+// Cron Setting tab — read-only view of this organization's scheduled jobs
+var GI_CRONS = [
+  { name:'Auto Lead Assignment',      script:'automaticleadassignment',           exec:'Every minute', time:'10 Minute', ran:'Oct 7, 2026, 12:43:13 AM' },
+  { name:'Auto Loan App Assignment',  script:'automaticsalesfinanceleadassignment',exec:'Every minute', time:'10 Minute', ran:'Oct 7, 2026, 12:42:13 AM' },
+  { name:'Download Inventory Files',  script:'downloadInventoryFiles',            exec:'Every hour',   time:'4 Hour',    ran:'Oct 6, 2026, 10:28:13 PM' },
+  { name:'Email Campaign Auto Sender',script:'emailcampaignautosender',           exec:'Every minute', time:'1 Minute',  ran:'Oct 7, 2026, 12:46:13 AM' },
+  { name:'Get CRM Lead From Mail',    script:'scrapecrmleads',                    exec:'Every minute', time:'5 Minute',  ran:'Oct 7, 2026, 12:46:13 AM' },
+  { name:'Get Email Notifications',   script:'getEmailNotification',              exec:'Every minute', time:'5 Minute',  ran:'Oct 7, 2026, 12:46:13 AM' },
+  { name:'Get Sold inventory data',   script:'getInventory',                      exec:'Daily',        time:'20:00',     ran:'Sep 25, 2025, 09:01:54 AM' },
+  { name:'Mass SMS Queue',            script:'updatePendingQueue',                exec:'Every minute', time:'5 Minute',  ran:'Oct 7, 2026, 12:46:13 AM' },
+  { name:'Schedule Report',           script:'scheduleReports',                   exec:'Every minute', time:'1 Minute',  ran:'Oct 7, 2026, 12:46:13 AM' },
+  { name:'Send Alert Message',        script:'sendAlertMessage',                  exec:'Every minute', time:'1 Minute',  ran:'Oct 7, 2026, 12:46:13 AM' }
+];
+
+var GI_API_BASE = '';
+
+function giRenderCrons(apiBase){
+  GI_API_BASE = apiBase;
+  document.getElementById('gi-cron-tbody').innerHTML = GI_CRONS.map(function(c, i){
+    return '<tr style="cursor:pointer" onclick="giCronOpen(' + i + ')">' +
+      '<td>' + (i+1) + '</td>' +
+      '<td class="gi-cron-name">' + c.name + '</td>' +
+      '<td class="gi-cron-link">' + apiBase + '/api/scripts/' + c.script + '</td>' +
+      '<td>' + c.exec + '</td>' +
+      '<td class="gi-cron-time">' + c.time + '</td>' +
+      '<td>Automatic</td>' +
+      '<td class="gi-cron-run">' + c.ran + '</td>' +
+      '<td><span class="gi-cron-status">Complete</span></td>' +
+    '</tr>';
+  }).join('');
+}
+
+// Loan App Setting — form field to data path mappings
+var LOAN_FIELDS = [
+  { field:'Check ITIN',                          value:'PersonalInfo.CheckITIN' },
+  { field:'Check No SSN',                        value:'PersonalInfo.CheckNoSSN' },
+  { field:'Check SSN',                           value:'PersonalInfo.CheckSSN' },
+  { field:'Co-Applicant Check ITIN',             value:'PersonalInfo.CoApplicant.CheckITIN' },
+  { field:'Co-Applicant Check No SSN',           value:'PersonalInfo.CoApplicant.CheckNoSSN' },
+  { field:'Co-Applicant Check SSN',              value:'PersonalInfo.CoApplicant.CheckSSN' },
+  { field:'Co-Applicant Country',                value:'PersonalInfo.CoApplicant.Country' },
+  { field:'Co-Applicant Current Address',        value:'AddressInfo.CoApplicant.CurrentRecidence.Address' },
+  { field:'Co-Applicant Current City',           value:'AddressInfo.CoApplicant.CurrentRecidence.City' },
+  { field:'Co-Applicant Current Employer Address', value:'EmploymentInfo.CoApplicant.CurrentEmployer.EmployerAddress' }
+];
+
+(function(){
+  var sections = [
+    { group:'PersonalInfo', path:'', fields:[
+      ['First Name','FirstName'],['Middle Name','MiddleName'],['Last Name','LastName'],
+      ['Date Of Birth','DateOfBirth'],['SSN','SSN'],['ITIN','ITIN'],['Email','Email'],
+      ['Mobile Phone','MobilePhone'],['Home Phone','HomePhone'],['Marital Status','MaritalStatus'],
+      ['Dependents','Dependents'],['Country','Country'],['Citizenship','Citizenship'],
+      ['Driver License Number','DriverLicenseNumber'],['Driver License State','DriverLicenseState']
+    ]},
+    { group:'AddressInfo', path:'CurrentRecidence.', fields:[
+      ['Current Address','Address'],['Current City','City'],['Current State','State'],['Current Zip','Zip'],
+      ['Current Years At Address','Years'],['Current Months At Address','Months'],
+      ['Housing Status','HousingStatus'],['Monthly Payment','MonthlyPayment']
+    ]},
+    { group:'AddressInfo', path:'PreviousRecidence.', fields:[
+      ['Previous Address','Address'],['Previous City','City'],['Previous State','State'],['Previous Zip','Zip'],
+      ['Previous Years At Address','Years'],['Previous Months At Address','Months']
+    ]},
+    { group:'EmploymentInfo', path:'CurrentEmployer.', fields:[
+      ['Current Employer Name','EmployerName'],['Current Employer Address','EmployerAddress'],
+      ['Current Employer City','EmployerCity'],['Current Employer State','EmployerState'],
+      ['Current Employer Zip','EmployerZip'],['Current Job Title','JobTitle'],
+      ['Current Work Phone','WorkPhone'],['Current Years Employed','Years'],
+      ['Current Months Employed','Months'],['Gross Monthly Income','GrossMonthlyIncome']
+    ]},
+    { group:'EmploymentInfo', path:'PreviousEmployer.', fields:[
+      ['Previous Employer Name','EmployerName'],['Previous Job Title','JobTitle'],
+      ['Previous Years Employed','Years'],['Previous Months Employed','Months']
+    ]},
+    { group:'IncomeInfo', path:'', fields:[
+      ['Other Income','OtherIncome'],['Other Income Source','OtherIncomeSource'],
+      ['Other Income Frequency','OtherIncomeFrequency']
+    ]},
+    { group:'BankInfo', path:'', fields:[
+      ['Bank Name','BankName'],['Account Type','AccountType'],
+      ['Routing Number','RoutingNumber'],['Account Number','AccountNumber']
+    ]},
+    { group:'ReferenceInfo', path:'', fields:[
+      ['Reference Name','Name'],['Reference Phone','Phone'],
+      ['Reference Relation','Relation'],['Reference Address','Address']
+    ]},
+    { group:'VehicleInfo', path:'Trade.', fields:[
+      ['Trade Vin','Vin'],['Trade Year','Year'],['Trade Make','Make'],
+      ['Trade Model','Model'],['Trade Mileage','Mileage'],['Trade Payoff','Payoff']
+    ]}
+  ];
+
+  [false, true].forEach(function(co){
+    sections.forEach(function(s){
+      s.fields.forEach(function(f){
+        LOAN_FIELDS.push({
+          field: (co ? 'Co-Applicant ' : '') + f[0],
+          value: s.group + '.' + (co ? 'CoApplicant.' : '') + s.path + f[1]
+        });
+      });
+    });
+  });
+  LOAN_FIELDS = LOAN_FIELDS.slice(0, 123);
+})();
+
+var laPage = 1;
+
+function laPerPage(){ return parseInt(document.getElementById('la-per-page').value, 10) || 10; }
+function laPages(){ return Math.max(1, Math.ceil(LOAN_FIELDS.length / laPerPage())); }
+function laPerPageChanged(){ laPage = 1; laRender(); }
+function laGo(p){
+  laPage = Math.min(Math.max(1, p), laPages());
+  laRender();
+}
+
+function laRender(){
+  var per = laPerPage();
+  if(laPage > laPages()) laPage = laPages();
+  var start = (laPage - 1) * per;
+  var rows = LOAN_FIELDS.slice(start, start + per);
+  var tb = document.getElementById('la-tbody');
+
+  tb.innerHTML = rows.length
+    ? rows.map(function(r, i){
+        return '<tr style="cursor:pointer" onclick="laOpenEdit(' + (start + i) + ')">' +
+          '<td>' + (start + i + 1) + '</td>' +
+          '<td class="la-field">' + r.field + '</td>' +
+          '<td class="la-value">' + r.value + '</td>' +
+        '</tr>';
+      }).join('')
+    : '<tr><td colspan="3"><div class="la-empty">No loan app fields yet.</div></td></tr>';
+
+  var from = LOAN_FIELDS.length ? start + 1 : 0;
+  var to = Math.min(start + per, LOAN_FIELDS.length);
+  document.getElementById('la-range').textContent = from + '-' + to + ' of ' + LOAN_FIELDS.length;
+  document.getElementById('la-first').disabled = laPage === 1;
+  document.getElementById('la-prev').disabled = laPage === 1;
+  document.getElementById('la-next').disabled = laPage === laPages();
+  document.getElementById('la-last').disabled = laPage === laPages();
+}
+
+// Known loan app fields, offered in the modal dropdown
+var LOAN_FIELD_NAMES = LOAN_FIELDS.map(function(r){ return r.field; }).sort();
+var laEditIdx = null;
+
+function laFillFieldOptions(selected){
+  var names = LOAN_FIELD_NAMES.slice();
+  if(selected && names.indexOf(selected) < 0) names.unshift(selected);
+  document.getElementById('la-f-field').innerHTML = names.map(function(n){
+    return '<option value="' + n.replace(/"/g, '&quot;') + '"' + (n === selected ? ' selected' : '') + '>' + n + '</option>';
+  }).join('');
+}
+
+function laOpenAdd(){
+  laEditIdx = null;
+  document.getElementById('la-modal-title').textContent = 'Add Field';
+  document.getElementById('la-modal-save').textContent = 'Add field';
+  document.getElementById('la-modal-delete').style.display = 'none';
+  laFillFieldOptions(LOAN_FIELD_NAMES[0]);
+  document.getElementById('la-f-value').value = '';
+  document.getElementById('la-modal').classList.add('open');
+}
+function laOpenEdit(i){
+  var r = LOAN_FIELDS[i];
+  if(!r) return;
+  laEditIdx = i;
+  document.getElementById('la-modal-title').textContent = 'Edit Field';
+  document.getElementById('la-modal-save').textContent = 'Save changes';
+  document.getElementById('la-modal-delete').style.display = '';
+  laFillFieldOptions(r.field);
+  document.getElementById('la-f-value').value = r.value;
+  document.getElementById('la-modal').classList.add('open');
+}
+function laClose(){ document.getElementById('la-modal').classList.remove('open'); laEditIdx = null; }
+function laSave(){
+  var field = document.getElementById('la-f-field').value;
+  var value = document.getElementById('la-f-value').value.trim();
+  if(!field) return;
+  if(laEditIdx !== null){
+    LOAN_FIELDS[laEditIdx] = { field:field, value:value };
+    laRender();
+    laClose();
+    window.showNavToast('Field Updated', field + ' has been updated.');
+    return;
+  }
+  LOAN_FIELDS.unshift({ field:field, value:value });
+  laPage = 1;
+  laRender();
+  laClose();
+  window.showNavToast('Field Added', field + ' has been added.');
+}
+function laDelete(){
+  var r = LOAN_FIELDS[laEditIdx];
+  if(!r){ laClose(); return; }
+  LOAN_FIELDS.splice(laEditIdx, 1);
+  laRender();
+  laClose();
+  window.showNavToast('Field Deleted', r.field + ' has been deleted.');
+}
+function laReportSetting(){ document.getElementById('rs-modal').classList.add('open'); }
+function rsClose(){ document.getElementById('rs-modal').classList.remove('open'); }
+function rsPickProvider(which){
+  var cbc = document.getElementById('rs-cbc');
+  var credit700 = document.getElementById('rs-700');
+  cbc.classList.toggle('on', which === 'cbc');
+  credit700.classList.toggle('on', which === '700');
+  cbc.setAttribute('aria-checked', which === 'cbc' ? 'true' : 'false');
+  credit700.setAttribute('aria-checked', which === '700' ? 'true' : 'false');
+}
+function rsSave(){
+  rsClose();
+  window.showNavToast('Saved', 'Credit report settings saved.');
+}
+
+// Reputation Management — review links, one row each
+var REP_LINKS = [
+  { name:'Google Review', link:'https://g.page/r/example/review' }
+];
+var REP_SAVED = JSON.stringify(REP_LINKS);
+
+function repRender(){
+  var wrap = document.getElementById('rep-rows');
+  if(!REP_LINKS.length){
+    wrap.innerHTML = '<div class="rep-empty">No review links yet.</div>' +
+      '<div class="rep-row"><div></div><div></div>' +
+        '<button class="rep-btn add" onclick="repAdd()" aria-label="Add review link">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+        '</button></div>';
+    return;
+  }
+  wrap.innerHTML = REP_LINKS.map(function(r, i){
+    var last = i === REP_LINKS.length - 1;
+    var btn = last
+      ? '<button class="rep-btn add" onclick="repAdd()" aria-label="Add review link">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+        '</button>'
+      : '<button class="rep-btn del" onclick="repRemove(' + i + ')" aria-label="Remove ' + r.name + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+        '</button>';
+    return '<div class="rep-row">' +
+      '<div class="ov-field">' + (i === 0 ? '<label for="rep-name-' + i + '">Name</label>' : '') +
+        '<input id="rep-name-' + i + '" value="' + r.name.replace(/"/g, '&quot;') + '" placeholder="e.g. Google Review" oninput="repSet(' + i + ',\'name\',this.value)"/></div>' +
+      '<div class="ov-field">' + (i === 0 ? '<label for="rep-link-' + i + '">Link</label>' : '') +
+        '<input id="rep-link-' + i + '" value="' + r.link.replace(/"/g, '&quot;') + '" placeholder="https://..." oninput="repSet(' + i + ',\'link\',this.value)"/></div>' +
+      btn +
+    '</div>';
+  }).join('');
+}
+
+function repSet(i, key, val){ if(REP_LINKS[i]) REP_LINKS[i][key] = val; }
+function repAdd(){
+  REP_LINKS.push({ name:'', link:'' });
+  repRender();
+  var inputs = document.querySelectorAll('#rep-rows .rep-row input');
+  if(inputs.length) inputs[inputs.length - 2].focus();
+}
+function repRemove(i){
+  REP_LINKS.splice(i, 1);
+  repRender();
+}
+function repUpdate(){
+  REP_SAVED = JSON.stringify(REP_LINKS);
+  window.showNavToast('Saved', 'Reputation links updated.');
+}
+function repCancel(){
+  REP_LINKS = JSON.parse(REP_SAVED);
+  repRender();
+}
+
+var giCronIdx = null;
+
+function giCronOpen(i){
+  var c = GI_CRONS[i];
+  if(!c) return;
+  giCronIdx = i;
+  document.getElementById('gi-cron-name').value = c.name;
+  document.getElementById('gi-cron-link').value = GI_API_BASE + '/api/scripts/' + c.script;
+  document.getElementById('gi-cron-exec').value = c.exec;
+  document.getElementById('gi-cron-type').value = 'Automatic';
+  document.getElementById('gi-cron-mins').value = (c.time.match(/^\d+/) || [''])[0];
+  document.getElementById('gi-cron-modal').classList.add('open');
+}
+function giCronClose(){
+  document.getElementById('gi-cron-modal').classList.remove('open');
+  giCronIdx = null;
+}
+function giCronDelete(){
+  var c = GI_CRONS[giCronIdx];
+  if(!c){ giCronClose(); return; }
+  GI_CRONS.splice(giCronIdx, 1);
+  giRenderCrons(GI_API_BASE);
+  giCronClose();
+  window.showNavToast('Cron Deleted', c.name + ' has been deleted.');
+}
+function giCronSave(){
+  var c = GI_CRONS[giCronIdx];
+  if(!c){ giCronClose(); return; }
+  var name = document.getElementById('gi-cron-name').value.trim();
+  if(!name){ document.getElementById('gi-cron-name').focus(); return; }
+  var exec = document.getElementById('gi-cron-exec').value;
+  var mins = document.getElementById('gi-cron-mins').value.trim();
+  c.name = name;
+  c.exec = exec;
+  if(mins) c.time = exec === 'Every hour' ? mins + ' Hour' : mins + ' Minute';
+  var link = document.getElementById('gi-cron-link').value.trim();
+  var tail = link.split('/api/scripts/')[1];
+  if(tail) c.script = tail;
+  giRenderCrons(GI_API_BASE);
+  giCronClose();
+  window.showNavToast('Cron Updated', name + ' has been updated.');
 }
 
 var CURRENT_ORG;
@@ -1063,17 +1942,19 @@ var CURRENT_ORG;
   ['corerecon','coreconnect','corebuy'].forEach(function(p){ ppRenderUsers(p); ppRenderInt(p); });
   document.getElementById('org-name').textContent = org.name;
   document.title = org.name + ' — CorePanel';
-  document.getElementById('ov-logo').textContent = orgInitials(org.name);
-  document.getElementById('ov-display-name').textContent = org.name;
-  document.getElementById('ov-display-type').textContent = org.type;
-  document.getElementById('ov-f-name').value = org.name;
-  document.getElementById('ov-f-type').value = org.type;
-  document.getElementById('ov-f-about').value = org.about;
-  document.getElementById('ov-f-phone').value = org.phone;
-  document.getElementById('ov-f-email').value = org.email;
-  document.getElementById('ov-f-website').value = org.website;
-  document.getElementById('ov-f-founded').value = org.founded;
-  document.getElementById('ov-f-address').value = org.address;
+  document.getElementById('gi-name').value = org.name;
+  document.getElementById('gi-email').value = org.email;
+  document.getElementById('gi-mobile').value = (org.phone || '').replace(/\D/g, '');
+  document.getElementById('gi-ext').value = '1';
+  document.getElementById('gi-weburl').value = org.website ? 'https://' + org.website : '';
+  document.getElementById('gi-apiurl').value = org.website ? 'https://api.' + org.website : '';
+  document.getElementById('gi-store').value = org.name.replace(/[^A-Za-z]/g, '').slice(0, 10);
+  var mailDomain = org.website || 'company.com';
+  document.getElementById('gi-crm-user').value = 'crm@' + mailDomain;
+  document.getElementById('gi-dp-user').value = 'sales@' + mailDomain;
+  giRenderCrons(document.getElementById('gi-apiurl').value || 'https://api.company.com');
+  repRender();
+  laRender();
   if(org.products){
     ['corerecon','coreconnect','corebuy'].forEach(function(prod){
       var active = org.products[prod];
