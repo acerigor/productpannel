@@ -17,6 +17,14 @@ html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif
 .org-back svg{width:16px;height:16px;}
 .org-header{display:flex;align-items:center;gap:14px;padding:16px 24px 16px;border-bottom:1px solid var(--brd2);}
 @media (max-width:640px){.org-header{padding:12px 16px;}}
+.org-header-actions{display:flex;align-items:center;gap:10px;}
+.org-header-actions[hidden]{display:none;}
+/* On mobile the actions drop onto their own row under the name */
+@media (max-width:640px){
+  .org-header{flex-wrap:wrap;}
+  .org-header-actions{order:3;width:100%;}
+  .org-header-actions .bill-btn{flex:1;justify-content:center;}
+}
 .org-name{font-size:20px;font-weight:700;color:var(--tx);font-family:var(--font);}
 .org-layout{display:flex;flex:1;min-height:0;overflow:hidden;}
 .org-sidebar{width:220px;flex-shrink:0;border-right:1px solid var(--brd2);padding:16px 0;overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
@@ -44,23 +52,6 @@ html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif
 .pp-tab{display:flex;align-items:center;padding:11px 18px;font-size:13px;font-weight:600;color:var(--mu);font-family:var(--font);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;background:none;border-top:none;border-left:none;border-right:none;user-select:none;}
 .pp-tab:hover{color:var(--tx);}
 .pp-tab.active{color:var(--ac);border-bottom-color:var(--ac);}
-.pp-status-wrap{margin-left:auto;position:relative;}
-.pp-status-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;border:1px solid var(--gr);color:var(--gr);background:rgba(34,200,138,.12);transition:border-color .15s,color .15s,background .12s;user-select:none;}
-.pp-status-btn:hover{opacity:.85;}
-.pp-status-btn.inactive{border-color:var(--rd);color:var(--rd);background:rgba(232,85,85,.12);}
-.pp-status-btn svg{width:12px;height:12px;color:var(--gr);flex-shrink:0;transition:transform .15s,color .15s;}
-.pp-status-btn.inactive svg{color:var(--rd);}
-.pp-status-btn.open svg{transform:rotate(180deg);}
-.pp-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.pp-status-dot.on{background:var(--gr);}
-.pp-status-dot.off{background:var(--rd);}
-.pp-status-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:160px;background:var(--sur);border:0.5px solid var(--brd2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:20;padding:4px;overflow:hidden;}
-.pp-status-dd.open{display:block;}
-.pp-status-opt{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12.5px;font-weight:500;font-family:var(--font);color:var(--tx);cursor:pointer;border-radius:7px;transition:background .1s;border:none;background:none;width:100%;text-align:left;}
-.pp-status-opt:hover{background:var(--sur2);}
-.pp-status-opt .pp-status-dot{width:8px;height:8px;}
-.pp-status-opt .pp-chk{margin-left:auto;width:14px;height:14px;color:var(--ac);opacity:0;}
-.pp-status-opt.selected .pp-chk{opacity:1;}
 .pp-sub{display:none;}
 .pp-sub.active{display:block;}
 .pp-usr-wrap{overflow-x:auto;overflow:hidden;margin:20px;border:0.5px solid var(--brd2);border-radius:10px;scrollbar-width:thin;scrollbar-color:var(--brd2) transparent;background:var(--sur);}
@@ -95,6 +86,46 @@ html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif
 .pp-int-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
 .pp-int-name{font-size:13px;font-weight:600;color:var(--tx);font-family:var(--font);}
 .pp-int-desc{font-size:11px;color:var(--mu);font-family:var(--font);line-height:1.3;}
+.bill-int-group{margin-top:14px;}
+.bill-int-group:first-child{margin-top:4px;}
+.bill-int-head{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--mu);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;font-family:var(--font);}
+.bill-int-off{font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;letter-spacing:0;
+  text-transform:none;background:rgba(232,85,85,.12);color:var(--rd);}
+.bill-int-none{padding:14px;background:var(--sur2);border:0.5px dashed var(--brd2);border-radius:10px;
+  color:var(--mu);font-size:12px;font-family:var(--font);}
+/* Pinned to the bottom of the scrolling panel, bled to its full width */
+.bill-int-summary{position:sticky;bottom:0;z-index:5;display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  margin:20px -24px -24px;padding:16px 24px;background:var(--sur);border-top:0.5px solid var(--brd2);
+  box-shadow:0 -8px 24px rgba(0,0,0,.35);}
+.bill-sum-figures{display:flex;align-items:center;gap:28px;width:100%;}
+.bill-sum-item{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:4px;align-items:center;}
+.bill-sum-label{font-size:10.5px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.6px;}
+.bill-sum-value{font-size:19px;font-weight:700;color:var(--tx);font-family:var(--font);line-height:1;white-space:nowrap;}
+.bill-sum-value small{font-size:11px;font-weight:500;color:var(--mu);}
+.bill-sum-value.save{color:var(--gr);}
+.bill-sum-value.save.up{color:var(--am);}
+.bill-sum-value.pay{color:var(--ac2);}
+@media (max-width:640px){
+  .bill-int-summary{gap:14px;margin:16px -16px -16px;padding:14px 16px;}
+  .bill-sum-figures{gap:12px;}
+}
+.bill-int-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;align-self:stretch;flex-shrink:0;}
+/* The price is a button: clicking it sets a custom rate for this organization */
+.bill-int-price{display:flex;align-items:baseline;gap:5px;font-size:13px;font-weight:700;color:var(--tx);
+  font-family:var(--font);white-space:nowrap;line-height:1;background:none;border:0;padding:3px 5px;margin:-3px -5px;
+  border-radius:6px;cursor:pointer;transition:background .12s;}
+.bill-int-price:hover{background:var(--hover);}
+.bill-int-price span{font-size:10.5px;font-weight:500;color:var(--mu);}
+.bill-int-price s{font-size:11px;font-weight:500;color:var(--mu);text-decoration:line-through;}
+.bill-int-price span.bill-int-amt{font-size:13px;font-weight:700;color:var(--tx);}
+.bill-int-price.custom span.bill-int-amt{color:var(--gr);}
+.bill-int-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--brd2);background:var(--sur);
+  cursor:pointer;flex-shrink:0;padding:0;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.bill-int-check:hover{border-color:var(--ac);}
+.bill-int-check.on{background:var(--ac);border-color:var(--ac);}
+.bill-int-check.on::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;
+  transform:rotate(45deg);margin-top:-2px;}
 @media (max-width:640px){.pp-tabs{padding:0 16px;} .pp-usr-wrap{margin:12px;} .pp-int-wrap{padding:16px;} .pp-int-list{grid-template-columns:1fr;}}
 .act-notes-wrap,.act-log-wrap{padding:20px 24px;}
 @media (max-width:640px){.act-notes-wrap,.act-log-wrap{padding:16px;}}
@@ -124,11 +155,9 @@ html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif
 .act-log-text{font-size:13px;color:var(--tx);font-family:var(--font);line-height:1.4;}
 .act-log-text strong{font-weight:600;}
 .act-log-time{font-size:11px;color:var(--mu);font-family:var(--font);margin-top:2px;}
-.bill-wrap{padding:24px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;}
+/* visible overflow so the summary bar sticks to .org-content, the real scroller */
+.bill-wrap{padding:24px;display:flex;flex-direction:column;gap:20px;overflow:visible;}
 @media (max-width:640px){.bill-wrap{padding:16px;gap:16px;}}
-@media (max-width:768px){.bill-cards{flex-direction:column;}}
-@media (max-width:640px){.bill-cards .bill-card{flex:none;width:100%;}}
-@media (max-width:500px){.bill-wrap>[style*="justify-content"]{flex-direction:column;}.bill-wrap>[style*="justify-content"] .bill-btn{width:100%;justify-content:center;}}
 @media (max-width:768px){.bill-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}}
 @media (max-width:500px){.bill-pm{flex-wrap:wrap;}}
 @media (max-width:500px){.bill-row-actions{flex-direction:column;}.bill-btn-sm{width:100%;text-align:center;}}
@@ -147,11 +176,6 @@ html,body{background:#0f1117;margin:0;padding:0;font-family:'DM Sans',sans-serif
 .bmc-menu.open{display:block;}
 .bmc-menu-item{display:block;width:100%;padding:8px 12px;font-size:12px;font-weight:500;font-family:var(--font);color:var(--tx);border:none;background:none;cursor:pointer;border-radius:6px;text-align:left;transition:background .1s;}
 .bmc-menu-item:hover{background:var(--sur2);}
-.bill-cards{display:flex;gap:12px;}.bill-cards .bill-card{flex:1;min-width:0;}
-.bill-card{background:var(--sur);border:0.5px solid var(--brd2);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:6px;}
-.bill-card-label{font-size:12px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;font-family:var(--font);}
-.bill-card-value{font-size:28px;font-weight:700;color:var(--gr);font-family:var(--font);}
-.bill-card-sub{font-size:12.5px;color:var(--tx);opacity:.55;font-family:var(--font);}
 .bill-section{display:flex;flex-direction:column;gap:10px;}
 .bill-section-title{font-size:14px;font-weight:700;color:var(--tx);font-family:var(--font);}
 .bill-table{width:100%;border-collapse:separate;border-spacing:0;font-family:var(--font);}
@@ -349,6 +373,11 @@ textarea.au-input{height:auto;padding:10px 12px;}
   <div class="org-header" style="display:flex;align-items:center;gap:12px;">
     <div class="org-name" id="org-name"></div>
     <div style="flex:1"></div>
+    <!-- Billing-only actions; orgNavSwitch shows them with the Billing panel -->
+    <div class="org-header-actions" id="org-billing-actions" hidden>
+      <button class="bill-btn bill-btn-outline" onclick="window.showNavToast('Billing','Billing address editor coming soon.')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Update Billing Address</button>
+      <button class="bill-btn bill-btn-outline" onclick="window.showNavToast('Payment','Payment method editor coming soon.')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Change Payment Method</button>
+    </div>
     <button class="org-menu-btn" onclick="orgToggleMobile()" id="org-menu-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
@@ -735,17 +764,6 @@ textarea.au-input{height:auto;padding:10px 12px;}
         <div class="pp-tabs">
           <button class="pp-tab active" onclick="ppSwitch('corerecon','users',this)">Users</button>
           <button class="pp-tab" onclick="ppSwitch('corerecon','int',this)">Integrations</button>
-          <div class="pp-status-wrap">
-            <button class="pp-status-btn" onclick="ppToggleDD(this)">
-              <span class="pp-status-dot on"></span>
-              <span class="pp-status-label">Active</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="pp-status-dd">
-              <button class="pp-status-opt selected" onclick="ppSetStatus('corerecon',true,this)"><span class="pp-status-dot on"></span>Active<svg class="pp-chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-              <button class="pp-status-opt" onclick="ppSetStatus('corerecon',false,this)"><span class="pp-status-dot off"></span>Inactive<svg class="pp-chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-            </div>
-          </div>
         </div>
         <div class="pp-sub active" id="pp-corerecon-users">
           <div class="pp-usr-wrap"><table class="pp-usr-table">
@@ -762,17 +780,6 @@ textarea.au-input{height:auto;padding:10px 12px;}
         <div class="pp-tabs">
           <button class="pp-tab active" onclick="ppSwitch('coreconnect','users',this)">Users</button>
           <button class="pp-tab" onclick="ppSwitch('coreconnect','int',this)">Integrations</button>
-          <div class="pp-status-wrap">
-            <button class="pp-status-btn" onclick="ppToggleDD(this)">
-              <span class="pp-status-dot on"></span>
-              <span class="pp-status-label">Active</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="pp-status-dd">
-              <button class="pp-status-opt selected" onclick="ppSetStatus('coreconnect',true,this)"><span class="pp-status-dot on"></span>Active<svg class="pp-chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-              <button class="pp-status-opt" onclick="ppSetStatus('coreconnect',false,this)"><span class="pp-status-dot off"></span>Inactive<svg class="pp-chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-            </div>
-          </div>
         </div>
         <div class="pp-sub active" id="pp-coreconnect-users">
           <div class="pp-usr-wrap"><table class="pp-usr-table">
@@ -789,17 +796,6 @@ textarea.au-input{height:auto;padding:10px 12px;}
         <div class="pp-tabs">
           <button class="pp-tab active" onclick="ppSwitch('corebuy','users',this)">Users</button>
           <button class="pp-tab" onclick="ppSwitch('corebuy','int',this)">Integrations</button>
-          <div class="pp-status-wrap">
-            <button class="pp-status-btn" onclick="ppToggleDD(this)">
-              <span class="pp-status-dot on"></span>
-              <span class="pp-status-label">Active</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="pp-status-dd">
-              <button class="pp-status-opt selected" onclick="ppSetStatus('corebuy',true,this)"><span class="pp-status-dot on"></span>Active<svg class="pp-chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-              <button class="pp-status-opt" onclick="ppSetStatus('corebuy',false,this)"><span class="pp-status-dot off"></span>Inactive<svg class="pp-chk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-            </div>
-          </div>
         </div>
         <div class="pp-sub active" id="pp-corebuy-users">
           <div class="pp-usr-wrap"><table class="pp-usr-table">
@@ -814,26 +810,9 @@ textarea.au-input{height:auto;padding:10px 12px;}
 
       <div class="org-panel" id="orgpanel-billing">
         <div class="bill-wrap">
-          <div style="display:flex;gap:10px;margin-bottom:4px;justify-content:flex-end;">
-            <button class="bill-btn bill-btn-outline" onclick="window.showNavToast('Billing','Billing address editor coming soon.')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Update Billing Address</button>
-            <button class="bill-btn bill-btn-outline" onclick="window.showNavToast('Payment','Payment method editor coming soon.')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Change Payment Method</button>
-          </div>
-          <div class="bill-cards">
-            <div class="bill-card">
-              <div class="bill-card-label">Monthly Cost</div>
-              <div class="bill-card-value">$249</div>
-              <div class="bill-card-sub">Next billing: Oct 1, 2026</div>
-            </div>
-            <div class="bill-card">
-              <div class="bill-card-label">Products Active</div>
-              <div class="bill-card-value" style="color:var(--rd)">3</div>
-              <div class="bill-card-sub">CoreRecon, CoreConnect, CoreBuy</div>
-            </div>
-            <div class="bill-card">
-              <div class="bill-card-label">Total Spent (YTD)</div>
-              <div class="bill-card-value" style="color:#9b59b6">$2,241</div>
-              <div class="bill-card-sub">Jan — Sep 2026</div>
-            </div>
+          <div class="bill-section">
+            <div class="bill-section-title">Integrations</div>
+            <div id="bill-integrations"></div>
           </div>
 
           <div class="bill-section">
@@ -871,6 +850,7 @@ textarea.au-input{height:auto;padding:10px 12px;}
             <div class="bill-mobile-cards" id="bill-mobile-cards"></div>
           </div>
 
+          <div class="bill-int-summary" id="bill-int-summary"></div>
         </div>
       </div>
 
@@ -1109,6 +1089,37 @@ textarea.au-input{height:auto;padding:10px 12px;}
   </div>
 </div>
 
+<!-- Per-organization integration price -->
+<div class="modal-backdrop modal-fullscreen-mobile" id="bp-modal" onclick="if(event.target===this) bpClose()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="bp-modal-title">Set Price</div>
+      <button class="modal-close" onclick="bpClose()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="modal-field-label" for="bp-f-catalog">Catalog Price</label>
+        <div class="modal-field"><input id="bp-f-catalog" type="number" min="0" step="1" placeholder="0"/></div>
+        <div class="field-hint" style="margin-top:6px">The list rate for this integration, used for every organization.</div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="bp-f-price">Price for this Organization</label>
+        <div class="modal-field"><input id="bp-f-price" type="number" min="0" step="1" placeholder="Leave blank to use the catalog price"/></div>
+      </div>
+      <div>
+        <label class="modal-field-label" for="bp-f-reason">Reason</label>
+        <div class="modal-field"><input id="bp-f-reason" placeholder="e.g. Annual prepay, Partner rate"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ls-delete" id="bp-modal-reset" onclick="bpReset()">Reset to catalog</button>
+      <div style="flex:1"></div>
+      <button class="modal-cancel" onclick="bpClose()">Cancel</button>
+      <button class="modal-save" onclick="bpSave()">Save price</button>
+    </div>
+  </div>
+</div>
+
 <!-- Cron Setting row editor -->
 <div class="modal-backdrop modal-fullscreen-mobile" id="gi-cron-modal" onclick="if(event.target===this) giCronClose()">
   <div class="modal modal--wide">
@@ -1190,6 +1201,7 @@ function orgInitials(name){
 function orgNavSwitch(nav){
   document.querySelectorAll('.org-nav').forEach(function(n){ n.classList.toggle('active', n.getAttribute('data-nav') === nav); });
   document.querySelectorAll('.org-panel').forEach(function(p){ p.classList.toggle('active', p.id === 'orgpanel-' + nav); });
+  document.getElementById('org-billing-actions').hidden = nav !== 'billing';
   orgCloseMobile();
 }
 function orgToggleMobile(){
@@ -1326,22 +1338,22 @@ var PP_USERS = {
 
 var PP_INTEGRATIONS = {
   corerecon: [
-    { name:'VIN Decoder', desc:'Automatic VIN decoding and vehicle history', color:'rgba(79,124,255,.12)', stroke:'var(--ac)', on:true },
-    { name:'Market Pricing', desc:'Real-time market value estimates', color:'rgba(34,200,138,.12)', stroke:'var(--gr)', on:true },
-    { name:'Condition Reports', desc:'Digital vehicle condition grading', color:'rgba(251,191,36,.12)', stroke:'#fbbf24', on:false }
+    { name:'VIN Decoder', desc:'Automatic VIN decoding and vehicle history', color:'rgba(79,124,255,.12)', stroke:'var(--ac)', on:true, price:19 },
+    { name:'Market Pricing', desc:'Real-time market value estimates', color:'rgba(34,200,138,.12)', stroke:'var(--gr)', on:true, price:29 },
+    { name:'Condition Reports', desc:'Digital vehicle condition grading', color:'rgba(251,191,36,.12)', stroke:'#fbbf24', on:false, price:15 }
   ],
   coreconnect: [
-    { name:'SMS Notifications', desc:'Text alerts for new messages', color:'rgba(20,184,166,.12)', stroke:'#14b8a6', on:true },
-    { name:'Email Digest', desc:'Daily summary of dealer activity', color:'rgba(79,124,255,.12)', stroke:'var(--ac)', on:false },
-    { name:'Push Alerts', desc:'Real-time browser notifications', color:'rgba(167,139,250,.12)', stroke:'#a78bfa', on:true },
-    { name:'Auto-Responder', desc:'Automated reply to inquiries', color:'rgba(244,114,182,.12)', stroke:'#f472b6', on:false }
+    { name:'SMS Notifications', desc:'Text alerts for new messages', color:'rgba(20,184,166,.12)', stroke:'#14b8a6', on:true, price:25 },
+    { name:'Email Digest', desc:'Daily summary of dealer activity', color:'rgba(79,124,255,.12)', stroke:'var(--ac)', on:false, price:10 },
+    { name:'Push Alerts', desc:'Real-time browser notifications', color:'rgba(167,139,250,.12)', stroke:'#a78bfa', on:true, price:12 },
+    { name:'Auto-Responder', desc:'Automated reply to inquiries', color:'rgba(244,114,182,.12)', stroke:'#f472b6', on:false, price:18 }
   ],
   corebuy: [
-    { name:'Auto-Bid', desc:'Automated bidding rules and limits', color:'rgba(34,200,138,.12)', stroke:'var(--gr)', on:true },
-    { name:'Auction Alerts', desc:'Notifications for matching vehicles', color:'rgba(251,146,60,.12)', stroke:'#fb923c', on:true },
-    { name:'Transport', desc:'Integrated vehicle shipping quotes', color:'rgba(79,124,255,.12)', stroke:'var(--ac)', on:false },
-    { name:'Floor Plan', desc:'Financing integration for purchases', color:'rgba(167,139,250,.12)', stroke:'#a78bfa', on:false },
-    { name:'Title Processing', desc:'Automated title and registration', color:'rgba(20,184,166,.12)', stroke:'#14b8a6', on:true }
+    { name:'Auto-Bid', desc:'Automated bidding rules and limits', color:'rgba(34,200,138,.12)', stroke:'var(--gr)', on:true, price:39 },
+    { name:'Auction Alerts', desc:'Notifications for matching vehicles', color:'rgba(251,146,60,.12)', stroke:'#fb923c', on:true, price:14 },
+    { name:'Transport', desc:'Integrated vehicle shipping quotes', color:'rgba(79,124,255,.12)', stroke:'var(--ac)', on:false, price:22 },
+    { name:'Floor Plan', desc:'Financing integration for purchases', color:'rgba(167,139,250,.12)', stroke:'#a78bfa', on:false, price:35 },
+    { name:'Title Processing', desc:'Automated title and registration', color:'rgba(20,184,166,.12)', stroke:'#14b8a6', on:true, price:27 }
   ]
 };
 
@@ -1399,49 +1411,128 @@ function ppRenderInt(prod){
     return '<div class="pp-int-item">' +
       '<div class="pp-int-icon" style="background:' + it.color + ';color:' + it.stroke + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>' +
       '<div class="pp-int-info"><div class="pp-int-name">' + it.name + '</div><div class="pp-int-desc">' + it.desc + '</div></div>' +
-      '<span class="tog' + (it.on ? '' : ' off') + '" onclick="this.classList.toggle(\'off\')"></span>' +
     '</div>';
   }).join('') + '</div></div>';
 }
 
 
-function ppToggleDD(btn){
-  var dd = btn.nextElementSibling;
-  var isOpen = dd.classList.contains('open');
-  document.querySelectorAll('.pp-status-dd.open').forEach(function(d){ d.classList.remove('open'); });
-  document.querySelectorAll('.pp-status-btn.open').forEach(function(b){ b.classList.remove('open'); });
-  if(!isOpen){ dd.classList.add('open'); btn.classList.add('open'); }
+// An integration bills at its catalog price unless this organization has a custom one
+function billItem(prod, i){ return (PP_INTEGRATIONS[prod] || [])[i] || null; }
+function billPrice(it){ return (it && it.custom != null) ? it.custom : (it ? it.price : 0); }
+
+var BP_PROD = '', BP_IDX = -1;
+
+function bpOpen(prod, i){
+  var it = billItem(prod, i);
+  if(!it) return;
+  BP_PROD = prod; BP_IDX = i;
+  document.getElementById('bp-modal-title').textContent = it.name;
+  document.getElementById('bp-f-catalog').value = it.price;
+  document.getElementById('bp-f-price').value = it.custom != null ? it.custom : '';
+  document.getElementById('bp-f-reason').value = it.reason || '';
+  document.getElementById('bp-modal-reset').style.display = it.custom != null ? '' : 'none';
+  document.getElementById('bp-modal').classList.add('open');
 }
 
-function ppSetStatus(prod, active, optBtn){
-  var panel = document.getElementById('orgpanel-' + prod);
-  var wrap = panel.querySelector('.pp-status-wrap');
-  var btn = wrap.querySelector('.pp-status-btn');
-  var dot = btn.querySelector('.pp-status-dot');
-  var label = btn.querySelector('.pp-status-label');
-  wrap.querySelectorAll('.pp-status-opt').forEach(function(o){ o.classList.remove('selected'); });
-  optBtn.classList.add('selected');
-  dot.className = 'pp-status-dot ' + (active ? 'on' : 'off');
-  label.textContent = active ? 'Active' : 'Inactive';
-  btn.classList.toggle('inactive', !active);
-  wrap.querySelector('.pp-status-dd').classList.remove('open');
-  btn.classList.remove('open');
-  var badge = document.getElementById('nav-badge-' + prod);
-  badge.className = 'org-nav-badge ' + (active ? 'on' : 'off');
-  badge.textContent = active ? 'Active' : 'Inactive';
-  if(CURRENT_ORG && CURRENT_ORG.products) CURRENT_ORG.products[prod] = active;
-  ppRenderUsers(prod);
-  ppRenderInt(prod);
-  var prodName = document.querySelector('.org-nav[data-nav="' + prod + '"]').childNodes[0].textContent.trim();
-  window.showNavToast(active ? 'Product Activated' : 'Product Deactivated', (active ? 'Enabled ' : 'Disabled ') + prodName + ' for this organization.');
+function bpClose(){ document.getElementById('bp-modal').classList.remove('open'); }
+
+// The catalog price is the list rate, shared by every organization
+function bpApplyCatalog(it){
+  var el = document.getElementById('bp-f-catalog');
+  var raw = el.value.trim();
+  if(raw === '') return true;
+  var val = Number(raw);
+  if(isNaN(val) || val < 0){ el.focus(); return false; }
+  it.price = Math.round(val);
+  return true;
 }
 
-document.addEventListener('click', function(e){
-  if(!e.target.closest('.pp-status-wrap')){
-    document.querySelectorAll('.pp-status-dd.open').forEach(function(d){ d.classList.remove('open'); });
-    document.querySelectorAll('.pp-status-btn.open').forEach(function(b){ b.classList.remove('open'); });
+function bpReset(){
+  var it = billItem(BP_PROD, BP_IDX);
+  if(it){
+    if(!bpApplyCatalog(it)) return;
+    it.custom = null; it.reason = '';
   }
-});
+  bpClose();
+  billRenderIntegrations();
+}
+
+function bpSave(){
+  var it = billItem(BP_PROD, BP_IDX);
+  if(!it) return bpClose();
+  if(!bpApplyCatalog(it)) return;
+  var raw = document.getElementById('bp-f-price').value.trim();
+  if(raw === ''){ return bpReset(); }
+  var val = Number(raw);
+  if(isNaN(val) || val < 0){ document.getElementById('bp-f-price').focus(); return; }
+  it.custom = Math.round(val);
+  it.reason = document.getElementById('bp-f-reason').value.trim();
+  bpClose();
+  billRenderIntegrations();
+}
+
+function billToggleCheck(el, prod, i){
+  var on = !el.classList.contains('on');
+  el.classList.toggle('on', on);
+  el.setAttribute('aria-checked', on ? 'true' : 'false');
+  if(PP_INTEGRATIONS[prod] && PP_INTEGRATIONS[prod][i]) PP_INTEGRATIONS[prod][i].on = on;
+  billRenderTotals();
+}
+
+// Catalog total vs. what this organization actually pays; the gap is the discount
+function billRenderTotals(){
+  var total = 0, pay = 0;
+  ['corerecon','coreconnect','corebuy'].forEach(function(prod){
+    var active = !CURRENT_ORG || !CURRENT_ORG.products || CURRENT_ORG.products[prod];
+    if(!active) return;
+    (PP_INTEGRATIONS[prod] || []).forEach(function(it){
+      if(it.on){ total += it.price; pay += billPrice(it); }
+    });
+  });
+  var save = total - pay;
+  document.getElementById('bill-int-summary').innerHTML =
+    '<div class="bill-sum-figures">' +
+      '<div class="bill-sum-item"><span class="bill-sum-label">Total</span><span class="bill-sum-value">$' + total + '<small>/mo</small></span></div>' +
+      '<div class="bill-sum-item"><span class="bill-sum-label">You Save</span><span class="bill-sum-value save' + (save < 0 ? ' up' : '') + '">' +
+        (save < 0 ? '+$' + (-save) : '-$' + save) + '<small>/mo</small></span></div>' +
+      '<div class="bill-sum-item"><span class="bill-sum-label">You Pay</span><span class="bill-sum-value pay">$' + pay + '<small>/mo</small></span></div>' +
+    '</div>';
+}
+
+// Every product's integrations in one place, under Billing
+function billRenderIntegrations(){
+  var names = { corerecon:'CoreRecon', coreconnect:'CoreConnect', corebuy:'CoreBuy' };
+  var html = ['corerecon','coreconnect','corebuy'].map(function(prod){
+    var active = !CURRENT_ORG || !CURRENT_ORG.products || CURRENT_ORG.products[prod];
+    var items = active ? (PP_INTEGRATIONS[prod] || []) : [];
+    var body = items.length
+      ? '<div class="pp-int-list">' + items.map(function(it, i){
+          return '<div class="pp-int-item">' +
+            '<div class="pp-int-icon" style="background:' + it.color + ';color:' + it.stroke + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>' +
+            '<div class="pp-int-info"><div class="pp-int-name">' + it.name + '</div><div class="pp-int-desc">' + it.desc + '</div></div>' +
+            '<div class="bill-int-right">' +
+              '<button type="button" class="bill-int-price' + (it.custom != null ? ' custom' : '') +
+                '" onclick="bpOpen(\'' + prod + '\',' + i + ')" title="' +
+                (it.custom != null ? (it.reason ? it.reason.replace(/"/g, '&quot;') : 'Custom rate') : 'Set a price for this organization') + '">' +
+                (it.custom != null ? '<s>$' + it.price + '</s>' : '') +
+                '<span class="bill-int-amt">$' + billPrice(it) + '</span><span>/mo</span>' +
+              '</button>' +
+              '<button type="button" class="bill-int-check' + (it.on ? ' on' : '') + '" onclick="billToggleCheck(this,\'' + prod + '\',' + i + ')"' +
+                ' role="checkbox" aria-checked="' + (it.on ? 'true' : 'false') + '" aria-label="' + it.name + '"></button>' +
+            '</div>' +
+          '</div>';
+        }).join('') + '</div>'
+      : '<div class="bill-int-none">' + (active ? 'No integrations for this product.' : 'Product not active for this organization.') + '</div>';
+
+    return '<div class="bill-int-group">' +
+      '<div class="bill-int-head">' + names[prod] +
+        (active ? '' : '<span class="bill-int-off">Inactive</span>') +
+      '</div>' + body +
+    '</div>';
+  }).join('');
+  document.getElementById('bill-integrations').innerHTML = html;
+  billRenderTotals();
+}
 
 function auOpen(){
   AU_EDIT_PROD = '';
@@ -1940,6 +2031,7 @@ var CURRENT_ORG;
     ['corerecon','coreconnect','corebuy'].forEach(function(p){ ORG_ORIGINAL_PRODUCTS[p] = !!org.products[p]; });
   }
   ['corerecon','coreconnect','corebuy'].forEach(function(p){ ppRenderUsers(p); ppRenderInt(p); });
+  billRenderIntegrations();
   document.getElementById('org-name').textContent = org.name;
   document.title = org.name + ' — CorePanel';
   document.getElementById('gi-name').value = org.name;
@@ -1958,16 +2050,6 @@ var CURRENT_ORG;
   if(org.products){
     ['corerecon','coreconnect','corebuy'].forEach(function(prod){
       var active = org.products[prod];
-      var panel = document.getElementById('orgpanel-' + prod);
-      var btn = panel.querySelector('.pp-status-btn');
-      var dot = btn.querySelector('.pp-status-dot');
-      var label = btn.querySelector('.pp-status-label');
-      dot.className = 'pp-status-dot ' + (active ? 'on' : 'off');
-      label.textContent = active ? 'Active' : 'Inactive';
-      btn.classList.toggle('inactive', !active);
-      var opts = panel.querySelectorAll('.pp-status-opt');
-      opts[0].classList.toggle('selected', active);
-      opts[1].classList.toggle('selected', !active);
       var badge = document.getElementById('nav-badge-' + prod);
       badge.className = 'org-nav-badge ' + (active ? 'on' : 'off');
       badge.textContent = active ? 'Active' : 'Inactive';
